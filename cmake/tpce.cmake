@@ -2,6 +2,7 @@
 ## current it's not well since not all file in *egen* is necessary
 set(EGEN_PREFIX src/app/tpce/egen/)
 file(GLOB TPCE_SOURCES
+	  "src/app/tpce/*.cc"
           "${EGEN_PREFIX}DateTime.cpp" "${EGEN_PREFIX}error.cpp"
           "${EGEN_PREFIX}Random.cpp" "${EGEN_PREFIX}Money.cpp"
           "${EGEN_PREFIX}EGenVersion.cpp" "${EGEN_PREFIX}locking.cpp"

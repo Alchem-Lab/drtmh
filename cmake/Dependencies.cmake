@@ -37,8 +37,8 @@ set( LIBBOOST_LIBRARIES ${BOOST_INSTALL_DIR}/lib )
 #
 # Configure dependencies: both built-in and external
 #
-find_library( LIBZMQ NAMES zmq HINTS $ENV{HOME}/local/zeromq/lib)
-find_library( LIBIBVERBS NAMES ibverbs)
+find_library( LIBZMQ NAMES zmq HINTS /usr/lib64/)
+find_library( LIBIBVERBS NAMES ibverbs HINTS /usr/lib64/)
 if( LINK_STATIC_LIB )
   add_library( ssmalloc STATIC IMPORTED )
   set_target_properties( ssmalloc PROPERTIES
@@ -103,7 +103,7 @@ if (NOT TARGET cpuinfo)
   set_property(TARGET cpuinfo PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
-find_path(ZMQ_CPP NAMES zmq.hpp HINTS  $ENV{HOME}/local/zeromq/include/)
+find_path(ZMQ_CPP NAMES zmq.hpp HINTS  $ENV{HOME}/install/zeromq-4.2.3/include/)
 include_directories( BEFORE ${LIBSSMALLOC_HEADERS} )
 include_directories( BEFORE ${LIBBOOST_HEADERS} )
 include_directories( BEFORE ${ZMQ_CPP} )
