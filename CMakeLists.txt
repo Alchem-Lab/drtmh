@@ -37,7 +37,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLEVELDB_PLATFORM_POSIX -pthread -DOS_L
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLEVELDB_PLATFORM_POSIX -pthread -DOS_LINUX -mrtm -pthread  -O0 -g2 ${MACRO_FLAGS}")
 
 ## TODO, we shall replace it with a pre-complied lib, but since now the lib is not stable, so we just add sources here
-file(GLOB RDMA_SOURCES "third_party/rdma_lib/src/*.cc" "third_party/micautil/*.cc")
+file(GLOB RDMA_SOURCES "third_party/libRDMA/src/*.cc" "third_party/micautil/*.cc")
 
 
 ## add main files
@@ -50,7 +50,8 @@ file(GLOB SOURCES
           "src/core/*.cc"                                                                        # nocc core
           "src/db/*.cc" "src/db/txs/*.cc"                                                        # framework + CC
           "src/util/*.cc" "src/util/micautil/*.cc" "src/port/*.cc" "src/oltp/utils/*.cc"         # utils
-          )
+          "src/rtx/*.cc"
+	  )
 
 include(cmake/tpce.cmake)
 add_executable(noccocc ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
