@@ -29,7 +29,9 @@ original_sigint_handler = signal.getsignal(signal.SIGINT)
 ## config parameters and global parameters
 ## default mac set
 mac_set = []
-mac_num = 0
+proxies = [] ## the proxies used to connect to remote servers
+pwd     = "123"
+mac_num = 3
 
 PORT = 8090
 #port = 9080
@@ -255,8 +257,6 @@ def main():
     time.sleep(1) ## ensure that all related processes are cleaned
 
     signal.signal(signal.SIGINT, signal_int_handler) ## register signal interrupt handler
-    subprocess.call(["mkdir", "-p", "tmp/"]);
-    subprocess.call(["rm", "-fr", "tmp/rocc-*.log"]);
     start_servers(mac_set, config_file, base_cmd, mac_num) ## start server processes
     for i in xrange(10):
         ## forever loop
