@@ -28,8 +28,8 @@ original_sigint_handler = signal.getsignal(signal.SIGINT)
 
 ## config parameters and global parameters
 ## default mac set
-mac_set = ["10.0.0.100", "10.0.0.101", "10.0.0.102", "10.0.0.103", "10.0.0.104", "10.0.0.105"]
-mac_num = 1
+mac_set = ["nerv1", "nerv2", "nerv3"]
+mac_num = 3
 
 PORT = 8090
 #port = 9080
@@ -179,7 +179,7 @@ def parse_hosts(f):
             mac_set.append(server)
     return
 
-def start_servers(macset, config, bcmd,num):
+def start_servers(macset, config, bcmd, num):
     assert(len(macset) >= num)
     for i in xrange(1,num):
         cmd = (bcmd % (i)) + OUTPUT_CMD_LOG ## disable remote output
@@ -240,14 +240,14 @@ def main():
     print "[START] Input parsing done."
 
     #kill_servers(exe)
-    prepare_files([exe,config_file,"hosts.xml"])    ## copy related files to remote
+    #prepare_files([exe,config_file,"hosts.xml"])    ## copy related files to remote
 
     print "[START] cleaning remaining processes."
 
     time.sleep(1) ## ensure that all related processes are cleaned
 
     signal.signal(signal.SIGINT, signal_int_handler) ## register signal interrupt handler
-    start_servers(mac_set, config_file, base_cmd,mac_num) ## start server processes
+    start_servers(mac_set, config_file, base_cmd, mac_num) ## start server processes
     for i in xrange(10):
         ## forever loop
         time.sleep(10)
