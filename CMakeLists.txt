@@ -39,11 +39,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLEVELDB_PLATFORM_POSIX -pthread -DOS_L
 ## TODO, we shall replace it with a pre-complied lib, but since now the lib is not stable, so we just add sources here
 file(GLOB RDMA_SOURCES "third_party/libRDMA/src/*.cc" "third_party/micautil/*.cc")
 
-
 ## add main files
 file(GLOB SOURCES
           "src/app/micro_benches/*.cc" "src/app/tpcc/*.cc"  "src/app/smallbank/*.cc"             # apps
-#          "src/app/tpce/*.cc"                                                                    # apps continued
+          "src/app/tpce/*.cc"                                                                    # apps continued
           "src/app/graph/*.cc"                                                                   # apps continued 
           "src/framework/*.cc"  "src/framework/utils/*.cc"                                       # framework
           "src/memstore/*.cc"                                                                    # memstore
@@ -105,3 +104,11 @@ set(CMAKE_INSTALL_PREFIX ./)
 install(TARGETS noccocc  DESTINATION scripts) 
 install(TARGETS noccfarm DESTINATION scripts)
 install(TARGETS noccsi   DESTINATION scripts)
+
+
+## for tests
+if(GTEST)
+    include(cmake/gtest.cmake)
+    enable_testing()
+    include(cmake/unit_tests.cmake)
+endif()

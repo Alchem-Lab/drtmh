@@ -6,7 +6,7 @@ import subprocess # execute commands
 import sys    # parse user input
 import signal # bind interrupt handler
 import pickle
-from runner import RoccRunner
+# from runner import RoccRunner
 
 import time #sleep
 
@@ -34,7 +34,8 @@ mac_num = 3
 PORT = 8090
 #port = 9080
 ## benchmark constants
-BASE_CMD = "./%s --bench %s --txn-flags 1  --verbose --config %s"
+DIR = "/home/chao/git_repos/rocc/scripts/"
+BASE_CMD = "cd " + DIR + " && ./%s --bench %s --txn-flags 1  --verbose --config %s"
 output_cmd = "1>/dev/null 2>&1 &" ## this will ignore all the output
 OUTPUT_CMD_LOG = " 1>log 2>&1 &" ## this will flush the log to a file
 
@@ -43,7 +44,7 @@ FNULL = open(os.devnull, 'w')
 ## bench config parameters
 
 base_cmd = ""
-config_file = "config.xml"
+config_file = DIR + "config.xml"
 
 ## start parese input parameter"
 program = "dbtest"
@@ -85,15 +86,19 @@ def kill_servers(e):
     for i in xrange(mac_num):
         subprocess.call(["ssh", "-n","-f", mac_set[i], kill_cmd1])
 
-    r = RoccRunner()
+    # r = RoccRunner()
 
     for i in xrange(mac_num):
-        c = 0
-        while r.check_liveness([],mac_set[i]):
-            time.sleep(2)
-            c += 1
-            if c > 5:
-                break
+        # c = 0
+        # while r.check_liveness([],mac_set[i]):
+        #     time.sleep(2)
+        #     c += 1
+        #     if c > 5:
+        #         break
+
+        subprocess.call(["ssh", "-n","-f", mac_set[i], kill_cmd1])
+        time.sleep(1)
+
         try:
             subprocess.call(["ssh", "-n","-f", mac_set[i], kill_cmd2])
             bcmd = "ps aux | grep nocc"
@@ -183,13 +188,16 @@ def start_servers(macset, config, bcmd, num):
     assert(len(macset) >= num)
     for i in xrange(1,num):
         cmd = (bcmd % (i)) + OUTPUT_CMD_LOG ## disable remote output
+        print ' '.join(["ssh","-n","-f",macset[i],"\"" + "cd " + DIR + " && rm *log" + "\""])
         subprocess.call(["ssh","-n","-f",macset[i],"rm *.log"],stdout=FNULL,stderr=subprocess.STDOUT) ## clean remaining log
-        subprocess.call(["ssh", "-n","-f", macset[i], cmd],stdout=FNULL,stderr=subprocess.STDOUT)
+        print ' '.join(["ssh", "-n","-f", macset[i], "\"" + cmd + "\""])
+        # subprocess.call(["ssh", "-n","-f", macset[i], cmd],stdout=FNULL,stderr=subprocess.STDOUT)
+        subprocess.call(["ssh", "-n","-f", macset[i], cmd], stderr=subprocess.STDOUT)
     ## local process is executed right here
     ## cmd = "perf stat " + (bcmd % 0)
     cmd = bcmd % 0
     print cmd
-    subprocess.call(cmd.split()) ## init local command for debug
+    subprocess.call(cmd, shell=True) ## init local command for debug
     #subprocess.call(["ssh","-n","-f",macset[0],cmd])
     return
 
