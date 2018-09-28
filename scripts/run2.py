@@ -39,7 +39,7 @@ PORT = 8090
 DIR = "~/git_repos/drtmh/scripts/"
 BASE_CMD = "cd " + DIR + " && ./%s --bench %s --txn-flags 1  --verbose --config %s"
 output_cmd = "1>/dev/null 2>&1 &" ## this will ignore all the output
-OUTPUT_CMD_LOG = " 1>tmp/rocc-%s.log 2>&1 &" ## this will flush the log to a file
+OUTPUT_CMD_LOG = " 1>/tmp/rocc.log 2>&1 &" ## this will flush the log to a file
 
 FNULL = open(os.devnull, 'w')
 
@@ -188,10 +188,10 @@ def parse_hosts(f):
 
 def start_servers(macset, config, bcmd, num):
     assert(len(macset) >= num)
-    for i in xrange(0,num):
-        cmd = (bcmd % (i)) + (OUTPUT_CMD_LOG % (i)) ## disable remote output
-        # print ' '.join(["ssh","-n","-f",macset[i],"\"" + "cd " + DIR + (" && rm tmp/rocc-%s.log" % (i)) + "\""])
-        #subprocess.call(["ssh","-n","-f",macset[i],"rm tmp/rocc-%s.log" % (i)],stdout=FNULL,stderr=subprocess.STDOUT) ## clean remaining log
+    for i in xrange(1,num):
+        cmd = (bcmd % (i)) + OUTPUT_CMD_LOG ## disable remote output
+        print ' '.join(["ssh","-n","-f",macset[i],"\"" + "cd " + DIR + " && rm /tmp/rocc.log" + "\""])
+        subprocess.call(["ssh","-n","-f",macset[i],"rm /tmp/rocc.log"],stdout=FNULL,stderr=subprocess.STDOUT) ## clean remaining log
         print ' '.join(["ssh", "-n","-f", macset[i], "\"" + cmd + "\""])
         # subprocess.call(["ssh", "-n","-f", macset[i], cmd],stdout=FNULL,stderr=subprocess.STDOUT)
         subprocess.call(["ssh", "-n","-f", macset[i], cmd], stderr=subprocess.STDOUT)
