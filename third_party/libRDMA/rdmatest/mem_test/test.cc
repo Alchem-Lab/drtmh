@@ -8,10 +8,6 @@
 #include "TestConfigXml.h"
 #include <getopt.h>
 
-#define MAX_SERVERS 64
-
-double tput[MAX_SERVERS];
-
 TestConfig config;
 
 extern uint64_t one_second;
