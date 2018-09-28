@@ -41,7 +41,7 @@ PORT = 8090
 ## benchmark constants
 BASE_CMD = "./%s --bench %s --txn-flags 1  --verbose --config %s"
 output_cmd = "1>/dev/null 2>&1 &" ## this will ignore all the output
-OUTPUT_CMD_LOG = " 1>log 2>&1 &" ## this will flush the log to a file
+OUTPUT_CMD_LOG = " 1>/tmp/rocc.log 2>&1 &" ## this will flush the log to a file
 
 FNULL = open(os.devnull, 'w')
 
@@ -233,8 +233,11 @@ def start_servers(macset, config, bcmd, num):
     assert(len(macset) >= num)
     for i in xrange(1,num):
         cmd = (bcmd % (i)) + OUTPUT_CMD_LOG ## disable remote output
-        subprocess.call(["ssh","-n","-f",macset[i],"rm *.log"],stdout=FNULL,stderr=subprocess.STDOUT) ## clean remaining log
-        subprocess.call(["ssh", "-n","-f", macset[i], cmd],stdout=FNULL,stderr=subprocess.STDOUT)
+        print ' '.join(["ssh","-n","-f",macset[i],"\"" + "cd " + DIR + " && rm /tmp/rocc.log" + "\""])
+        subprocess.call(["ssh","-n","-f",macset[i],"rm /tmp/rocc.log"],stdout=FNULL,stderr=subprocess.STDOUT) ## clean remaining log
+        print ' '.join(["ssh", "-n","-f", macset[i], "\"" + cmd + "\""])
+        # subprocess.call(["ssh", "-n","-f", macset[i], cmd],stdout=FNULL,stderr=subprocess.STDOUT)
+        subprocess.call(["ssh", "-n","-f", macset[i], cmd], stderr=subprocess.STDOUT)
     ## local process is executed right here
     ## cmd = "perf stat " + (bcmd % 0)
     cmd = bcmd % 0
