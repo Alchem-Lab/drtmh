@@ -149,6 +149,8 @@ std::pair<uint64_t, uint64_t> get_system_memory_info()
 
 void *malloc_huge_pages(size_t size,uint64_t huge_page_sz,bool flag)
 {
+  LOG(2) << "malloc_huge_pages: size = " << size << "huge_page_sz = " << huge_page_sz << "flag = " << flag;
+  
   char *ptr; // the return value
 #define ALIGN_TO_PAGE_SIZE(x)  (((x) + huge_page_sz - 1) / huge_page_sz * huge_page_sz)
   size_t real_size = ALIGN_TO_PAGE_SIZE(size + huge_page_sz);

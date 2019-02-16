@@ -32,7 +32,7 @@ class RdmaChecker {
         ASSERT(h->lock == 0) << " current lock content " << (uint64_t)(h->lock);
         ASSERT(h->seq == it->seq) << " header's seq " << h->seq << "; buffered seq " << it->seq;
         ASSERT(h->seq == ch->seq)  << " header's seq " << h->seq << "; checker's seq " << ch->seq;
-        ASSERT(ch->lock == ENCODE_LOCK_CONTENT(c->response_node_,c->worker_id_,c->cor_id_ + 1))
+        ASSERT((int64_t)ch->lock == ENCODE_LOCK_CONTENT(c->response_node_,c->worker_id_,c->cor_id_ + 1))
             <<" check header's lock "<< ch->lock;
       }
     }
