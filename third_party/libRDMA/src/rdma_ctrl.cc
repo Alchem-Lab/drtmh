@@ -398,6 +398,7 @@ void RdmaCtrl::link_connect_qps(int tid, int dev_id, int port_idx, int idx, ibv_
     //     assert(qp != NULL);
     // }
 
+    int retry_cnt = 0;
     while(1) {
         int connected = 0;
         for(uint i = 0;i < get_num_nodes();++i) {
@@ -410,8 +411,13 @@ void RdmaCtrl::link_connect_qps(int tid, int dev_id, int port_idx, int idx, ibv_
 
         if(connected == get_num_nodes())
             break;
-        else
+        else {
             usleep(200000);
+            if (retry_cnt % 10 == 0)
+                fprintf(stderr,"%d: %d out of %d qps connected. Retry connecting qps...\n",tid, connected, get_num_nodes());
+            CE(retry_cnt >= 100, "too many qps connection retries.");
+            retry_cnt++;
+        }
     }
 }
 

@@ -15,8 +15,8 @@ class RDMALogger : public Logger {
              RRpc *rpc,int ack_rpc_id,
              int expected_store,char *local_p,int ms,int ts,int size,int entry_size = RTX_LOG_ENTRY_SIZE)
       :Logger(rpc,ack_rpc_id,base_off,expected_store,local_p,ms,ts,size,entry_size),
-       node_id_(nid),worker_id_(tid),
-       scheduler_(rdma_sched)
+       scheduler_(rdma_sched),
+       node_id_(nid),worker_id_(tid)
   {
     // init local QP vector
     fill_qp_vec(cm,worker_id_);

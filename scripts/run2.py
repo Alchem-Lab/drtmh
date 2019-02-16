@@ -28,16 +28,16 @@ original_sigint_handler = signal.getsignal(signal.SIGINT)
 
 ## config parameters and global parameters
 ## default mac set
-mac_set = ["nerv1", "nerv2", "nerv3"]
-mac_num = 3
+mac_set = []
+mac_num = 0
 
 PORT = 8090
 #port = 9080
 ## benchmark constants
-DIR = "/home/chao/git_repos/drtmh/scripts/"
+DIR = "~/git_repos/drtmh/scripts/"
 BASE_CMD = "cd " + DIR + " && ./%s --bench %s --txn-flags 1  --verbose --config %s"
 output_cmd = "1>/dev/null 2>&1 &" ## this will ignore all the output
-OUTPUT_CMD_LOG = " 1>/tmp/rocc.log 2>&1 &" ## this will flush the log to a file
+OUTPUT_CMD_LOG = " 1>tmp/rocc-%s.log 2>&1 &" ## this will flush the log to a file
 
 FNULL = open(os.devnull, 'w')
 
@@ -186,18 +186,18 @@ def parse_hosts(f):
 
 def start_servers(macset, config, bcmd, num):
     assert(len(macset) >= num)
-    for i in xrange(1,num):
-        cmd = (bcmd % (i)) + OUTPUT_CMD_LOG ## disable remote output
-        print ' '.join(["ssh","-n","-f",macset[i],"\"" + "cd " + DIR + " && rm /tmp/rocc.log" + "\""])
-        subprocess.call(["ssh","-n","-f",macset[i],"rm /tmp/rocc.log"],stdout=FNULL,stderr=subprocess.STDOUT) ## clean remaining log
+    for i in xrange(0,num):
+        cmd = (bcmd % (i)) + (OUTPUT_CMD_LOG % (i)) ## disable remote output
+        # print ' '.join(["ssh","-n","-f",macset[i],"\"" + "cd " + DIR + (" && rm tmp/rocc-%s.log" % (i)) + "\""])
+        #subprocess.call(["ssh","-n","-f",macset[i],"rm tmp/rocc-%s.log" % (i)],stdout=FNULL,stderr=subprocess.STDOUT) ## clean remaining log
         print ' '.join(["ssh", "-n","-f", macset[i], "\"" + cmd + "\""])
         # subprocess.call(["ssh", "-n","-f", macset[i], cmd],stdout=FNULL,stderr=subprocess.STDOUT)
         subprocess.call(["ssh", "-n","-f", macset[i], cmd], stderr=subprocess.STDOUT)
     ## local process is executed right here
     ## cmd = "perf stat " + (bcmd % 0)
-    cmd = bcmd % 0
-    print cmd
-    subprocess.call(cmd.split()) ## init local command for debug
+    # cmd = bcmd % 0V
+    # print cmd
+    # subprocess.call(cmd, shell=True) ## init local command for debug
     #subprocess.call(["ssh","-n","-f",macset[0],cmd])
     return
 
@@ -255,11 +255,14 @@ def main():
     time.sleep(1) ## ensure that all related processes are cleaned
 
     signal.signal(signal.SIGINT, signal_int_handler) ## register signal interrupt handler
+    subprocess.call(["mkdir", "-p", "tmp/"]);
+    subprocess.call(["rm", "-fr", "tmp/rocc-*.log"]);
     start_servers(mac_set, config_file, base_cmd, mac_num) ## start server processes
     for i in xrange(10):
         ## forever loop
         time.sleep(10)
     signal_int_handler(0,1) ## 0,1 are dummy args
+    subprocess.call(["scancel", "-u", "$USER"]);
     return
 
 #====================================#
