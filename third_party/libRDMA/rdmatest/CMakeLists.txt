@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 2.6)
 set (test
     "rc_ping"
     "ralloc_test"
-    "msg_test"
+    # "msg_test"
     "mr_test"
     "one_sided"
     "multi_post_read"
@@ -53,7 +53,7 @@ file(GLOB SOURCES "${PROJECT_BINARY_DIR}/../src/*.cc" )
 add_executable(rc_ping ${PROJECT_BINARY_DIR}/rc_ping_test/test.cc ${PROJECT_BINARY_DIR}/main.cc ${SOURCES})
 add_executable(ud_msg ${PROJECT_BINARY_DIR}/ud_msg_test/test.cc ${PROJECT_BINARY_DIR}/main.cc ${SOURCES})
 add_executable(ralloc_test ${PROJECT_BINARY_DIR}/ralloc_test.cc)
-add_executable(msg_test ${PROJECT_BINARY_DIR}/ring_msg_test/test.cc ${PROJECT_BINARY_DIR}/main.cc ${SOURCES})
+#add_executable(msg_test ${PROJECT_BINARY_DIR}/ring_msg_test/test.cc ${PROJECT_BINARY_DIR}/main.cc ${SOURCES})
 add_executable(mr_test  ${PROJECT_BINARY_DIR}/mem_test/test.cc  ${SOURCES})
 add_executable(one_sided ${PROJECT_BINARY_DIR}/one_sided_test/test.cc ${SOURCES}  ${PROJECT_BINARY_DIR}/main.cc)
 add_executable(multi_post_read ${PROJECT_BINARY_DIR}/multi_post_read_test/test.cc ${SOURCES}  ${PROJECT_BINARY_DIR}/main.cc)
