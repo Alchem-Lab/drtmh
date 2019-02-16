@@ -33,7 +33,8 @@ set( LIBBOOST_LIBRARIES ${BOOST_INSTALL_DIR}/lib )
 #
 # Configure dependencies: both built-in and external
 #
-find_library( LIBZMQ NAMES zmq HINTS /usr/lib64/)
+# find_library( LIBZMQ NAMES zmq HINTS /usr/lib64/)
+find_library( LIBZMQ NAMES zmq HINTS /home/chao/install/zeromq-4.2.3/lib/)
 find_library( LIBIBVERBS NAMES ibverbs HINTS /usr/lib64/)
 if( LINK_STATIC_LIB )
   add_library( ssmalloc STATIC IMPORTED )
