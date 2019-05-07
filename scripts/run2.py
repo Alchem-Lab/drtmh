@@ -6,7 +6,7 @@ import subprocess # execute commands
 import sys    # parse user input
 import signal # bind interrupt handler
 import pickle
-from runner import RoccRunner
+# from runner import RoccRunner
 
 import time #sleep
 
@@ -35,7 +35,6 @@ mac_set = ["nerv14", "nerv15", "nerv16"]
 proxies = [] ## the proxies used to connect to remote servers
 pwd     = "123"
 mac_num = 3
-
 PORT = 8090
 #port = 9080
 ## benchmark constants
@@ -49,7 +48,7 @@ FNULL = open(os.devnull, 'w')
 ## bench config parameters
 
 base_cmd = ""
-config_file = "config.xml"
+config_file = DIR + "config.xml"
 
 ## start parese input parameter"
 program = "dbtest"
@@ -131,15 +130,19 @@ def kill_servers(e):
     for i in xrange(mac_num):
         subprocess.call(["ssh", "-n","-f", mac_set[i], kill_cmd1])
 
-    r = RoccRunner()
+    # r = RoccRunner()
 
     for i in xrange(mac_num):
-        c = 0
-        while r.check_liveness([],mac_set[i]):
-            time.sleep(2)
-            c += 1
-            if c > 5:
-                break
+        # c = 0
+        # while r.check_liveness([],mac_set[i]):
+        #     time.sleep(2)
+        #     c += 1
+        #     if c > 5:
+        #         break
+
+        subprocess.call(["ssh", "-n","-f", mac_set[i], kill_cmd1])
+        time.sleep(1)
+
         try:
             subprocess.call(["ssh", "-n","-f", mac_set[i], kill_cmd2])
             bcmd = "ps aux | grep nocc"
@@ -241,9 +244,9 @@ def start_servers(macset, config, bcmd, num):
         subprocess.call(["ssh", "-n","-f", macset[i], cmd], stderr=subprocess.STDOUT)
     ## local process is executed right here
     ## cmd = "perf stat " + (bcmd % 0)
-    cmd = bcmd % 0
-    print cmd
-    subprocess.call(cmd.split()) ## init local command for debug
+    # cmd = bcmd % 0V
+    # print cmd
+    # subprocess.call(cmd, shell=True) ## init local command for debug
     #subprocess.call(["ssh","-n","-f",macset[0],cmd])
     return
 

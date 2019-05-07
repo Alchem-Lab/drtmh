@@ -52,8 +52,8 @@ file(GLOB SOURCES
           "src/core/*.cc"                                                                        # nocc core
           "src/db/*.cc" "src/db/txs/*.cc"                                                        # framework + CC
           "src/util/*.cc" "src/util/micautil/*.cc" "src/port/*.cc" "src/oltp/utils/*.cc"         # utils
-          "src/rtx/*.cc"       # new rtx's code
-          )
+          "src/rtx/*.cc"
+	  )
 
 include(cmake/tpce.cmake)
 add_executable(noccocc ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
