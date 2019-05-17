@@ -3,6 +3,7 @@
 #include "tx_config.h"
 
 #include "occ.h"
+#include "dslr.h"
 #include "core/logging.h"
 
 #include "checker.hpp"
@@ -21,6 +22,10 @@ class OCCR : public OCC {
       OCC(worker,db,rpc_handler,nid,tid,cid,response_node,
              cm,rdma_sched,ms)
   {
+    dslr_lock_manager = new DSLR(worker, db, rpc_handler, 
+                                 nid, tid, cid, response_node, 
+                                 cm, rdma_sched, ms);
+
     if(worker_id_ == 0 && cor_id_ == 0) {
       LOG(3) << "Use one-sided for read.";
     }
@@ -42,9 +47,15 @@ class OCCR : public OCC {
    * Using RDMA one-side primitive to implement various TX operations
    */
   bool lock_writes_w_rdma(yield_func_t &yield);
+  bool lock_writes_w_CAS_rdma(yield_func_t &yield);
+  bool lock_writes_w_FA_rdma(yield_func_t &yield);
   void write_back_w_rdma(yield_func_t &yield);
+  void write_back_w_CAS_rdma(yield_func_t &yield);
+  void write_back_w_FA_rdma(yield_func_t &yield);  
   bool validate_reads_w_rdma(yield_func_t &yield);
   void release_writes_w_rdma(yield_func_t &yield);
+  void release_writes_w_CAS_rdma(yield_func_t &yield);
+  void release_writes_w_FA_rdma(yield_func_t &yield);
 
   int pending_remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
 
@@ -94,7 +105,11 @@ class OCCR : public OCC {
 #endif
 
 #if 1 //USE_RDMA_COMMIT
+#if USE_DSLR
+    if(!lock_writes_w_FA_rdma(yield)) {    
+#else
     if(!lock_writes_w_rdma(yield)) {
+#endif
 #if !NO_ABORT
       goto ABORT;
 #endif
@@ -140,7 +155,11 @@ class OCCR : public OCC {
     asm volatile("" ::: "memory");
 #endif
 #if 1
+#if USE_DSLR
+    write_back_w_FA_rdma(yield);    
+#else
     write_back_w_rdma(yield);
+#endif
 #else
     /**
      * Fixme! write back w RPC now can only work with *lock_w_rpc*.
@@ -213,6 +232,9 @@ class OCCR : public OCC {
   void commit_rpc_handler2(int id,int cid,char *msg,void *arg);
   void release_rpc_handler2(int id,int cid,char *msg,void *arg);
   void validate_rpc_handler2(int id,int cid,char *msg,void *arg);
+
+private:
+  DSLR* dslr_lock_manager;
 };
 
 } // namespace rtx

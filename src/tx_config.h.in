@@ -47,6 +47,10 @@
 #endif
 
 #cmakedefine USE_RDMA_COMMIT @USE_RDMA_COMMIT@
+#cmakedefine USE_DSLR @USE_DSLR@
+#ifndef USE_DSLR
+#define USE_DSLR 0
+#endif
 
 #cmakedefine RDMA_STORE_SIZE @RDMA_STORE_SIZE@
 #ifndef RDMA_STORE_SIZE

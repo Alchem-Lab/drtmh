@@ -2,6 +2,8 @@
 
 #include "core/rdma_sched.h"
 #include "tx_config.h"
+using namespace rdmaio;
+
 
 namespace nocc {
 
@@ -55,6 +57,71 @@ class RDMALockReq  : public RDMAReqBase {
     sr[0].wr.atomic.remote_addr = remote_off;
     sr[0].wr.atomic.compare_add = compare;
     sr[0].wr.atomic.swap = swap;
+    sge[0].length = sizeof(uint64_t);
+    sge[0].addr = (uint64_t)local_addr;
+  }
+
+  inline void set_read_meta(uint64_t remote_off,char *local_addr,int len = sizeof(uint64_t)) {
+    sr[1].wr.rdma.remote_addr =  remote_off;
+    sge[1].addr = (uint64_t)local_addr;
+    sge[1].length = len;
+  }
+
+  inline void post_reqs(oltp::RScheduler *s,Qp *qp) {
+
+    sr[0].wr.atomic.remote_addr += qp->remote_attr_.memory_attr_.buf;
+    sr[0].wr.atomic.rkey = qp->remote_attr_.memory_attr_.rkey;
+    sge[0].lkey = qp->dev_->conn_buf_mr->lkey;
+
+    sr[1].wr.rdma.remote_addr += qp->remote_attr_.memory_attr_.buf;
+    sr[1].wr.rdma.rkey = qp->remote_attr_.memory_attr_.rkey;
+    sge[1].lkey = qp->dev_->conn_buf_mr->lkey;
+
+    s->post_batch(qp,cor_id,&(sr[0]),&bad_sr,1);
+  }
+};
+
+enum Segment {
+  NX = 0,
+  NS = 1,
+  MAXX = 2,
+  MAXS = 3
+};
+
+#define ENCODE_DSLR_LOCK_CONTENT(nx,ns,maxx,maxs) ( ((uint64_t)nx) << 48 | ((uint64_t)ns) << 32 | ((uint64_t)maxx) << 16 | ((uint64_t)maxs) )
+#define DECODE_DSLR_LOCK_NX(lock) ((lock) >> 48)
+#define DECODE_DSLR_LOCK_NS(lock) (((lock) >> 32) & 0xffff)
+#define DECODE_DSLR_LOCK_MAXX(lock) (((lock) >> 16) & 0xffff)
+#define DECODE_DSLR_LOCK_MAXS(lock) ((lock) & 0xffff)
+
+class RDMAFALockReq  : public RDMAReqBase {
+ public:
+  explicit RDMAFALockReq(int cid) : RDMAReqBase(cid)
+  {
+    // op code
+    sr[0].opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
+    sr[1].opcode = IBV_WR_RDMA_READ;
+  }
+
+  inline void set_lock_meta(uint64_t remote_off, Segment segment, uint64_t val,
+                            char *local_addr) {
+    sr[0].wr.atomic.remote_addr = remote_off;
+    switch(segment) {
+      case NX:
+        sr[0].wr.atomic.compare_add = (val&0xffff)<<48;
+        break;
+      case NS:
+        sr[0].wr.atomic.compare_add = (val&0xffff)<<32;
+        break;
+      case MAXX:
+        sr[0].wr.atomic.compare_add = (val&0xffff)<<16;
+        break;
+      case MAXS:
+        sr[0].wr.atomic.compare_add = (val&0xffff);
+        break;
+      default:
+        assert(false);
+    }
     sge[0].length = sizeof(uint64_t);
     sge[0].addr = (uint64_t)local_addr;
   }

@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 #include <vector>
-
+#include "time.h"
+#define CPU_FREQ 2.6
 
 namespace nocc {
 namespace util {
@@ -82,8 +83,17 @@ class BreakdownTimer {
     return rdtsc() - begin;
   }
 
-  static double rdtsc_to_ms(uint64_t rdts, uint64_t one_second_cycle) {
+  static double rdtsc_to_ms(uint64_t rdts, uint64_t one_second_cycle = CPU_FREQ) {
     return ((double)rdts / (double)one_second_cycle) * 1000;
+  }
+  static double rdtsc_to_microsec(uint64_t rdts, uint64_t one_second_cycle = CPU_FREQ) {
+    return ((double)rdts / (double)one_second_cycle) * 1000000;
+  }
+
+  static uint64_t get_sys_clock() {
+    uint64_t ret = rdtsc();
+    ret = (uint64_t) ((double)ret / CPU_FREQ);
+    return ret;
   }
 };
 } // namespace util
