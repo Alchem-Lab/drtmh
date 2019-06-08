@@ -509,7 +509,7 @@ void RemoteSet::reset() {
 
 void RemoteSet::update_read_buf() {
   assert(false);
-  request_buf_ = msg_buf_alloctors[cor_id_].get_req_buf() + sizeof(uint64_t) + sizeof(rpc_header);
+  request_buf_ = nocc::msg_buf_alloctors[cor_id_].get_req_buf() + sizeof(uint64_t) + sizeof(rpc_header);
   request_buf_end_ = request_buf_ + sizeof(RequestHeader);
 }
 

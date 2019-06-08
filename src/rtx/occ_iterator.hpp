@@ -6,7 +6,7 @@ namespace rtx {
 
 class RTXIterator {
  public:
-  RTXIterator(OCC *tx,int tableid,bool sec = false):
+  RTXIterator(TXOpBase *tx,int tableid,bool sec = false):
       tx_(tx){
     if(sec) {
       iter_ = (tx_->db_->_indexs[tableid])->GetIterator();
@@ -88,7 +88,7 @@ class RTXIterator {
   }
 
  private:
-  OCC *tx_;
+  TXOpBase *tx_;
   Memstore::Iterator *iter_;
 
   MemNode* cur_ = NULL;

@@ -227,6 +227,8 @@ void MicroWorker::thread_local_init() {
 					txs_[i] = new DBRad(store_,worker_id_,rpc_,i);
 #elif defined(OCC_TX)
 					txs_[i] = new DBTX(store_,worker_id_,rpc_,i);
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+					txs_[i] = new DBTX(store_,worker_id_,rpc_,i);
 #elif defined(FARM)
 					txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
 #elif defined(SI_TX)

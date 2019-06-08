@@ -19,10 +19,6 @@
 
 //#define SANITY_CHECKS
 
-//#define OCC_TX
-//#define RAD_TX
-//#define SI_TX
-
 #define TX_CP  0
 #define TX_SED 1
 #define TX_TL0 2

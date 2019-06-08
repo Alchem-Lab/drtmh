@@ -50,6 +50,7 @@ void  RWorker::new_master_routine(yield_func_t &yield,int cor_id) {
 
   while( true ) {
     if(unlikely(!running_status())) {
+      fprintf(stdout, "exiting master routine.\n");
       return exit_handler();
     }
 

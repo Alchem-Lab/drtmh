@@ -72,6 +72,8 @@ struct StockLevelInputPayload {
   uint8_t pid;
 };
 
+typedef struct { uint64_t a;uint64_t b; } order_index_type_t;
+
 /* Tx's implementation */
 class TpccWorker : public TpccMixin, public BenchWorker {
 
@@ -82,13 +84,30 @@ class TpccWorker : public TpccMixin, public BenchWorker {
              BenchRunner *context);
   ~TpccWorker();
 
+#if ENABLE_TXN_API
+  txn_result_t txn_new_order_new_api(yield_func_t &yield);
+  txn_result_t txn_payment_api(yield_func_t &yield);
+  txn_result_t txn_delivery_api(yield_func_t &yield);
+  txn_result_t txn_stock_level_api(yield_func_t &yield);
+  txn_result_t txn_order_status_api(yield_func_t &yield);
+  txn_result_t txn_super_stock_level_api(yield_func_t &yield);
+  txn_result_t txn_payment_naive_api(yield_func_t &yield);    // non speculative execution  
+  txn_result_t txn_payment_naive1_api(yield_func_t &yield);   // + batching
+#else
   txn_result_t txn_new_order(yield_func_t &yield);
   txn_result_t txn_new_order_new(yield_func_t &yield);
 
+
   txn_result_t txn_payment(yield_func_t &yield);
+
+
   txn_result_t txn_delivery(yield_func_t &yield);
+
+
   txn_result_t txn_stock_level(yield_func_t &yield);
+
   txn_result_t txn_order_status(yield_func_t &yield);
+
   txn_result_t txn_super_stock_level(yield_func_t &yield);
 
   txn_result_t txn_super_stocklevel_new(yield_func_t &yield);
@@ -100,8 +119,8 @@ class TpccWorker : public TpccMixin, public BenchWorker {
   txn_result_t txn_new_order_naive1(yield_func_t &yield); // + batching
 
   txn_result_t txn_payment_naive(yield_func_t &yield);    // non speculative execution
-  txn_result_t txn_payment_naive1(yield_func_t &yield);   // + batching
-
+  txn_result_t txn_payment_naive1(yield_func_t &yield);   // + batching  
+#endif
 
   /* The later are used for transactions handling ro fork/join modes */
   void stock_level_piece(yield_func_t &yield,int id,int cid,char* input);
@@ -140,12 +159,26 @@ class TpccWorker : public TpccMixin, public BenchWorker {
 
   /* Wrapper for implementation of transaction */
   static txn_result_t TxnNewOrder(BenchWorker *w,yield_func_t &yield) {
+#if ENABLE_TXN_API
+    //txn_result_t r = static_cast<TpccWorker *>(w)->txn_new_order(yield);
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_new_order_new_api(yield);
+#else
     //txn_result_t r = static_cast<TpccWorker *>(w)->txn_new_order(yield);
     txn_result_t r = static_cast<TpccWorker *>(w)->txn_new_order_new(yield);
+#endif
     return r;
   }
 
   static txn_result_t TxnPayment(BenchWorker *w,yield_func_t &yield) {
+#if ENABLE_TXN_API
+#if NAIVE == 1
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_payment_naive_api(yield);
+#elif NAIVE == 2 || NAIVE == 3
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_payment_naive1_api(yield);
+#else
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_payment_api(yield);
+#endif
+#else
 #if NAIVE == 1
     txn_result_t r = static_cast<TpccWorker *>(w)->txn_payment_naive(yield);
 #elif NAIVE == 2 || NAIVE == 3
@@ -153,27 +186,45 @@ class TpccWorker : public TpccMixin, public BenchWorker {
 #else
     txn_result_t r = static_cast<TpccWorker *>(w)->txn_payment(yield);
 #endif
+#endif
     return r;
   }
 
   static txn_result_t TxnDelivery(BenchWorker *w,yield_func_t &yield) {
+#if ENABLE_TXN_API
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_delivery_api(yield);    
+#else
     txn_result_t r = static_cast<TpccWorker *>(w)->txn_delivery(yield);
+#endif
     return r;
   }
 
   static txn_result_t TxnStockLevel(BenchWorker *w,yield_func_t &yield) {
+#if ENABLE_TXN_API
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_stock_level_api(yield);
+    //txn_result_t r = static_cast<TpccWorker *>(w)->txn_super_stock_level(yield);    
+#else
     txn_result_t r = static_cast<TpccWorker *>(w)->txn_stock_level(yield);
     //txn_result_t r = static_cast<TpccWorker *>(w)->txn_super_stock_level(yield);
+#endif
     return r;
   }
 
   static txn_result_t TxnSuperStockLevel(BenchWorker *w,yield_func_t &yield) {
-    txn_result_t r = static_cast<TpccWorker *>(w)->txn_super_stock_level(yield);
+#if ENABLE_TXN_API
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_super_stock_level_api(yield);
+#else
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_super_stock_level(yield);    
+#endif
     return r;
   }
 
   static txn_result_t TxnOrderStatus(BenchWorker *w,yield_func_t &yield) {
+#if ENABLE_TXN_API
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_order_status_api(yield);
+#else
     txn_result_t r = static_cast<TpccWorker *>(w)->txn_order_status(yield);
+#endif
     return r;
   }
 };

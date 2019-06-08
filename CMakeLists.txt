@@ -43,7 +43,7 @@ file(GLOB RDMA_SOURCES "third_party/libRDMA/src/*.cc" "third_party/micautil/*.cc
 ## add main files
 file(GLOB SOURCES
           "src/app/micro_benches/*.cc" "src/app/tpcc/*.cc"  "src/app/smallbank/*.cc"             # apps
-          "src/app/tpce/*.cc"                                                                    # apps continued
+          # "src/app/tpce/*.cc"                                                                    # apps continued
           "src/app/graph/*.cc"                                                                   # apps continued 
           "src/framework/*.cc"  "src/framework/utils/*.cc"                                       # framework
           "src/memstore/*.cc"                                                                    # memstore
@@ -54,8 +54,18 @@ file(GLOB SOURCES
           )
 
 include(cmake/tpce.cmake)
-add_executable(noccocc ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+
+# add_executable(noccocc ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+add_executable(noccocc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccocc PRIVATE "-DOCC_TX")
+
+# add_executable(noccnowait ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+add_executable(noccnowait ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccnowait PRIVATE "-DNOWAIT_TX")
+
+# add_executable(noccwaitdie ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+add_executable(noccwaitdie ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccwaitdie PRIVATE "-DWAITDIE_TX")
 
 add_executable(noccsi ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsi PRIVATE "-DSI_TX")
@@ -80,7 +90,7 @@ include(cmake/Dependencies.cmake)
 #
 # Configure binary linking
 #
-set( apps noccrad noccocc noccsi noccfarm nn nr )
+set( apps noccrad noccocc noccsi noccfarm noccnowait noccwaitdie nn nr )
 foreach( prog ${apps} )
   if( LINK_STATIC_LIB )
     target_link_libraries( ${prog}
@@ -102,10 +112,11 @@ endforeach( prog )
 
 # for the ease of running
 set(CMAKE_INSTALL_PREFIX ./)
-install(TARGETS noccocc  DESTINATION scripts) 
-install(TARGETS noccfarm DESTINATION scripts)
-install(TARGETS noccsi   DESTINATION scripts)
-
+install(TARGETS noccocc  	DESTINATION scripts) 
+install(TARGETS noccfarm 	DESTINATION scripts)
+install(TARGETS noccsi   	DESTINATION scripts)
+install(TARGETS noccnowait 	DESTINATION scripts)
+install(TARGETS noccwaitdie   	DESTINATION scripts)
 
 ## for tests
 if(GTEST)

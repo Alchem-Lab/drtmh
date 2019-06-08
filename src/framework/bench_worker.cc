@@ -20,7 +20,13 @@ namespace nocc {
 
 __thread oltp::BenchWorker *worker = NULL;
 __thread TXHandler   **txs_ = NULL;
+#ifdef OCC_TX
 __thread rtx::OCC      **new_txs_ = NULL;
+#elif defined(NOWAIT_TX)
+__thread rtx::NOWAIT   **new_txs_ = NULL;
+#elif defined(WAITDIE_TX)
+__thread rtx::WAITDIE  **new_txs_ = NULL;
+#endif
 
 extern uint64_t total_ring_sz;
 extern uint64_t ring_padding;
@@ -85,8 +91,16 @@ void BenchWorker::init_tx_ctx() {
 
   worker = this;
   txs_              = new TXHandler*[1 + server_routine + 2];
+#ifdef OCC_TX
   new_txs_          = new rtx::OCC*[1 + server_routine + 2];
   std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::OCC*>(NULL));
+#elif defined(NOWAIT_TX)
+  new_txs_          = new rtx::NOWAIT*[1 + server_routine + 2];
+  std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::NOWAIT*>(NULL));
+#elif defined(WAITDIE_TX)
+  new_txs_          = new rtx::WAITDIE*[1 + server_routine + 2];
+  std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::WAITDIE*>(NULL));
+#endif
 
   //msg_buf_alloctors = new RPCMemAllocator[1 + server_routine];
 
@@ -202,6 +216,8 @@ BenchWorker::worker_routine(yield_func_t &yield) {
 
 
   uint64_t retry_count(0);
+  // uint64_t max_count = 1;
+  // while (max_count-- > 0) {
   while(true) {
 #if CS == 0
     /* select the workload */
@@ -286,6 +302,9 @@ BenchWorker::worker_routine(yield_func_t &yield) {
 #endif
     } else {
       retry_count += 1;
+#if DEBUG_RETRY_TXN
+      fprintf(stdout, "%d: retry transaction.\n", cor_id_);
+#endif
       //if(retry_count > 10000000) assert(false);
       // abort case
       if(old_seed != abort_seed) {
@@ -304,6 +323,12 @@ BenchWorker::worker_routine(yield_func_t &yield) {
     yield_next(yield);
     // end worker main loop
   }
+
+  //this yield must be there to allow current finished coroutine
+  //not to block the scheduling of following coroutines in the
+  //coroutine schedule list, a.k.a, the the routineMeta list.
+  indirect_must_yield(yield);
+  fprintf(stdout, "%d: ends.\n", cor_id_);  
 }
 
 void BenchWorker::exit_handler() {
@@ -316,22 +341,12 @@ void BenchWorker::exit_handler() {
     auto second_cycle = BreakdownTimer::get_one_second_cycle();
 #if 1
     //exit_lock.Lock();
-    fprintf(stdout,"aborts: ");
-    workload[0].latency_timer.calculate_detailed();
-    fprintf(stdout,"%s ratio: %f ,executed %lu, latency %f, rw_size %f, m %f, 90 %f, 99 %f\n",
-            workload[0].name.c_str(),
-            (double)((*txn_aborts)[0]) / ((*txn_counts)[0] + ((*txn_counts)[0] == 0)),
-            (*txn_counts)[0],workload[0].latency_timer.report() / second_cycle * 1000,
-            workload[0].p.report(),
-            workload[0].latency_timer.report_medium() / second_cycle * 1000,
-            workload[0].latency_timer.report_90() / second_cycle * 1000,
-            workload[0].latency_timer.report_99() / second_cycle * 1000);
-
-    for(uint i = 1;i < workload.size();++i) {
+    fprintf(stdout, "stats for worker %d:\n", worker_id_);
+    for(uint i = 0;i < workload.size();++i) {
       workload[i].latency_timer.calculate_detailed();
-      fprintf(stdout,"        %s ratio: %f ,executed %lu, latency: %f, rw_size %f, m %f, 90 %f, 99 %f\n",
+      fprintf(stdout,"%s executed %lu, latency: %f, rw_size %f, m %f, 90 %f, 99 %f\n",
               workload[i].name.c_str(),
-              (double)((*txn_aborts)[i]) / ((*txn_counts)[i] + ((*txn_counts)[i] == 0)),
+              // (double)((*txn_aborts)[i]) / ((*txn_counts)[i] + ((*txn_counts)[i] == 0)),
               (*txn_counts)[i],
               workload[i].latency_timer.report() / second_cycle * 1000,
               workload[i].p.report(),
@@ -339,14 +354,8 @@ void BenchWorker::exit_handler() {
               workload[i].latency_timer.report_90() / second_cycle * 1000,
               workload[i].latency_timer.report_99() / second_cycle * 1000);
     }
-    fprintf(stdout,"\n");
-
-    fprintf(stdout,"total: ");
-    for(uint i = 0;i < workload.size();++i) {
-      fprintf(stdout," %d %lu; ",i, (*txn_counts)[i]);
-    }
-    fprintf(stdout,"succs ratio %f\n",(double)(ntxn_executed_) /
-            (double)(ntxn_commits_));
+    fprintf(stdout,"succs ratio %f\n",(double)(ntxn_commits_) /
+            (double)(ntxn_executed_));
 
     exit_report();
 #endif

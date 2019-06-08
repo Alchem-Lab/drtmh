@@ -11,6 +11,8 @@
 
 #include "rtx/occ_rdma.h"
 #include "rtx/occ_variants.hpp"
+#include "rtx/nowait_rdma.h"
+#include "rtx/waitdie_rdma.h"
 
 #include <boost/bind.hpp>
 
@@ -81,6 +83,7 @@ void BankWorker::check_consistency() {
 
 }
 
+#if !ENABLE_TXN_API
 void BankWorker::balance_piece(int id, int cid, char *input, yield_func_t &yield) {
 
   balance_req_header *header = (balance_req_header *)input;
@@ -419,7 +422,7 @@ retry:
   return txn_result_t(ret,73); // since readlock success, so no need to abort
 }
 
-
+#endif
 
 void BankWorker::thread_local_init() {
 
@@ -450,7 +453,20 @@ void BankWorker::thread_local_init() {
 #endif
 #endif
     new_txs_[i]->set_logger(new_logger_);
-
+#elif defined(NOWAIT_TX)
+#if ONE_SIDED_READ
+    new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,-1,
+                                   cm,rdma_sched_,total_partition);    
+#else
+    assert(false);
+#endif
+#elif defined(WAITDIE_TX)
+#if ONE_SIDED_READ
+    new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,-1,
+                                   cm,rdma_sched_,total_partition);     
+#else
+    assert(false);
+#endif
 #elif defined(FARM)
     txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
 #elif defined(SI_TX)

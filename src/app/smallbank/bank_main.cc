@@ -328,6 +328,12 @@ std::vector<RWorker *> BankMainRunner::make_workers() {
   ret.push_back(ts_manager);
 #endif
 
+#if defined(NOWAIT_TX) || defined(WAITDIE_TX)
+  // add ts worker
+  ts_manager = new TSManager(nthreads + nclients + 1,cm,0,0);
+  ret.push_back(ts_manager);  
+#endif
+
 #if CS == 1
   for(uint i = 0;i < nclients;++i)
     ret.push_back(new BankClient(nthreads + i,r.next()));

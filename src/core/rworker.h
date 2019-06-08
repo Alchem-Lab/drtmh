@@ -2,6 +2,7 @@
 #define NOCC_OLTP_BENCH_WORKER_H
 
 #include "all.h"
+#include "time.h"
 #include "./utils/thread.h"
 #include "./utils/util.h"
 
@@ -116,10 +117,23 @@ class RWorker : public ndb_thread {
     if(msg_handler_ != NULL)
       msg_handler_->poll_comps(); // poll rpcs requests/replies
     rdma_sched_->poll_comps();  // poll RDMA completions
+
+    //handles timeout events tr
+    for(uint i = 0;i < total_worker_coroutine + 1;++i) {
+      if(next_routine_array[i].active_ == false && 
+          next_routine_array[i].time_start_ != 0 &&
+          rdtsc() - next_routine_array[i].time_start_ > next_routine_array[i].timeout_) {
+          add_to_routine_list(next_routine_array[i].id_);
+          next_routine_array[i].time_start_ = 0;
+          // fprintf(stdout, "routine %d added back.\n", next_routine_array[i].id_);
+      }
+    }
   }
 
   void indirect_yield(yield_func_t &yield);
   void indirect_must_yield(yield_func_t &yield);
+  void indirect_yield_timeout(yield_func_t &yield, double timeout);
+  void indirect_must_yield_until_timeout(yield_func_t &yield, double timeout);
   void yield_next(yield_func_t &yield);
 
   // whether worker is running

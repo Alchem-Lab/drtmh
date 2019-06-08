@@ -2,7 +2,7 @@
 #define NOCC_DB_ROUTINE_H
 
 #include "all.h"
-
+#include "util/timer.h"
 #include <queue>          // std::queue
 
 namespace nocc {
@@ -42,7 +42,7 @@ extern __thread std::queue<RoutineMeta *> *ro_pool;
 // -----------------------------------
 struct RoutineMeta {
 
-  RoutineMeta() {active_ = false;  id_ = 0;}
+  RoutineMeta() {active_ = false;  id_ = 0; timeout_ = 0; time_start_ = 0; }
 
   static void register_callback(one_shot_func_t callback,int id);
 
@@ -53,7 +53,8 @@ struct RoutineMeta {
   int  id_;
   coroutine_func_t *routine_;
   bool active_;
-
+  uint64_t timeout_;
+  uint64_t time_start_;
   one_shot_req info_;
 
   void inline __attribute__ ((always_inline))
@@ -72,6 +73,22 @@ struct RoutineMeta {
     if(routine_tailer == this)
       routine_tailer = prev_;
     active_ = false;
+    next->yield_to(yield);
+  }
+
+  // release myself from the routine list
+  void inline __attribute__ ((always_inline))
+      yield_from_routine_list_until_timeout(yield_func_t &yield, double timeout) {
+    assert(active_ == true);
+    auto next  = next_;
+    prev_->next_ = next;
+    next->prev_  = prev_;
+    if(routine_tailer == this)
+      routine_tailer = prev_;
+    // fprintf(stdout, "routine %d removed.\n", id_);
+    active_ = false;
+    timeout_ = nocc::util::BreakdownTimer::microsec_to_rdtsc(timeout);
+    time_start_ = nocc::util::BreakdownTimer::get_rdtsc();
     next->yield_to(yield);
   }
 

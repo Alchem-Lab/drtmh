@@ -22,9 +22,9 @@
 
 /* 16 bit mac | 6 bit thread | 10 bit cor_id  */
 #define ENCODE_LOCK_CONTENT(mac,tid,cor_id) ( ((mac) << 16) | ((tid) << 10) | (cor_id) ) 
-#define DECODE_LOCK_MAC(lock) ( (lock) >> 16)
+#define DECODE_LOCK_MAC(lock) (((lock) & 0xffffffff ) >> 16)
 #define DECODE_LOCK_TID(lock) (((lock) & 0xffff ) >> 10)
-#define DECODE_LOCK_CID(lock) ( (lock) & 0x3f)
+#define DECODE_LOCK_CID(lock) ( (lock) & 0x3ff)
 
 #define META_SIZE 16
 

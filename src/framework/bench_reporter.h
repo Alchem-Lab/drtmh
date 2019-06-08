@@ -18,7 +18,8 @@ class BenchReporter { // not thread safe
 
  private:
   double throughput;
-  double aborts;
+  uint64_t commits;
+  uint64_t aborts;
   double abort_ratio;
 
   std::vector<uint64_t> prev_commits_;
@@ -34,6 +35,8 @@ class BenchReporter { // not thread safe
   double   calculate_execute_ratio();
 
   std::vector<double > throughputs;
+  std::vector<uint64_t> all_commits;
+  std::vector<uint64_t> all_aborts;
 };
 
 } // end namespace oltp

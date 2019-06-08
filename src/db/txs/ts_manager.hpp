@@ -100,6 +100,7 @@ class TSManager : public RWorker {
     init_ts_meta(set_ptr);   // local copy of the TS
 
     running = true;
+
 #if ONE_CLOCK == 0 && LARGE_VEC == 0 && TS_USE_MSG == 1
     for(uint i = 0;i < cm->get_num_nodes();++i) {
       update_locks_.push_back(std::mutex());
@@ -136,6 +137,10 @@ class TSManager : public RWorker {
                                       std::placeholders::_3,
                                       std::placeholders::_4),RPC_TS_UPDATE);
 
+    
+    this->inited = true;
+
+  // starts the new_master_routine
     start_routine();
   }
 

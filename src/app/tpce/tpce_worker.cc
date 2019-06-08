@@ -258,6 +258,26 @@ void TpceWorker::thread_local_init() {
     }
     txs_[i] = new DBTX(store_,worker_id_,rpc_,i);
     remote_helper = new RemoteHelper(store_,total_partition,server_routine + 1);
+#elif defined(NOWAIT_TX)
+    if(txs_[i] == NULL) {
+#if ONE_SIDED_READ
+      new_txs_[i] = new NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                  cm,rdma_sched_,total_partition);
+#else
+      assert(false);
+#endif
+      continue;
+    }
+#elif defined(WAITDIE_TX)
+    if (txs_[i] == NULL) {
+#if ONE_SIDED_READ
+      new_txs_[i] = new WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                  cm,rdma_sched_,total_partition);
+#else
+      assert(false);
+#endif
+      continue;
+    }
 #elif defined(FARM)
     txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
 #elif defined(SI_TX)

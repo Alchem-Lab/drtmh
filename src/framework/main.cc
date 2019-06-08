@@ -272,8 +272,8 @@ int main(int argc, char **argv)
 
   if(bench_type == "tpcc") {
     test_fn = nocc::oltp::tpcc::TpccTest;
-  } else if(bench_type == "tpce") {
-    test_fn = nocc::oltp::tpce::TpceTest;
+  // } else if(bench_type == "tpce") {
+  //   test_fn = nocc::oltp::tpce::TpceTest;
   } else if(bench_type == "micro") {
     test_fn = nocc::oltp::micro::MicroTest;
   } else if(bench_type == "bank") {

@@ -25,10 +25,29 @@ void RWorker::indirect_must_yield(yield_func_t &yield) {
   change_ctx(cor_id_);
 }
 
+inline ALWAYS_INLINE
+void RWorker::indirect_yield_timeout(yield_func_t &yield, double timeout) {
+  indirect_must_yield_until_timeout(yield, timeout);
+}
+
+inline ALWAYS_INLINE
+void RWorker::indirect_must_yield_until_timeout(yield_func_t &yield, double timeout) {
+
+  int next = routine_meta_->next_->id_;
+  cor_id_  = next;
+  auto cur = routine_meta_;
+  routine_meta_ = cur->next_;
+  change_ctx(cor_id_);
+  cur->yield_from_routine_list_until_timeout(yield, timeout);
+
+  change_ctx(cor_id_);
+}
 
 inline ALWAYS_INLINE
 void RWorker::yield_next(yield_func_t &yield) {
   // yield to the next routine
+  routine_meta_->active_ = false;
+
   int next = routine_meta_->next_->id_;
   routine_meta_ = routine_meta_->next_;
   cor_id_  = next;

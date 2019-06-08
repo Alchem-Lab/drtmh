@@ -12,7 +12,11 @@ extern __thread MappedLog local_log;
 namespace rtx {
 
 OCC::OCC(oltp::RWorker *worker,MemDB *db,RRpc *rpc_handler,int nid,int cid,int response_node) :
+#if ENABLE_TXN_API
+    TxnAlg(worker,db,rpc_handler,nid,cid,response_node),    
+#else
     TXOpBase(worker,db,rpc_handler,response_node),
+#endif
     read_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
     write_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
     read_set_(),

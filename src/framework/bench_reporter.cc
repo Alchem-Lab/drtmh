@@ -13,6 +13,7 @@ extern size_t nthreads;
 // the data exchanged between servers
 struct WorkerData {
   double throughput;
+  int32_t commits;
   int32_t aborts;
   int32_t abort_ratio;
 };
@@ -59,11 +60,13 @@ void BenchReporter::init(const std::vector<BenchWorker *> *workers) {
     prev_abort_ratio_.push_back(0);
   }
 
-  throughput = 0;aborts = 0;abort_ratio = 0;
+  throughput = 0;commits = 0;aborts = 0;abort_ratio = 0;
   second_cycle = util::BreakdownTimer::get_one_second_cycle();
 
   for(uint i = 0;i < total_partition;++i) {
     throughputs.push_back(0.0);
+    all_commits.push_back(0.0);
+    all_aborts.push_back(0.0);
   }
 }
 
@@ -74,13 +77,16 @@ void BenchReporter::merge_data(char *data,int id) {
   fprintf(stdout,"merge data %s from %s\n", normalize_throughput(p->throughput).c_str(),
           cm->network_[id].c_str());
   throughputs[id] = p->throughput;
+  all_commits[id] = p->commits;
+  all_aborts[id] = p->aborts;
 }
 
 void BenchReporter::collect_data(char *data,struct  timespec &start_t) {
   // calculate results
-  uint64_t res = calculate_commits(prev_commits_);
+  uint64_t commit_num = calculate_commits(prev_commits_);
   uint64_t abort_num = calculate_aborts(prev_aborts_);
-  double   abort_ratio = calculate_abort_ratio(prev_abort_ratio_);
+  // double   abort_ratio = calculate_abort_ratio(prev_abort_ratio_);
+  double abort_ratio = (double)abort_num/(commit_num+abort_num);
 
   // re-set timer
   struct timespec end_t;
@@ -88,12 +94,14 @@ void BenchReporter::collect_data(char *data,struct  timespec &start_t) {
   double elapsed_sec = util::DiffTimespec(end_t,start_t) / 1000.0;
   clock_gettime(CLOCK_REALTIME, &start_t);
 
-  double my_thr = (double)res / elapsed_sec;
+  double my_thr = (double)commit_num / elapsed_sec;
 
-  fprintf(stdout,"my throughput %s, ratio %f\n",normalize_throughput(my_thr).c_str(),abort_ratio);
+  fprintf(stdout,"my throughput %s, abort %lu, commit %lu, abort ratio %f\n",
+            normalize_throughput(my_thr).c_str(), abort_num, commit_num, abort_ratio);
 
   WorkerData *p = (WorkerData *)data;
   p->throughput = my_thr;
+  p->commits = commit_num;
   p->aborts = abort_num;
   p->abort_ratio = abort_ratio;
   return;
@@ -107,16 +115,24 @@ void BenchReporter::report_data(uint64_t epoch,std::ofstream &log_file) {
   //latency = (*workers_)[0]->latency_timer_.report() / second_cycle * 1000;
 
   auto sum = 0.0;
+  auto n_commits = 0UL;
+  auto n_aborts = 0UL;
   for(auto i = 0;i < throughputs.size();++i) {
     sum += throughputs[i];
+    n_commits += all_commits[i];
+    n_aborts += all_aborts[i];
   }
 
-  double abort_ratio = calculate_abort_ratio(prev_abort_ratio_);
+  // double abort_ratio = calculate_abort_ratio(prev_abort_ratio_);
+  double abort_ratio = ((n_commits + n_aborts == 0UL) ? 0.0 : (double)n_aborts / (n_commits + n_aborts));
+
 #if LISTENER_PRINT_PERF == 1
   fprintf(stdout,"@%lu System throughput %s, abort %f\n",
           epoch,normalize_throughput(sum).c_str(),
           abort_ratio);
+#if 0
   fprintf(stdout,"succ ratio %f\n", calculate_execute_ratio());
+#endif
 #endif
 
 #ifdef LOG_RESULTS
@@ -131,6 +147,7 @@ void BenchReporter::report_data(uint64_t epoch,std::ofstream &log_file) {
 
   // clear the report data
   throughput = 0;
+  commits = 0;
   aborts = 0;
   abort_ratio = 0;
 }
@@ -154,7 +171,6 @@ double BenchReporter::calculate_abort_ratio(std::vector<uint64_t> &prevs) {
   return res;
 }
 
-
 uint64_t BenchReporter::calculate_commits(std::vector<uint64_t> &prevs) {
 
   uint64_t sum = 0;
@@ -168,7 +184,7 @@ uint64_t BenchReporter::calculate_commits(std::vector<uint64_t> &prevs) {
     assert(snap >= prevs[i]);
     prevs[i] = snap;
   }
-
+  commits += sum;
   return sum;
 }
 

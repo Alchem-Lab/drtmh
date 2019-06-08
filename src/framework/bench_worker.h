@@ -11,8 +11,14 @@
 #include "db/txs/tx_handler.h"
 
 #include "rtx/logger.hpp"
-#include "rtx/occ.h"
 
+#ifdef OCC_TX
+#include "rtx/occ.h"
+#elif defined(NOWAIT_TX)
+#include "rtx/nowait_rdma.h"
+#elif defined(WAITDIE_TX)
+#include "rtx/waitdie_rdma.h"
+#endif
 
 #include <queue>          // std::queue
 
@@ -31,7 +37,14 @@ namespace nocc {
 
 extern __thread coroutine_func_t *routines_;
 extern __thread TXHandler   **txs_;
-extern __thread rtx::OCC    **new_txs_;
+#ifdef OCC_TX
+extern __thread rtx::OCC      **new_txs_;
+#elif defined(NOWAIT_TX)
+extern __thread rtx::NOWAIT   **new_txs_;
+#elif defined(WAITDIE_TX)
+extern __thread rtx::WAITDIE  **new_txs_;
+#endif
+
 extern     RdmaCtrl *cm;
 
 extern __thread int *pending_counts_;
@@ -169,9 +182,16 @@ class BenchWorker : public RWorker {
   rtx::Logger *new_logger_;
   TXHandler *tx_;       /* current coroutine's tx handler */
 
+#ifdef OCC_TX
   rtx::OCC *rtx_;
   rtx::OCC *rtx_hook_ = NULL;
-
+#elif defined(NOWAIT_TX)
+  rtx::NOWAIT  *rtx_;
+  rtx::NOWAIT  *rtx_hook_ = NULL;
+#elif defined(WAITDIE_TX)
+  rtx::WAITDIE *rtx_;
+  rtx::WAITDIE *rtx_hook_ = NULL;
+#endif
   LAT_VARS(yield);
 
   /* For statistics counts */

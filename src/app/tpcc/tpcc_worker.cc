@@ -37,7 +37,7 @@ extern __thread util::fast_random   *random_generator;
 
 namespace tpcc {
 
-uint64_t npayment_executed = 0;
+static uint64_t npayment_executed = 0;
 extern unsigned g_txn_workload_mix[5];
 extern int g_new_order_remote_item_pct;
 extern int g_mico_dist_num;
@@ -93,6 +93,24 @@ void TpccWorker::thread_local_init() {
 #endif
       new_txs_[i]->set_logger(new_logger_);
     }
+#elif defined(NOWAIT_TX)
+    if(txs_[i]  == NULL) {
+#if ONE_SIDED_READ
+      new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                   cm,rdma_sched_,total_partition);
+#else
+      assert(false);
+#endif
+    }
+#elif defined(WAITDIE_TX)
+    if(txs_[i]  == NULL) {    
+#if ONE_SIDED_READ
+      new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                   cm,rdma_sched_,total_partition);
+#else
+      assert(false);
+#endif
+    }
 #elif defined(SI_TX)
     txs_[i] = new DBSI(store_,worker_id_,rpc_,i);
 #elif defined(FARM)
@@ -107,6 +125,8 @@ void TpccWorker::thread_local_init() {
   /* init local tx so that it is not a null value */
   tx_ = txs_[cor_id_];
 }
+
+#if !ENABLE_TXN_API
 
 txn_result_t TpccWorker::txn_new_order(yield_func_t &yield) {
 
@@ -419,6 +439,16 @@ txn_result_t TpccWorker::txn_payment(yield_func_t &yield) {
     RadIterator  iter((DBRad *)tx_, CUST_INDEX, false);
 #elif defined(OCC_TX)
     DBTXIterator iter((DBTX *)tx_, CUST_INDEX,false);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
+#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX)
+    DBTXIterator iter((DBTX *)tx_,CUST_INDEX,false);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
 #elif defined(FARM)
     DBFarmIterator iter((DBFarm *)tx_,CUST_INDEX,false);
 #elif defined(SI_TX)
@@ -581,6 +611,16 @@ txn_result_t TpccWorker::txn_delivery(yield_func_t &yield) {
     RadIterator iter((DBRad *)tx_,NEWO);
 #elif  defined(OCC_TX)
     DBTXIterator iter((DBTX *)tx_,NEWO);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
+#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX)
+    DBTXIterator iter((DBTX *)tx_,NEWO);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
 #elif  defined(FARM)
     DBFarmIterator iter((DBFarm *)tx_,NEWO);
 #elif  defined(SI_TX)
@@ -628,6 +668,16 @@ txn_result_t TpccWorker::txn_delivery(yield_func_t &yield) {
     RadIterator iter1((DBRad *)tx_,ORLI);
 #elif  defined(OCC_TX)
     DBTXIterator iter1((DBTX *)tx_,ORLI);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+    DBTXIterator iter1((DBTX *)tx_,ORLI);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
 #elif  defined(FARM)
     DBFarmIterator iter1((DBFarm *)tx_,ORLI);
 #elif  defined(SI_TX)
@@ -680,7 +730,6 @@ txn_result_t TpccWorker::txn_delivery(yield_func_t &yield) {
   return txn_result_t(ret,res);
 }
 
-
 txn_result_t TpccWorker::txn_stock_level(yield_func_t &yield) {
 
   const uint warehouse_id = PickWarehouseId(random_generator[cor_id_], warehouse_id_start_, warehouse_id_end_);
@@ -712,6 +761,16 @@ txn_result_t TpccWorker::txn_stock_level(yield_func_t &yield) {
   RadIterator  iter((DBRad *)tx_,ORLI);
 #elif defined(OCC_TX)
   DBTXIterator iter((DBTX *)tx_,ORLI);
+  if(tx_ != NULL) {
+    fprintf(stderr, "rtx_ should be used instead of tx_");
+    assert(false);
+  }
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+  DBTXIterator iter((DBTX *)tx_,ORLI);
+  if(tx_ != NULL) {
+    fprintf(stderr, "rtx_ should be used instead of tx_");
+    assert(false);
+  }
 #elif defined(FARM)
   DBFarmIterator iter((DBFarm *)tx_,ORLI);
 #elif defined(SI_TX)
@@ -854,9 +913,19 @@ txn_result_t TpccWorker::txn_super_stock_level(yield_func_t &yield) {
 
 #ifdef RAD_TX
     RadIterator iter((DBRad *)tx_,ORLI);
-#elif  defined(OCC_TX)
+#elif defined(OCC_TX)
     DBTXIterator iter((DBTX *)tx_,ORLI);
-#elif  defined(FARM)
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+    DBTXIterator iter((DBTX *)tx_,ORLI);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
+#elif defined(FARM)
     DBFarmIterator iter((DBFarm *)tx_,ORLI);
 #elif defined(SI_TX)
     SIIterator iter((DBSI *)tx_,ORLI);
@@ -956,11 +1025,21 @@ txn_result_t TpccWorker::txn_order_status(yield_func_t &yield) {
 
 #ifdef RAD_TX
     RadIterator  citer((DBRad *)tx_,CUST_INDEX ,false);
-#elif  defined(OCC_TX)
-    DBTXIterator citer((DBTX *)tx_, CUST_INDEX,false);
-#elif  defined(FARM)
+#elif defined(OCC_TX)
+  DBTXIterator citer((DBTX *)tx_, CUST_INDEX,false);
+  if(tx_ != NULL) {
+    fprintf(stderr, "rtx_ should be used instead of tx_");
+    assert(false);
+  }
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+  DBTXIterator citer((DBTX *)tx_,CUST_INDEX,false);
+  if(tx_ != NULL) {
+    fprintf(stderr, "rtx_ should be used instead of tx_");
+    assert(false);
+  }
+#elif defined(FARM)
     DBFarmIterator citer((DBFarm *)tx_,CUST_INDEX,false);
-#elif  defined(SI_TX)
+#elif defined(SI_TX)
     SIIterator citer((DBSI *)tx_,CUST_INDEX,false);
 #endif
 
@@ -1017,6 +1096,16 @@ txn_result_t TpccWorker::txn_order_status(yield_func_t &yield) {
   RadIterator  iter((DBRad *)tx_,ORDER_INDEX);
 #elif defined(OCC_TX)
   DBTXIterator iter((DBTX *)tx_,ORDER_INDEX);
+  if(tx_ != NULL) {
+    fprintf(stderr, "rtx_ should be used instead of tx_");
+    assert(false);
+  }
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+  DBTXIterator iter((DBTX *)tx_,ORDER_INDEX);
+  if(tx_ != NULL) {
+    fprintf(stderr, "rtx_ should be used instead of tx_");
+    assert(false);
+  }
 #elif defined(FARM)
   DBFarmIterator iter((DBFarm *)tx_,ORDER_INDEX);
 #elif defined(SI_TX)
@@ -1123,6 +1212,8 @@ txn_result_t TpccWorker::txn_micro(yield_func_t &yield) {
   return txn_result_t(res,ret);
 }
 
+#endif
+
 workload_desc_vec_t TpccWorker::get_workload() const {
   return _get_workload();
 }
@@ -1158,9 +1249,19 @@ void TpccWorker::check_consistency() {
     tx_->begin();
 #ifdef RAD_TX
     RadIterator iter((DBRad *)tx_,NEWO);
-#elif  defined(OCC_TX)
+#elif defined(OCC_TX)
     DBTXIterator iter((DBTX *)tx_,NEWO);
-#elif  defined(FARM)
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+    DBTXIterator iter((DBTX *)tx_,NEWO);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
+#elif defined(FARM)
     DBFarmIterator iter((DBFarm *)tx_,NEWO);
 #elif defined(SI_TX)
     SIIterator iter((DBSI *)tx_,NEWO);
@@ -1207,6 +1308,8 @@ void TpccWorker::check_consistency() {
   fprintf(stdout,"w ytd %lu d total %lu %d\n",v_w->w_ytd,all_dist_ytd,v_w->w_ytd == all_dist_ytd);
 #endif
 }
+
+#if !ENABLE_TXN_API
 
 // naive version of TX new order and payment  ///////////////////////////
 
@@ -1495,6 +1598,16 @@ txn_result_t TpccWorker::txn_payment_naive(yield_func_t &yield) {
     RadIterator  iter((DBRad *)tx_, CUST_INDEX, false);
 #elif defined(OCC_TX)
     DBTXIterator iter((DBTX *)tx_, CUST_INDEX,false);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
+#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX)
+    DBTXIterator iter((DBTX *)tx_,CUST_INDEX,false);
+    if(tx_ != NULL) {
+      fprintf(stderr, "rtx_ should be used instead of tx_");
+      assert(false);
+    }
 #elif defined(FARM)
     DBFarmIterator iter((DBFarm *)tx_,CUST_INDEX,false);
 #elif defined(SI_TX)
@@ -1890,9 +2003,7 @@ txn_result_t TpccWorker::txn_payment_naive1(yield_func_t &yield) {
   return txn_result_t(true,10);
 }
 
-
-
-
+#endif
 /* End namespace tpcc */
 }
 /* End namespace nocc framework */

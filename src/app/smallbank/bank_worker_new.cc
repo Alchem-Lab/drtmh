@@ -27,12 +27,15 @@ bool verify_save_balance(const savings::value *s) {
 
 namespace bank {
 
+#if !ENABLE_TXN_API
+
 txn_result_t BankWorker::txn_sp_new(yield_func_t &yield) {
 
   rtx_->begin(yield);
 
-  uint64_t id0,id1;
-  GetTwoAccount(random_generator[cor_id_],&id0,&id1);
+  // uint64_t id0,id1;
+  // GetTwoAccount(random_generator[cor_id_],&id0,&id1);  
+  uint64_t id0 = 100, id1 = 101;
   float amount = 5.0;
 
   // first account
@@ -43,15 +46,15 @@ txn_result_t BankWorker::txn_sp_new(yield_func_t &yield) {
   rtx_->add_to_write<CHECK,checking::value>(pid,id0,yield);
 #endif
   // second account
-  pid = AcctToPid(id1);
-#if EM_FASST == 0
-  rtx_->read<CHECK,checking::value>(pid,id1,yield);
-#else
-  rtx_->add_to_write<CHECK,checking::value>(pid,id1,yield);
-#endif
+//   pid = AcctToPid(id1);
+// #if EM_FASST == 0
+//   rtx_->read<CHECK,checking::value>(pid,id1,yield);
+// #else
+//   rtx_->add_to_write<CHECK,checking::value>(pid,id1,yield);
+// #endif
 
   auto c0 = rtx_->get_readset<checking::value>(0,yield);
-  auto c1 = rtx_->get_readset<checking::value>(1,yield);
+  // auto c1 = rtx_->get_readset<checking::value>(1,yield);
 
   if(c0->c_balance < amount) {
 #if EM_FASST == 1
@@ -60,9 +63,10 @@ txn_result_t BankWorker::txn_sp_new(yield_func_t &yield) {
 #endif
   } else {
     c0->c_balance -= amount;
-    c1->c_balance += amount;
-    rtx_->add_to_write(1);
-    rtx_->add_to_write(0);
+    // c1->c_balance += amount;
+    // rtx_->add_to_write(1);
+    // rtx_->add_to_write(0);
+    rtx_->add_to_write();
   }
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret,73);
@@ -225,6 +229,8 @@ txn_result_t BankWorker::txn_amal_new(yield_func_t &yield) {
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret,73); // since readlock success, so no need to abort
 }
+
+#endif
 
 }; // namespace bank
 

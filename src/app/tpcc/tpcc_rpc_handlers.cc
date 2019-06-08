@@ -51,6 +51,16 @@ namespace nocc {
         RadIterator iter((DBRad *)tx_,ORLI);
 #elif defined(OCC_TX)
         DBTXTempIterator iter((DBTX *)tx_,ORLI);
+        if(tx_ != NULL) {
+          fprintf(stderr, "rtx_ should be used instead of tx_");
+          assert(false);
+        }
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+        DBTXIterator iter((DBTX *)tx_,ORLI);
+        if(tx_ != NULL) {
+          fprintf(stderr, "rtx_ should be used instead of tx_");
+          assert(false);
+        }
 #elif defined(FARM)
         DBFarmIterator iter((DBFarm *)tx_,ORLI);
 #elif defined(SI_TX)

@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef NOCC_RTX_OCC_RDMA_H_
+#define NOCC_RTX_OCC_RDMA_H_
+
 #include "tx_config.h"
 
 #include "occ.h"
@@ -22,9 +25,13 @@ class OCCR : public OCC {
       OCC(worker,db,rpc_handler,nid,tid,cid,response_node,
              cm,rdma_sched,ms)
   {
+#if ENABLE_TXN_API
+    // dslr_lock_manager is already included in the TxnAlg instance.
+#else
     dslr_lock_manager = new DSLR(worker, db, rpc_handler, 
                                  nid, tid, cid, response_node, 
                                  cm, rdma_sched, ms);
+#endif
 
     if(worker_id_ == 0 && cor_id_ == 0) {
       LOG(3) << "Use one-sided for read.";
@@ -53,6 +60,8 @@ class OCCR : public OCC {
   void write_back_w_CAS_rdma(yield_func_t &yield);
   void write_back_w_FA_rdma(yield_func_t &yield);  
   bool validate_reads_w_rdma(yield_func_t &yield);
+  bool validate_reads_w_CAS_rdma(yield_func_t &yield);  
+  bool validate_reads_w_FA_rdma(yield_func_t &yield);
   void release_writes_w_rdma(yield_func_t &yield);
   void release_writes_w_CAS_rdma(yield_func_t &yield);
   void release_writes_w_FA_rdma(yield_func_t &yield);
@@ -128,7 +137,11 @@ class OCCR : public OCC {
 
     asm volatile("" ::: "memory");
 #if 1 //USE_RDMA_COMMIT
+#if USE_DSLR
+    if(!validate_reads_w_FA_rdma(yield)) {
+#else
     if(!validate_reads_w_rdma(yield)) {
+#endif
 #if !NO_ABORT
       goto ABORT;
 #endif
@@ -175,8 +188,12 @@ class OCCR : public OCC {
     gc_writeset();
     return true;
  ABORT:
-#if 0 //USE_RDMA_COMMIT
+#if 1 //USE_RDMA_COMMIT
+#if USE_DSLR
+    release_writes_w_FA_rdma(yield);
+#else
     release_writes_w_rdma(yield);
+#endif
 #else
     release_writes(yield);
 #endif
@@ -234,8 +251,13 @@ class OCCR : public OCC {
   void validate_rpc_handler2(int id,int cid,char *msg,void *arg);
 
 private:
+#if ENABLE_TXN_API
+#else
   DSLR* dslr_lock_manager;
+#endif
 };
 
 } // namespace rtx
 } // namespace nocc
+
+#endif

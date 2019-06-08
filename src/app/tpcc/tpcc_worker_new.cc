@@ -15,6 +15,7 @@ namespace tpcc {
 
 extern int g_new_order_remote_item_pct;
 
+#if !ENABLE_TXN_API
 txn_result_t TpccWorker::txn_new_order_new(yield_func_t &yield) {
 
 #if CHECKS
@@ -138,7 +139,6 @@ txn_result_t TpccWorker::txn_new_order_new(yield_func_t &yield) {
   uint64_t array_dummy[2];
   array_dummy[0] = 1;
   array_dummy[1] = o_key;
-  typedef struct { uint64_t a;uint64_t b; } order_index_type_t;
 
   rtx_->insert<ORDER_INDEX,order_index_type_t>(current_partition,o_sec,(order_index_type_t *)array_dummy,yield);
 
@@ -250,6 +250,8 @@ txn_result_t TpccWorker::txn_new_order_new(yield_func_t &yield) {
 txn_result_t TpccWorker::txn_super_stocklevel_new(yield_func_t &yield) {
   return txn_result_t(true,1);
 }
+
+#endif
 
 TpccWorker::~TpccWorker() {
 
