@@ -8,6 +8,7 @@
 
 // RPC ids
 #define RTX_READ_RPC_ID 0
+#define RTX_RW_RPC_ID 8
 #define RTX_LOCK_RPC_ID 1
 #define RTX_RELEASE_RPC_ID 2
 #define RTX_COMMIT_RPC_ID  3

@@ -53,6 +53,7 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
 }
 
 txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
+  int index = -1;
 
   rtx_->begin(yield);
 
@@ -62,9 +63,10 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
   GetAccount(random_generator[cor_id_],&id);
   int pid = AcctToPid(id);
 
-  rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
-  rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
-
+  index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
+  if (index < 0) return txn_result_t(false,73);
+  index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
+  if (index < 0) return txn_result_t(false,73);
   savings::value  *sv = (savings::value*)rtx_->load_read(0, sizeof(savings::value), yield);
   checking::value *cv = (checking::value*)rtx_->load_write(0, sizeof(checking::value), yield);
 
@@ -80,6 +82,7 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
 }
 
 txn_result_t BankWorker::txn_dc_new_api(yield_func_t &yield) {
+  int index = -1;
 
   rtx_->begin(yield);
 
@@ -89,8 +92,8 @@ retry:
   GetAccount(random_generator[cor_id_],&id);
   int pid = AcctToPid(id);
 
-  rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
-
+  index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
+  if (index < 0) return txn_result_t(false,73);
   checking::value *cv = (checking::value*)rtx_->load_write(0,sizeof(checking::value),yield);
 
   // fetch cached record from read-set
@@ -117,6 +120,7 @@ retry:
 }
 
 txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
+  int index = -1;
 
   rtx_->begin(yield);
 
@@ -124,8 +128,8 @@ txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
   int pid = AcctToPid(id);
-  rtx_->write(pid,SAV,id,sizeof(savings::value),yield);
-
+  index = rtx_->write(pid,SAV,id,sizeof(savings::value),yield);
+  if (index < 0) return txn_result_t(false,73);
   auto sv = (savings::value*)rtx_->load_write(0, sizeof(savings::value), yield);
 
   sv->s_balance += amount;
@@ -134,6 +138,7 @@ txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
 }
 
 txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
+  int index = -1;
 
   rtx_->begin(yield);
 
@@ -142,8 +147,10 @@ txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
   int pid = AcctToPid(id);
 
   double res = 0.0;
-  rtx_->read(pid,CHECK,id,sizeof(checking::value),yield);
-  rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
+  index = rtx_->read(pid,CHECK,id,sizeof(checking::value),yield);
+  if (index < 0) return txn_result_t(false,73);
+  index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
+  if (index < 0) return txn_result_t(false,73);
 
   auto cv = (checking::value*)rtx_->load_read(0,sizeof(checking::value),yield);
   auto sv = (savings::value*)rtx_->load_read(1,sizeof(savings::value),yield);
@@ -155,6 +162,7 @@ txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
 
 
 txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
+  int index = -1;
 
   rtx_->begin(yield);
 
@@ -164,9 +172,12 @@ txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
   int pid0 = AcctToPid(id0);
   int pid1 = AcctToPid(id1),idx1;
 
-  rtx_->write(pid0,SAV,id0,sizeof(savings::value),yield);
-  rtx_->write(pid0,CHECK,id0,sizeof(checking::value),yield);
-  rtx_->write(pid1,CHECK,id1,sizeof(checking::value),yield);
+  index = rtx_->write(pid0,SAV,id0,sizeof(savings::value),yield);
+  if (index < 0) return txn_result_t(false,73);
+  index = rtx_->write(pid0,CHECK,id0,sizeof(checking::value),yield);
+  if (index < 0) return txn_result_t(false,73);
+  index = rtx_->write(pid1,CHECK,id1,sizeof(checking::value),yield);
+  if (index < 0) return txn_result_t(false,73);
 
   auto s0 = (savings::value*)rtx_->load_write(0,sizeof(savings::value),yield);
   auto c0 = (checking::value*)rtx_->load_write(1,sizeof(checking::value),yield);

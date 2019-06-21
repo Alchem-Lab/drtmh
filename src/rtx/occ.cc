@@ -93,6 +93,23 @@ int OCC::local_read(int tableid,uint64_t key,int len,yield_func_t &yield) {
   return idx;
 }
 
+int OCC::local_write(int tableid,uint64_t key,int len,yield_func_t &yield) {
+
+  char *temp_val = (char *)malloc(len);
+  uint64_t seq;
+
+  auto node = local_get_op(tableid,key,temp_val,len,seq,db_->_schemas[tableid].meta_len);
+
+  if(unlikely(node == NULL)) {
+    free(temp_val);
+    return -1;
+  }
+  // add to read-set
+  int idx = write_set_.size();
+  write_set_.emplace_back(tableid,key,node,temp_val,seq,len,node_id_);
+  return idx;
+}
+
 int OCC::local_insert(int tableid,uint64_t key,char *val,int len,yield_func_t &yield) {
   char *data_ptr = (char *)malloc(len);
   uint64_t seq;
@@ -104,6 +121,10 @@ int OCC::local_insert(int tableid,uint64_t key,char *val,int len,yield_func_t &y
 
 int OCC::remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
   return add_batch_read(tableid,key,pid,len);
+}
+
+int OCC::remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+  return add_batch_write(tableid,key,pid,len);
 }
 
 int OCC::remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
@@ -122,13 +143,23 @@ int OCC::add_batch_read(int tableid,uint64_t key,int pid,int len) {
   // add a batch read request
   int idx = read_set_.size();
   add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-                               /* init RTXReadItem */ RTX_REQ_READ,pid,key,tableid,len,idx);
+                               /* init RTXReadItem */ RTX_REQ_READ,pid,key,tableid,len,(idx<<1));
   read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
   return idx;
 }
 
+int OCC::add_batch_write(int tableid,uint64_t key,int pid,int len) {
+  // add a batch read request
+  int idx = write_set_.size();
+  add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
+                               /* init RTXReadItem */ RTX_REQ_READ_LOCK,pid,key,tableid,len,(idx<<1)+1);
+  // fprintf(stdout, "write rpc batched: write_set idx = %d\n", idx);
+  write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
+  return idx;
+}
 
 int OCC::add_batch_insert(int tableid,uint64_t key,int pid,int len) {
+  assert(false);
   // add a batch read request
   int idx = read_set_.size();
   add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
@@ -137,18 +168,9 @@ int OCC::add_batch_insert(int tableid,uint64_t key,int pid,int len) {
   return idx;
 }
 
-int OCC::add_batch_write(int tableid,uint64_t key,int pid,int len,yield_func_t &yield) {
-  // add a batch read request
-  int idx = read_set_.size();
-  add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-                               /* init RTXReadItem */ RTX_REQ_READ_LOCK,pid,key,tableid,len,idx);
-  read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
-  return idx;
-}
-
 
 int OCC::send_batch_read(int idx) {
-  return send_batch_rpc_op(read_batch_helper_,cor_id_,RTX_READ_RPC_ID);
+  return send_batch_rpc_op(read_batch_helper_,cor_id_,RTX_RW_RPC_ID);
 }
 
 bool OCC::parse_batch_result(int num) {
@@ -160,9 +182,19 @@ bool OCC::parse_batch_result(int num) {
     ptr += sizeof(ReplyHeader);
     for(uint j = 0;j < header->num;++j) {
       OCCResponse *item = (OCCResponse *)ptr;
-      read_set_[item->idx].data_ptr = (char *)malloc(read_set_[item->idx].len);
-      memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),read_set_[item->idx].len);
-      read_set_[item->idx].seq      = item->seq;
+      if (item->idx & 1 == 0) { // an idx in read-set
+        // fprintf(stdout, "rpc response: read_set idx = %d, payload = %d\n", item->idx, item->payload);
+        item->idx >>= 1;
+        read_set_[item->idx].data_ptr = (char *)malloc(read_set_[item->idx].len);
+        memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),read_set_[item->idx].len);
+        read_set_[item->idx].seq      = item->seq;
+      } else {
+        // fprintf(stdout, "rpc response: write_set idx = %d, payload = %d\n", item->idx, item->payload);
+        item->idx >>= 1;
+        write_set_[item->idx].data_ptr = (char *)malloc(write_set_[item->idx].len);
+        memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),write_set_[item->idx].len);
+        write_set_[item->idx].seq      = item->seq;
+      }
       ptr += (sizeof(OCCResponse) + item->payload);
     }
   }
@@ -176,14 +208,18 @@ void OCC::prepare_write_contents() {
   write_batch_helper_.clear_buf(); // only clean buf, not the mac_set
 
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    add_batch_entry_wo_mac<RtxWriteItem>(write_batch_helper_,
-                                         (*it).pid,
-                                         /* init write item */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
-    memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
-    write_batch_helper_.req_buf_end_ += (*it).len;
+    if(it->pid != node_id_) {
+      add_batch_entry_wo_mac<RtxWriteItem>(write_batch_helper_,
+                                           (*it).pid,
+                                           /* init write item */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+      memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
+      write_batch_helper_.req_buf_end_ += (*it).len;
+    }
   }
 }
 
+
+// the handler for write_back is commit_rpc_handler
 void OCC::write_back(yield_func_t &yield) {
 
   // write back local records
@@ -196,7 +232,7 @@ void OCC::write_back(yield_func_t &yield) {
     }
   }
   if(written_items == write_set_.size()) {// not remote records
-    worker_->indirect_yield(yield);
+    // worker_->indirect_yield(yield);
     return;
   }
 #endif
@@ -210,27 +246,19 @@ void OCC::write_back(yield_func_t &yield) {
 #endif
 }
 
+// the handler for write_back_oneshot is commit_oneshot_handler
 void OCC::write_back_oneshot(yield_func_t &yield) {
-
-  char *cur_ptr = write_batch_helper_.req_buf_;
+  // make use of the content that is already prepared in write_batch_helper's buffer.
+  char *cur_ptr = write_batch_helper_.req_buf_ + sizeof(RTXRequestHeader);
   START(commit);
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) {
-
-      CommitItem *item = (CommitItem *)cur_ptr;
-
-      item->tableid = (*it).tableid;
-      item->key = (*it).key;
-      item->len = (*it).len;
-
-      memcpy(cur_ptr + sizeof(CommitItem),it->data_ptr,it->len);
-
 #if !PA
       rpc_->prepare_multi_req(write_batch_helper_.reply_buf_,1,cor_id_);
 #endif
-      rpc_->append_pending_req(cur_ptr,RTX_COMMIT_RPC_ID,sizeof(CommitItem) + it->len,cor_id_,RRpc::REQ,(*it).pid);
+      rpc_->append_pending_req(cur_ptr,RTX_COMMIT_RPC_ID,sizeof(RtxWriteItem) + it->len,cor_id_,RRpc::REQ,(*it).pid);
 
-      cur_ptr += (sizeof(RtxLockItem) + it->len + rpc_->rpc_padding());
+      cur_ptr += (sizeof(RtxWriteItem) + it->len);
     } else {
       inplace_write_op(it->node,it->data_ptr,it->len);
     }
@@ -368,7 +396,7 @@ bool OCC::lock_writes(yield_func_t &yield) {
 }
 
 /* RPC handlers */
-void OCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
+void OCC::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   char *reply = reply_msg + sizeof(ReplyHeader);
   int num_returned(0);
@@ -397,26 +425,15 @@ void OCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
       }
         break;
       case RTX_REQ_READ_LOCK: {
-        uint64_t seq;
-        MemNode *node = NULL;
-
-        OCCResponse *reply_item = (OCCResponse *)reply;
-        if(unlikely((node = local_try_lock_op(item->tableid,item->key,
-                                              ENCODE_LOCK_CONTENT(id,worker_id_,cid + 1))) == NULL)) {
-          reply_item->seq = 0;
-          reply_item->idx = item->idx;
-          reply_item->payload = 0;
-          reply += sizeof(OCCResponse);
-          break;
-        } else {
-          reply_item->seq = node->seq;
+          // fetch the record
+          uint64_t seq;
+          auto node = local_get_op(item->tableid,item->key,reply + sizeof(OCCResponse),item->len,seq,
+                                 db_->_schemas[item->tableid].meta_len);
+          reply_item->seq = seq;
           reply_item->idx = item->idx;
           reply_item->payload = item->len;
 
-          local_get_op(node,reply + sizeof(OCCResponse),seq,item->len);
-
           reply += (sizeof(OCCResponse) + item->len);
-        }
       }
         break;
       default:
@@ -500,6 +517,16 @@ void OCC::commit_rpc_handler(int id,int cid,char *msg,void *arg) {
 #endif
 }
 
+void OCC::commit_oneshot_handler(int id,int cid,char *msg,void *arg) {
+
+  RtxWriteItem *item = (RtxWriteItem *)msg;
+  inplace_write_op(item->tableid,item->key,msg + sizeof(RtxWriteItem),item->len);
+#if !PA
+  char *reply = rpc_->get_reply_buf();
+  rpc_->send_reply(reply,sizeof(uint8_t),id,cid);
+#endif
+}
+
 void OCC::validate_rpc_handler(int id,int cid,char *msg,void *arg) {
 
   char* reply_msg = rpc_->get_reply_buf();
@@ -522,16 +549,6 @@ void OCC::validate_rpc_handler(int id,int cid,char *msg,void *arg) {
   rpc_->send_reply(reply_msg,sizeof(uint8_t),id,cid);
 }
 
-void OCC::commit_oneshot_handler(int id,int cid,char *msg,void *arg) {
-
-  CommitItem *item = (CommitItem *)msg;
-  inplace_write_op(item->tableid,item->key,msg + sizeof(CommitItem),item->len);
-#if !PA
-  char *reply = rpc_->get_reply_buf();
-  rpc_->send_reply(reply,sizeof(uint8_t),id,cid);
-#endif
-}
-
 void OCC::backup_get_handler(int id,int cid,char *msg,void *arg) {
 
   ReadItem *item = (ReadItem *)msg;
@@ -551,10 +568,10 @@ void OCC::backup_get_handler(int id,int cid,char *msg,void *arg) {
 
 void OCC::register_default_rpc_handlers() {
   // register rpc handlers
-  ROCC_BIND_STUB(rpc_,&OCC::read_rpc_handler,this,RTX_READ_RPC_ID);
+  ROCC_BIND_STUB(rpc_,&OCC::read_write_rpc_handler,this,RTX_RW_RPC_ID);
   ROCC_BIND_STUB(rpc_,&OCC::lock_rpc_handler,this,RTX_LOCK_RPC_ID);
   ROCC_BIND_STUB(rpc_,&OCC::release_rpc_handler,this,RTX_RELEASE_RPC_ID);
-  //ROCC_BIND_STUB(rpc_,&OCC::commit_rpc_handler,this,RTX_COMMIT_RPC_ID);
+  // ROCC_BIND_STUB(rpc_,&OCC::commit_rpc_handler,this,RTX_COMMIT_RPC_ID);
   ROCC_BIND_STUB(rpc_,&OCC::commit_oneshot_handler,this,RTX_COMMIT_RPC_ID);
   ROCC_BIND_STUB(rpc_,&OCC::validate_rpc_handler,this,RTX_VAL_RPC_ID);
 

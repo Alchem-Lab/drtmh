@@ -89,7 +89,7 @@ class OCC : public TXOpBase {
     else {
       // remote case
       return remote_read(pid,tableid,key,sizeof(V),yield);
-    }    
+    }
   }
 #endif
   /**
@@ -110,16 +110,13 @@ class OCC : public TXOpBase {
       int index;
 
       if(pid == node_id_)
-        index = local_read(tableid,key,len,yield);
+        index = local_write(tableid,key,len,yield);
       else {
         // remote case
-        index = remote_read(pid,tableid,key,len,yield);
+        index = remote_write(pid,tableid,key,len,yield);
       }
 
-      //note that either the local_read or remote_read function
-      //has append a new read-set item into the read-set.
-      //we just need to return true here since the read always succeeds in OCC.
-      return add_to_write(index);    
+      return index;
   }
 
   template <int tableid,typename V> // the value stored corresponding to tableid
@@ -174,19 +171,6 @@ class OCC : public TXOpBase {
   }
 #endif
 
-  // directly add the record to the write-set
-  template <int tableid,typename V> // the value stored corresponding to tableid
-  int  add_to_write(int pid,uint64_t key,yield_func_t &yield) {
-    if(pid == node_id_){
-      assert(false); // not implemented
-    }
-    else {
-      // remote case
-      return add_batch_write(tableid,key,pid,sizeof(V),yield);
-    }
-    return -1;
-  }
-
   template <typename V>
   V *get_readset(int idx,yield_func_t &yield) {
     assert(idx < read_set_.size());
@@ -234,36 +218,24 @@ class OCC : public TXOpBase {
     return -1;    
   }
 
-  // add a specific item in read-set to writeset
-  inline __attribute__((always_inline))
-  int add_to_write(int idx) {
-    assert(idx >= 0 && idx < read_set_.size());
-    write_set_.emplace_back(read_set_[idx]);
-
-    // eliminate read-set
-    // FIXME: is it necessary to use std::swap to avoid memcpy?
-    read_set_.erase(read_set_.begin() + idx);
-    return write_set_.size() - 1;
-  }
-
-  inline __attribute__((always_inline))
-  int add_to_write() {
-    return add_to_write(read_set_.size() - 1); 
-  }
-
   virtual int      local_read(int tableid,uint64_t key,int len,yield_func_t &yield);
+  virtual int      local_write(int tableid,uint64_t key,int len,yield_func_t &yield);
   virtual int      local_insert(int tableid,uint64_t key,char *val,int len,yield_func_t &yield);
   virtual int      remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield);
   virtual int      pending_remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     return remote_read(pid,tableid,key,len,yield);
   }
+  virtual int      remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield);
+  virtual int      pending_remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    return remote_write(pid,tableid,key,len,yield);
+  }  
   virtual int      remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield);
 
   // if local, the batch_get will return the results
   virtual void     start_batch_read();
   virtual int      add_batch_read(int tableid,uint64_t key,int pid,int len);
   virtual int      add_batch_insert(int tableid,uint64_t key,int pid,int len);
-  virtual int      add_batch_write(int tableid,uint64_t key,int pid,int len,yield_func_t &yield);
+  virtual int      add_batch_write(int tableid,uint64_t key,int pid,int len);
   virtual int      send_batch_read(int idx = 0);
   virtual bool     parse_batch_result(int num);
 
@@ -285,9 +257,8 @@ class OCC : public TXOpBase {
   virtual bool lock_writes(yield_func_t &yield);
   virtual bool release_writes(yield_func_t &yield);
   virtual bool validate_reads(yield_func_t &yield);
-  virtual void write_back(yield_func_t &yield);
   virtual void log_remote(yield_func_t &yield);
-
+  virtual void write_back(yield_func_t &yield);
   void write_back_oneshot(yield_func_t &yield);
 
  protected:
@@ -311,14 +282,12 @@ class OCC : public TXOpBase {
 
  private:
   // RPC handlers
-  void read_rpc_handler(int id,int cid,char *msg,void *arg);
+  void read_write_rpc_handler(int id,int cid,char *msg,void *arg);
   void lock_rpc_handler(int id,int cid,char *msg,void *arg);
   void release_rpc_handler(int id,int cid,char *msg,void *arg);
   void commit_rpc_handler(int id,int cid,char *msg,void *arg);
-  void validate_rpc_handler(int id,int cid,char *msg,void *arg);
-
   void commit_oneshot_handler(int id,int cid,char *msg,void *arg);
-
+  void validate_rpc_handler(int id,int cid,char *msg,void *arg);
   void backup_get_handler(int id,int cid, char *msg,void *arg);
  protected:
   void prepare_write_contents();

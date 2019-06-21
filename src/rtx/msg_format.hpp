@@ -1,6 +1,7 @@
 #pragma once
 
 // This header contains common msg definiation used in RTX
+#include "memstore/memdb.h"
 
 namespace nocc {
 
@@ -54,6 +55,28 @@ struct RtxWriteItem {
   }
 } __attribute__ ((aligned (8)));
 
+enum req_lock_type_t {
+  RTX_REQ_LOCK_READ = 0,
+  RTX_REQ_LOCK_WRITE,
+  RTX_REQ_LOCK_INSERT // may be not necessary?
+};
+
+struct RTXLockRequestItem {
+  req_lock_type_t type;
+  uint8_t  pid;
+  uint8_t  tableid;
+  uint64_t key;
+  uint64_t seq;
+  uint64_t txn_starting_timestamp;
+  inline RTXLockRequestItem(req_lock_type_t type,uint8_t pid,uint8_t tableid,uint64_t key,uint64_t seq,uint64_t txn_start_time)
+      :type(type),pid(pid),tableid(tableid),key(key),seq(seq),txn_starting_timestamp(txn_start_time)
+  {
+  }
+} __attribute__ ((aligned (8)));
+
+#define LOCK_SUCCESS_MAGIC 73
+#define LOCK_FAIL_MAGIC 12
+#define LOCK_WAIT_MAGIC 41
 
 }; // namespace rtx
 }; // namespace nocc

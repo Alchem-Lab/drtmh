@@ -5,7 +5,6 @@ namespace nocc {
 
 namespace rtx {
 
-
 bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = read_set_;
     auto it = set.begin() + index;
@@ -37,17 +36,12 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       // write_batch_helper_.mac_set_.insert(it->pid);
       if (h->lock != 0) {
         #if !NO_ABORT
-        // if failed, release all locks acquired.
-        release_reads_w_rdma(yield);
-        release_writes_w_rdma(yield);
         END(lock);
         return false;
-
         #endif
       }
     }
     else { //local access
-      assert(false);
       if(unlikely(!local_try_lock_op(it->node,
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
         #if !NO_ABORT
@@ -92,17 +86,12 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       // write_batch_helper_.mac_set_.insert(it->pid);
       if (h->lock != 0) {
         #if !NO_ABORT
-
-        // if failed, release all locks acquired.
-        release_reads_w_rdma(yield);
-        release_writes_w_rdma(yield);
         END(lock);
         return false;
         #endif
       }
     }
     else { //local access
-      assert(false);
       if(unlikely(!local_try_lock_op(it->node,
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
         #if !NO_ABORT
@@ -313,12 +302,26 @@ using namespace nocc::rtx::rwlock;
         }
       }
     } else { // local access
-      if(it->node->lock & 0x1 == W_LOCKED) {
-        END(lock);
-        return false;
-      } else {
-        END(lock);
-        return true;
+      while(true) {
+        volatile uint64_t l = it->node->lock;
+        if(l & 0x1 == W_LOCKED) {
+          END(lock);
+          return false;
+        } else {
+          if (EXPIRED(END_TIME(l))) {
+            volatile uint64_t *lockptr = &(it->node->lock);
+            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                         R_LEASE(end_time)))) {
+              continue;
+            } else {
+              END(lock);
+              return true;
+            }
+          } else {
+            END(lock);
+            return true;
+          }
+        }
       }
     }
 }
@@ -347,8 +350,9 @@ using namespace nocc::rtx::rwlock;
       RdmaValHeader *h = (RdmaValHeader *)local_buf;
       #endif
 
+      // fprintf(stderr, "post write lock at off %x.\n", off);
       while (true) {
-        lock_req_->set_lock_meta(off,_state,LOCKED(node_id_),local_buf);
+        lock_req_->set_lock_meta(off,_state,LOCKED(response_node_),local_buf);
         lock_req_->post_reqs(scheduler_,qp);
         worker_->indirect_yield(yield);
 
@@ -370,23 +374,28 @@ using namespace nocc::rtx::rwlock;
         }
       }
     } else { // local access
-      if(it->node->lock & 0x1 == W_LOCKED) {
-        END(lock);
-        return false;
-      } else {
-        if (EXPIRED(END_TIME(it->node->lock))) {
-          // clear expired lease (optimization)
-          volatile uint64_t *lockptr = &(it->node->lock);
-          *lockptr &= 0x1ff; // clear the higher 55-bits to clear the expired lease
-        } else { //read locked
+      while (true) {
+        volatile uint64_t l = it->node->lock;
+        if(l & 0x1 == W_LOCKED) {
           END(lock);
           return false;
+        } else {
+          if (EXPIRED(END_TIME(l))) {
+            volatile uint64_t *lockptr = &(it->node->lock);
+            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                         LOCKED(response_node_)))) {
+              continue;
+            } else {
+              END(lock);
+              return true; 
+            }       
+          } else { //read locked
+            END(lock);
+            return false;
+          }
         }
       }
     }
-
-    END(lock);
-    return true;
 }
 
 void NOWAIT::release_reads_w_rdma(yield_func_t &yield) {
@@ -409,7 +418,7 @@ void NOWAIT::release_reads_w_rdma(yield_func_t &yield) {
                               (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
       }
     } else {
-      assert(false); // not implemented
+      while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
     } // check pid
   }   // for
   worker_->indirect_yield(yield);
@@ -435,7 +444,7 @@ void NOWAIT::release_writes_w_rdma(yield_func_t &yield) {
                               (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
       }
     } else {
-      assert(false); // not implemented
+      while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
     } // check pid
   }   // for
   worker_->indirect_yield(yield);
@@ -443,33 +452,12 @@ void NOWAIT::release_writes_w_rdma(yield_func_t &yield) {
 }
 
 void NOWAIT::release_reads_w_rwlock_rdma(yield_func_t &yield) {
-  // can only work with lock_w_rdma
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = read_set_.begin();it != read_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      if(node->lock == 0) { // successfull locked
-        //Qp *qp = qp_vec_[(*it).pid];
-        Qp *qp = get_qp((*it).pid);
-        assert(qp != NULL);
-        node->lock = rwlock::INIT;
-        scheduler_->post_send(qp,cor_id_,IBV_WR_RDMA_WRITE,(char *)(node),sizeof(uint64_t),
-                              (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
-      }
-    } else {
-      assert(false); // not implemented
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
   return;
 }
 
 void NOWAIT::release_writes_w_rwlock_rdma(yield_func_t &yield) {
+  using namespace rwlock;
+
   uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
 
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
@@ -488,7 +476,7 @@ void NOWAIT::release_writes_w_rwlock_rdma(yield_func_t &yield) {
                               (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
       }
     } else {
-      assert(false); // not implemented
+      while (!unlikely(local_try_release_op(it->tableid, it->key, LOCKED(response_node_)))) ;
     } // check pid
   }   // for
   worker_->indirect_yield(yield);
@@ -537,6 +525,7 @@ void NOWAIT::release_writes_w_FA_rdma(yield_func_t &yield) {
       }
     } else {
       assert(false); // not implemented
+
     } // check pid
   }   // for
   worker_->indirect_yield(yield);
@@ -576,7 +565,6 @@ void NOWAIT::write_back_w_rdma(yield_func_t &yield) {
       }
 
     } else { // local write
-      assert(false);
       inplace_write_op(it->node,it->data_ptr,it->len);
     } // check pid
   }   // for
@@ -618,7 +606,6 @@ void NOWAIT::write_back_w_rwlock_rdma(yield_func_t &yield) {
       }
 
     } else { // local write
-      assert(false);
       inplace_write_op(it->node,it->data_ptr,it->len);
     } // check pid
   }   // for
@@ -650,7 +637,6 @@ void NOWAIT::write_back_w_FA_rdma(yield_func_t &yield) {
         worker_->indirect_yield(yield);
       }
     } else { // local write
-      assert(false);
       inplace_write_op(it->node,it->data_ptr,it->len);
     } // check pid
   }   // for
@@ -659,8 +645,218 @@ void NOWAIT::write_back_w_FA_rdma(yield_func_t &yield) {
   END(commit);
 }
 
+bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, uint64_t end_time, yield_func_t &yield) {
+  using namespace rwlock;
+
+  START(lock);
+  std::vector<ReadSetItem> &set = read_set_;
+  auto it = set.begin() + index;
+  if((*it).pid != node_id_) {
+
+    rpc_op<RTXLockRequestItem>(cor_id_, RTX_LOCK_RPC_ID, (*it).pid, 
+                               rpc_op_send_buf_,reply_buf_, 
+                               /*init RTXLockRequestItem*/  
+                               RTX_REQ_LOCK_READ,
+                               (*it).pid,(*it).tableid,(*it).key,(*it).seq, 
+                               txn_start_time
+    );
+
+    worker_->indirect_yield(yield);
+    END(lock);
+
+    // got the response
+    uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
+    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
+      return true;
+    else if (resp_lock_status == LOCK_FAIL_MAGIC)
+      return false;
+    assert(false);
+
+  } else {
+
+      while(true) {
+        volatile uint64_t l = it->node->lock;
+        if(l & 0x1 == W_LOCKED) {
+          END(lock);
+          return false;
+        } else {
+          if (EXPIRED(END_TIME(l))) {
+            volatile uint64_t *lockptr = &(it->node->lock);
+            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                         R_LEASE(end_time)))) {
+              continue;
+            } else {
+              END(lock);
+              return true;
+            }
+          } else {
+            END(lock);
+            return true;
+          }
+        }
+      }
+  }
+  assert(false);
+}
+
+bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
+  using namespace rwlock;
+
+  START(lock);
+  std::vector<ReadSetItem> &set = write_set_;
+  auto it = set.begin() + index;
+
+  if((*it).pid != node_id_) {
+    rpc_op<RTXLockRequestItem>(cor_id_, RTX_LOCK_RPC_ID, (*it).pid, 
+                               rpc_op_send_buf_,reply_buf_, 
+                               /*init RTXLockRequestItem*/  
+                               RTX_REQ_LOCK_WRITE,
+                               (*it).pid,(*it).tableid,(*it).key,(*it).seq, 
+                               txn_start_time
+    );
+
+    worker_->indirect_yield(yield);
+    END(lock);
+
+    // got the response
+    uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
+    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
+      return true;
+    else if (resp_lock_status == LOCK_FAIL_MAGIC)
+      return false;
+    assert(false);
+  } else {
+
+      while (true) {
+        volatile uint64_t l = it->node->lock;
+        if(l & 0x1 == W_LOCKED) {
+          END(lock);
+          return false;
+        } else {
+          if (EXPIRED(END_TIME(l))) {
+            volatile uint64_t *lockptr = &(it->node->lock);
+            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                         LOCKED(response_node_)))) {
+              continue;
+            } else {
+              END(lock);
+              return true; 
+            }       
+          } else { //read locked
+            END(lock);
+            return false;
+          }
+        }
+      }
+  }
+}
+
+void NOWAIT::release_reads(yield_func_t &yield) {
+  using namespace rwlock;
+
+  start_batch_rpc_op(write_batch_helper_);
+  for(auto it = read_set_.begin();it != read_set_.end();++it) {
+    if((*it).pid != node_id_) { // remote case
+      add_batch_entry<RTXLockRequestItem>(write_batch_helper_, (*it).pid,
+                                   /*init RTXLockRequestItem */ RTX_REQ_LOCK_READ, (*it).pid,(*it).tableid,(*it).key,(*it).seq, txn_start_time);
+    }
+    else {
+      auto res = local_try_release_op(it->tableid,it->key,
+                                R_LEASE(txn_start_time + LEASE_TIME));
+    }
+  }
+  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+  worker_->indirect_yield(yield);
+}
+
+void NOWAIT::release_writes(yield_func_t &yield) {
+  using namespace rwlock;
+
+  start_batch_rpc_op(write_batch_helper_);
+  for(auto it = write_set_.begin();it != write_set_.end();++it) {
+    if((*it).pid != node_id_) { // remote case
+      add_batch_entry<RTXLockRequestItem>(write_batch_helper_, (*it).pid,
+                                   /*init RTXLockRequestItem */ RTX_REQ_LOCK_WRITE, (*it).pid,(*it).tableid,(*it).key,(*it).seq, txn_start_time);
+    }
+    else {
+      auto res = local_try_release_op(it->tableid,it->key,
+                                    LOCKED(it->pid));
+    }
+  }
+  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+  worker_->indirect_yield(yield);
+}
+
+#if 0
+
+void NOWAIT::write_back(yield_func_t &yield) {
+  // note here we are not using the functionality provided by write_batch_helper
+  // itself, i.e., send_batch_rpc_op(write_batch_helper_, ...)
+  // instead, we use a different mechanism.
+  char *cur_ptr = write_batch_helper_.req_buf_;
+  START(commit);
+  for(auto it = write_set_.begin();it != write_set_.end();++it) {
+    if((*it).pid != node_id_) {
+
+      RtxWriteItem *item = (RtxWriteItem *)cur_ptr;
+
+      item->pid = (*it).pid;
+      item->tableid = (*it).tableid;
+      item->key = (*it).key;
+      item->len = (*it).len;
+
+      memcpy(cur_ptr + sizeof(RtxWriteItem),it->data_ptr,it->len);
+
+      fprintf(stdout, "write back to %d %d %d.\n", item->pid, item->tableid, item->key);
+#if !PA
+      rpc_->prepare_multi_req(write_batch_helper_.reply_buf_,1,cor_id_);
+#endif
+      rpc_->append_pending_req(cur_ptr,RTX_COMMIT_RPC_ID,sizeof(RtxWriteItem) + it->len,cor_id_,RRpc::REQ,(*it).pid);
+
+      cur_ptr += sizeof(RtxWriteItem) + it->len;
+    } else {
+      inplace_write_op(it->node,it->data_ptr,it->len);
+    }
+  }
+  rpc_->flush_pending();
+
+  worker_->indirect_yield(yield);
+  END(commit);
+}
+
+#else
+
+void NOWAIT::write_back(yield_func_t &yield) {
+  start_batch_rpc_op(write_batch_helper_);
+  
+  for(auto it = write_set_.begin();it != write_set_.end();++it) {
+    if((*it).pid != node_id_) { // remote case
+
+      // fprintf(stdout, "write back to %d %d %d. my node_id_= %d.\n", it->pid, it->tableid, it->key, node_id_);      
+      add_batch_entry<RtxWriteItem>(write_batch_helper_, (*it).pid,
+                                   /*init RTXWriteItem */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+      
+      memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
+      write_batch_helper_.req_buf_end_ += (*it).len;
+    }
+    else {
+      inplace_write_op(it->node,it->data_ptr,it->len);
+    }
+  }
+
+  // for (char* ptr = write_batch_helper_.req_buf_; ptr != write_batch_helper_.req_buf_end_; ptr++) {
+    // fprintf(stdout, "%x ", *ptr);
+  // }
+  // fprintf(stdout, "\n");
+
+  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID);
+  worker_->indirect_yield(yield);
+}
+
+#endif
+
 /* RPC handlers */
-void NOWAIT::read_rpc_handler(int id,int cid,char *msg,void *arg) {
+void NOWAIT::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   char *reply = reply_msg + sizeof(ReplyHeader);
   int num_returned(0);
@@ -689,26 +885,16 @@ void NOWAIT::read_rpc_handler(int id,int cid,char *msg,void *arg) {
       }
         break;
       case RTX_REQ_READ_LOCK: {
+        // fetch the record
         uint64_t seq;
-        MemNode *node = NULL;
+        auto node = local_get_op(item->tableid,item->key,reply + sizeof(OCCResponse),item->len,seq,
+                                 db_->_schemas[item->tableid].meta_len);
 
-        OCCResponse *reply_item = (OCCResponse *)reply;
-        if(unlikely((node = local_try_lock_op(item->tableid,item->key,
-                                              ENCODE_LOCK_CONTENT(id,worker_id_,cid + 1))) == NULL)) {
-          reply_item->seq = 0;
-          reply_item->idx = item->idx;
-          reply_item->payload = 0;
-          reply += sizeof(OCCResponse);
-          break;
-        } else {
-          reply_item->seq = node->seq;
-          reply_item->idx = item->idx;
-          reply_item->payload = item->len;
+        reply_item->seq = seq;
+        reply_item->idx = item->idx;
+        reply_item->payload = item->len;
 
-          local_get_op(node,reply + sizeof(OCCResponse),seq,item->len);
-
-          reply += (sizeof(OCCResponse) + item->len);
-        }
+        reply += (sizeof(OCCResponse) + item->len);
       }
         break;
       default:
@@ -724,60 +910,142 @@ void NOWAIT::read_rpc_handler(int id,int cid,char *msg,void *arg) {
 }
 
 void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
+  using namespace rwlock;
 
   char* reply_msg = rpc_->get_reply_buf();
+
   uint8_t res = LOCK_SUCCESS_MAGIC; // success
 
-  RTX_ITER_ITEM(msg,sizeof(RtxLockItem)) {
+  int request_item_parsed = 0;
 
-    //ASSERT(num < 25) << "[Lock RPC handler] lock " << num << " items.";
+  RTX_ITER_ITEM(msg,sizeof(RTXLockRequestItem)) {
 
-    auto item = (RtxLockItem *)ttptr;
+    auto item = (RTXLockRequestItem *)ttptr;
+
+    // no batching of lock request.
+    request_item_parsed++;
+    assert(request_item_parsed <= 1);
 
     if(item->pid != response_node_)
       continue;
 
-    MemNode *node = NULL;
+    MemNode *node = db_->stores_[item->tableid]->Get(item->key);
+    assert(node != NULL && node->value != NULL);
 
-    if(unlikely((node = local_try_lock_op(item->tableid,item->key,
-                                          ENCODE_LOCK_CONTENT(id,worker_id_,cid + 1))) == NULL)) {
-      res = LOCK_FAIL_MAGIC;
-      break;
+    switch(item->type) {
+      case RTX_REQ_LOCK_READ: {
+          while (true) {
+            uint64_t l = node->lock;
+            if(l & 0x1 == W_LOCKED) {
+                res = LOCK_FAIL_MAGIC;
+                goto END;
+            } else {
+              if (EXPIRED(END_TIME(l))) {
+                // clear expired lease (optimization)
+                volatile uint64_t *lockptr = &(node->lock);
+                if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                             R_LEASE(item->txn_starting_timestamp + LEASE_TIME))))
+                  continue;
+                else
+                  goto NEXT_ITEM;  // successfully read locked this item
+              } else { // read locked: not conflict
+                goto NEXT_ITEM;    // successfully read locked this item
+              }
+            }
+          }
+      }
+        break;
+      case RTX_REQ_LOCK_WRITE: {
+        while(true) {
+          uint64_t l = node->lock;
+          if(l & 0x1 == W_LOCKED) {
+              res = LOCK_FAIL_MAGIC;
+              goto END;
+          } else {
+            if (EXPIRED(END_TIME(l))) {
+              // clear expired lease (optimization)
+              volatile uint64_t *lockptr = &(node->lock);
+              if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                           LOCKED(item->pid))))
+                continue;
+              else
+                goto NEXT_ITEM;
+            } else { //read locked: conflict
+                res = LOCK_FAIL_MAGIC;
+                goto END;
+            }
+          }
+        }
+      }
+        break;
+      default:
+        assert(false);
     }
-    if(unlikely(node->seq != item->seq)){
-      res = LOCK_FAIL_MAGIC;
-      break;
-    }
+
+NEXT_ITEM:
+    ;
   }
 
-  //char *log_buf = next_log_entry(&local_log,32);
-  //assert(log_buf != NULL);
-  //sprintf(log_buf,"reply to  %d c:%d, \n",id,cid);
+END:
+  assert(res != LOCK_WAIT_MAGIC);
   *((uint8_t *)reply_msg) = res;
   rpc_->send_reply(reply_msg,sizeof(uint8_t),id,cid);
 }
 
 void NOWAIT::release_rpc_handler(int id,int cid,char *msg,void *arg) {
-
-  RTX_ITER_ITEM(msg,sizeof(RtxLockItem)) {
-    auto item = (RtxLockItem *)ttptr;
+  using namespace rwlock;
+  
+  RTX_ITER_ITEM(msg,sizeof(RTXLockRequestItem)) {
+    auto item = (RTXLockRequestItem *)ttptr;
 
     if(item->pid != response_node_)
       continue;
+
+    if (item->type == RTX_REQ_LOCK_READ)
     auto res = local_try_release_op(item->tableid,item->key,
-                                    ENCODE_LOCK_CONTENT(id,worker_id_,cid + 1));
+                                    R_LEASE(item->txn_starting_timestamp + LEASE_TIME));
+    else if (item->type == RTX_REQ_LOCK_WRITE)
+    auto res = local_try_release_op(item->tableid,item->key,
+                                    LOCKED(item->pid));
   }
 
   char* reply_msg = rpc_->get_reply_buf();
   rpc_->send_reply(reply_msg,0,id,cid); // a dummy reply
 }
 
+void NOWAIT::commit_rpc_handler(int id,int cid,char *msg,void *arg) {
+  RTX_ITER_ITEM(msg,sizeof(RtxWriteItem)) {
+    auto item = (RtxWriteItem *)ttptr;
+    ttptr += item->len;
+
+    // for (int i = 0; i < sizeof(RtxWriteItem) + item->len; i++) {
+      // fprintf(stdout, "%x ", *((char*)item + i));
+    // }
+
+    if(item->pid != response_node_) {
+      continue;
+    }
+
+    // fprintf(stdout, "handler: write back to %d %d %d.\n", item->pid, item->tableid, item->key);
+
+    inplace_write_op(item->tableid,item->key,  // find key
+                                 (char *)item + sizeof(RtxWriteItem),item->len);
+  } // end for
+
+  // fprintf(stdout, "\n");
+
+#if PA == 0
+  char *reply_msg = rpc_->get_reply_buf();
+  rpc_->send_reply(reply_msg,0,id,cid); // a dummy reply
+#endif
+}
+
 void NOWAIT::register_default_rpc_handlers() {
   // register rpc handlers
-  ROCC_BIND_STUB(rpc_,&NOWAIT::read_rpc_handler,this,RTX_READ_RPC_ID);
+  ROCC_BIND_STUB(rpc_,&NOWAIT::read_write_rpc_handler,this,RTX_RW_RPC_ID);
   ROCC_BIND_STUB(rpc_,&NOWAIT::lock_rpc_handler,this,RTX_LOCK_RPC_ID);
   ROCC_BIND_STUB(rpc_,&NOWAIT::release_rpc_handler,this,RTX_RELEASE_RPC_ID);
-  
+  ROCC_BIND_STUB(rpc_,&NOWAIT::commit_rpc_handler,this,RTX_COMMIT_RPC_ID);
 }
 
 } // namespace rtx

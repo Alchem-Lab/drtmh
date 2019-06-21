@@ -107,6 +107,47 @@ class OCCR : public OCC {
     return read_set_.size() - 1;
   }
 
+  int pending_remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+
+    ASSERT(RDMA_CACHE) << "Currently RTX only supports pending remote read for value in cache.";
+
+    char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
+    assert(data_ptr != NULL);
+
+    auto off = pending_rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
+    data_ptr += sizeof(RdmaValHeader);
+
+    write_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
+                           0,
+                           len,pid);
+    return write_set_.size() - 1;
+  }
+
+  int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+
+    char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
+    ASSERT(data_ptr != NULL);
+
+    uint64_t off = 0;
+#if INLINE_OVERWRITE
+    off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
+    MemNode *node = (MemNode *)data_ptr;
+    auto seq = node->seq;
+    data_ptr = data_ptr + sizeof(MemNode);
+#else
+    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
+    RdmaValHeader *header = (RdmaValHeader *)data_ptr;
+    auto seq = header->seq;
+    data_ptr = data_ptr + sizeof(RdmaValHeader);
+#endif
+    ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
+
+    write_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
+                           seq,
+                           len,pid);
+    return write_set_.size() - 1;
+  }
+
   bool commit(yield_func_t &yield) {
 
 #if TX_ONLY_EXE
@@ -167,6 +208,7 @@ class OCCR : public OCC {
 
     asm volatile("" ::: "memory");
 #endif
+
 #if 1
 #if USE_DSLR
     write_back_w_FA_rdma(yield);    
@@ -187,7 +229,8 @@ class OCCR : public OCC {
     gc_readset();
     gc_writeset();
     return true;
- ABORT:
+
+ABORT:
 #if 1 //USE_RDMA_COMMIT
 #if USE_DSLR
     release_writes_w_FA_rdma(yield);

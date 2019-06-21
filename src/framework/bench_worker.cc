@@ -331,6 +331,17 @@ BenchWorker::worker_routine(yield_func_t &yield) {
   fprintf(stdout, "%d: ends.\n", cor_id_);  
 }
 
+
+void BenchWorker::events_handler() {
+  RWorker::events_handler();
+
+#if defined(WAITDIE_TX) && ONE_SIDED_READ == 0
+
+    // handling locking events deligated by corountines
+    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
+#endif
+}
+
 void BenchWorker::exit_handler() {
 
   if( worker_id_ == 0 ){

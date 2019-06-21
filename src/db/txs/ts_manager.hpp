@@ -13,6 +13,7 @@
 #include "all.h"
 
 #include "core/rworker.h"
+#include "core/commun_queue.hpp"
 #include "framework/req_buf_allocator.h"
 
 #include "framework/config.h"
@@ -26,6 +27,7 @@ namespace oltp {
 extern __thread RPCMemAllocator *msg_buf_alloctors;
 }
 using namespace oltp;
+using namespace util;
 
 extern zmq::context_t send_context;
 extern std::vector<SingleQueue *>   local_comm_queues;

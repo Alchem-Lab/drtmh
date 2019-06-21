@@ -9,6 +9,7 @@
 
 #include "util/util.h"
 
+#include "rtx/global_vars.h"
 #include "rtx/occ_rdma.h"
 #include "rtx/occ_variants.hpp"
 #include "rtx/nowait_rdma.h"
@@ -454,19 +455,11 @@ void BankWorker::thread_local_init() {
 #endif
     new_txs_[i]->set_logger(new_logger_);
 #elif defined(NOWAIT_TX)
-#if ONE_SIDED_READ
     new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,-1,
-                                   cm,rdma_sched_,total_partition);    
-#else
-    assert(false);
-#endif
+                                   cm,rdma_sched_,total_partition);
 #elif defined(WAITDIE_TX)
-#if ONE_SIDED_READ
     new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,-1,
-                                   cm,rdma_sched_,total_partition);     
-#else
-    assert(false);
-#endif
+                                   cm,rdma_sched_,total_partition);
 #elif defined(FARM)
     txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
 #elif defined(SI_TX)
@@ -481,6 +474,7 @@ void BankWorker::thread_local_init() {
   rtx_ = new_txs_[cor_id_];
   rtx_hook_ = new_txs_[1];
   //routine_1_tx_ = txs_[1]; // used for report
+  nocc::rtx::global_lock_manager->thread_local_init();
 } // end func: thread_local_init
 
 

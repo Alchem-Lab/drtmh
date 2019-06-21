@@ -140,7 +140,8 @@ void BankMainRunner::init_store(MemDB* &store){
   store = new MemDB(store_buffer);
 
   int meta_size = META_SIZE;
-#if ONE_SIDED_READ
+#if 1
+// #if ONE_SIDED_READ
   meta_size = sizeof(rtx::RdmaValHeader);
 #endif
 
@@ -150,7 +151,8 @@ void BankMainRunner::init_store(MemDB* &store){
   store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value),meta_size,
                    NumAccounts() / total_partition * 1.5);
 
-#if ONE_SIDED_READ == 1
+#if 1
+// #if ONE_SIDED_READ == 1
   //store->EnableRemoteAccess(ACCT,cm);
   store->EnableRemoteAccess(SAV,cm);
   store->EnableRemoteAccess(CHECK,cm);
@@ -162,7 +164,8 @@ void BankMainRunner::init_backup_store(MemDB* &store){
   store = new MemDB();
   int meta_size = META_SIZE;
 
-#if ONE_SIDED_READ
+#if 1
+// #if ONE_SIDED_READ
   meta_size = sizeof(rtx::RdmaValHeader);
 #endif
 
@@ -184,7 +187,8 @@ class BankLoader : public BenchLoader {
 
   void load() {
 
-#if ONE_SIDED_READ == 1
+#if 1
+// #if ONE_SIDED_READ == 1
     if(is_primary_)
       RThreadLocalInit();
 #endif
@@ -212,7 +216,8 @@ class BankLoader : public BenchLoader {
       check_size = Round<int>(check_size, sizeof(uint64_t));
       ASSERT(check_size % sizeof(uint64_t) == 0) << "cache size " << check_size;
 
-#if ONE_SIDED_READ == 1
+#if 1
+// #if ONE_SIDED_READ == 1
       if(is_primary_){
         wrapper_saving = (char *)Rmalloc(save_size);
         wrapper_check  = (char *)Rmalloc(check_size);
@@ -249,7 +254,8 @@ class BankLoader : public BenchLoader {
       savings::value *s = (savings::value *)(wrapper_saving + meta_size);
       s->s_balance = balance_s;
       auto node = store_->Put(SAV,i,(uint64_t *)wrapper_saving,sizeof(savings::value));
-      if(is_primary_ && ONE_SIDED_READ) {
+      if (is_primary_) {
+      // if(is_primary_ && ONE_SIDED_READ) {
         node->off = (uint64_t)wrapper_saving - (uint64_t)(cm->conn_buf_);
         ASSERT(node->off % sizeof(uint64_t) == 0) << "saving value size " << save_size;
       }
@@ -262,7 +268,8 @@ class BankLoader : public BenchLoader {
       if(i == 0)
         LOG(3) << "check cv balance " << c->c_balance;
 
-      if(is_primary_ && ONE_SIDED_READ) {
+      if (is_primary_) {
+      // if(is_primary_ && ONE_SIDED_READ) {
         node->off =  (uint64_t)wrapper_check - (uint64_t)(cm->conn_buf_);
         ASSERT(node->off % sizeof(uint64_t) == 0) << "check value size " << check_size;
       }
@@ -360,7 +367,8 @@ std::vector<BackupBenchWorker *> BankMainRunner::make_backup_workers() {
 
 void BankMainRunner::populate_cache() {
 
-#if ONE_SIDED_READ == 1 && RDMA_CACHE == 1
+#if RDMA_CACHE == 1
+// #if ONE_SIDED_READ == 1 && RDMA_CACHE == 1
   LOG(2) << "loading cache.";
 
   // create a temporal QP for usage

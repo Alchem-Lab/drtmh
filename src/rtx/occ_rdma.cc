@@ -32,7 +32,7 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
 
       req.set_lock_meta(off,0,lock_content,local_buf);
       req.set_read_meta(off + sizeof(uint64_t),local_buf + sizeof(uint64_t));
-
+      // fprintf(stderr, "post write lock at off %x.\n", off);
       req.post_reqs(scheduler_,qp);
 
       // two request need to be polled
@@ -187,6 +187,7 @@ void OCCR::release_writes_w_rdma(yield_func_t &yield) {
         Qp *qp = get_qp((*it).pid);
         assert(qp != NULL);
         node->lock = 0;
+        // fprintf(stderr, "release write lock at off %x.\n", (*it).off);
         scheduler_->post_send(qp,cor_id_,IBV_WR_RDMA_WRITE,(char *)(node),sizeof(uint64_t),
                               (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
       }
@@ -251,6 +252,7 @@ void OCCR::write_back_w_rdma(yield_func_t &yield) {
       node->seq = (*it).seq + 2; // update the seq
       node->lock = 0;            // re-set lock
 
+      // fprintf(stderr, "write back at off %x.\n", (*it).off + sizeof(RdmaValHeader));
       req.set_write_meta((*it).off + sizeof(RdmaValHeader),(*it).data_ptr,(*it).len);
       req.set_unlock_meta((*it).off);
       req.post_reqs(scheduler_,qp);
@@ -332,11 +334,11 @@ bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
       Qp *qp = get_qp((*it).pid);
       assert(qp != NULL);
 
+      // fprintf(stderr, "validate at off %x.\n", (*it).off);
       scheduler_->post_send(qp,cor_id_,
                             IBV_WR_RDMA_READ,(char *)node,
                             sizeof(uint64_t) + sizeof(uint64_t), // lock + version
                             (*it).off,IBV_SEND_SIGNALED);
-
 
     } else { // local case
       if(!local_validate_op(it->node,it->seq)) {

@@ -2,6 +2,7 @@
 #define GLOBAL_VARS_H_
 
 #include "view.h"
+#include "global_lock_manager.h"
 
 namespace nocc {
 
@@ -15,8 +16,8 @@ struct RdmaValHeader {
   uint64_t seq;
 };
 
-
 extern SymmetricView *global_view;
+extern GlobalLockManager *global_lock_manager;
 
 } // namespace rtx
 } // namespace nocc

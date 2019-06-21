@@ -88,6 +88,7 @@ BenchRunner::BenchRunner(std::string &config_file)
   rtx::global_view = new rtx::SymmetricView(rep_factor,net_def_.size());
   //rtx::global_view->print();
 
+  rtx::global_lock_manager = new rtx::GlobalLockManager();
   /* reset the barrier number */
   barrier_a_.n = nthreads;
 }
@@ -156,7 +157,8 @@ BenchRunner::run() {
   assert(r_buffer_size > total_sz);
 
   uint64_t store_size = 0;
-#if ONE_SIDED_READ == 1
+#if 1
+// #if ONE_SIDED_READ == 1
   if(1){
     store_size = RDMA_STORE_SIZE * M;
     store_buffer = rdma_buffer + total_sz;
@@ -211,7 +213,8 @@ BenchRunner::run() {
   cm->start_server(); // listening server for receive QP connection requests
 #endif
 
-#if ONE_SIDED_READ == 1
+#if 1
+// #if ONE_SIDED_READ == 1
   {
     // fetch if possible the cached entries from remote servers
     auto mem_info_before = get_system_memory_info();

@@ -111,7 +111,7 @@ class RWorker : public ndb_thread {
   // handlers communication events,
   // such as: in-comming RPC request/response; RDMA operation completions
   inline ALWAYS_INLINE
-  void events_handler() const {
+  virtual void events_handler() const {
     if(client_handler_ != NULL)
       client_handler_->poll_comps(); // poll reqs from clients
     if(msg_handler_ != NULL)

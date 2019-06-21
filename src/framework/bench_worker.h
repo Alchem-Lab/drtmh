@@ -18,6 +18,11 @@
 #include "rtx/nowait_rdma.h"
 #elif defined(WAITDIE_TX)
 #include "rtx/waitdie_rdma.h"
+#if ONE_SIDED_READ == 0
+// TODO: this includes incurs dependecy on the rtx folder,
+//       which should be refactored later after.
+#include "rtx/global_vars.h"
+#endif
 #endif
 
 #include <queue>          // std::queue
@@ -110,6 +115,7 @@ class BenchWorker : public RWorker {
 
   void init_tx_ctx();
 
+  virtual void events_handler();
   virtual void exit_handler();
   virtual void run(); // run -> call worker routine
   virtual void worker_routine(yield_func_t &yield);
@@ -214,6 +220,8 @@ class BenchWorker : public RWorker {
   BenchRunner  *context_;
 
   std::queue<REQ> pending_reqs_;
+
+  friend class GlobalLockManager;
 };
 
 class BenchLoader : public ndb_thread {

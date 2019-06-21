@@ -12,6 +12,7 @@
 #include <limits>
 #include <boost/bind.hpp>
 
+#include "rtx/global_vars.h"
 #include "rtx/occ_rdma.h"
 #include "rtx/occ_variants.hpp"
 
@@ -124,6 +125,8 @@ void TpccWorker::thread_local_init() {
   rtx_hook_ = new_txs_[1];
   /* init local tx so that it is not a null value */
   tx_ = txs_[cor_id_];
+
+  nocc::rtx::global_lock_manager->thread_local_init();
 }
 
 #if !ENABLE_TXN_API

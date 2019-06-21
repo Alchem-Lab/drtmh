@@ -29,22 +29,20 @@ original_sigint_handler = signal.getsignal(signal.SIGINT)
 ## config parameters and global parameters
 ## default mac set
 mac_set = ["nerv14", "nerv15", "nerv16"]
-proxies = [] ## the proxies used to connect to remote servers
-pwd     = "123"
-mac_num = 3
-
+mac_num = len(mac_set)
 PORT = 8090
 #port = 9080
+
 ## benchmark constants
 DIR = "~/git_repos/drtmh/scripts/"
 BASE_CMD = "cd " + DIR + " && ./%s --bench %s --txn-flags 1  --verbose --config %s"
 output_cmd = "1>/dev/null 2>&1 &" ## this will ignore all the output
-OUTPUT_CMD_LOG = " 1>tmp/drtmh-%s.log 2>&1 &" ## this will flush the log to a file
+output_file_path = "drtmh.log"
+NO_OUTPUT_CMD_LOG = " 1>/dev/null 2>&1 &" ## this will flush the log to dev null
 
 FNULL = open(os.devnull, 'w')
 
 ## bench config parameters
-
 base_cmd = ""
 config_file = DIR + "config.xml"
 
@@ -53,7 +51,6 @@ program = "dbtest"
 
 exe = ""
 bench = "bank"
-arg = ""
 
 ## lock
 int_lock = threading.Lock()
@@ -61,23 +58,7 @@ int_lock = threading.Lock()
 # ending flag
 script_end = False
 
-#====================================#
-## class definations
-class GetOutOfLoop(Exception):
-    ## a dummy class for exit outer loop
-    pass
-
-#====================================#
 ## helper functions
-def copy_file(f):
-    global mac_num
-    assert(mac_num <= len(mac_set))
-    for i in xrange(mac_num):
-        host = mac_set[i]
-        #print_with_tag("copy","To %s" % host)
-        subprocess.call(["scp", "./%s" % f, "%s:%s" % (host,"~")],stdout=FNULL,stderr=subprocess.STDOUT)
-
-
 def kill_servers(e):
     #  print "ending ... kill servers..."
     sigint = 2
@@ -137,7 +118,7 @@ def signal_int_handler(sig, frame):
     return
 
 def parse_input():
-    global config_file, exe,  base_cmd, arg, bench, mac_num ## global declared parameters
+    global output_file_path, config_file, exe, base_cmd, bench, mac_num, mac_set ## global declared parameters
     if (len(sys.argv)) > 1: ## config file name
         config_file = sys.argv[1]
     if (len(sys.argv)) > 2: ## exe file name
@@ -148,118 +129,43 @@ def parse_input():
         bench = sys.argv[4]
     if (len(sys.argv)) > 5:
         mac_num = int(sys.argv[5])
+    if (len(sys.argv)) > 6:
+        mac_set = sys.argv[6].split(',')
+        assert(mac_num == len(mac_set))
+    else:
+        mac_set = ["nerv"+str(16-i) for i in range(mac_num)][::-1]
+    if (len(sys.argv)) > 7:
+        output_file_path = sys.argv[7];
     args += (" -p %d" % mac_num)
 
     base_cmd = (BASE_CMD % (exe, bench, config_file)) + " --id %d " + args
     return
 
-
-# print "starting with config file  %s" % config_file
-def parse_bench_parameters(f):
-    assert(false)
-    global mac_set, mac_num
-    tree = ET.ElementTree(file=f)
-    root = tree.getroot()
-    assert root.tag == "bench"
-
-    mac_set = []
-    for e in root.find("servers").find("mapping").findall("a"):
-        mac_set.append(e.text.strip())
+def start_servers():
+    global base_cmd, mac_num, mac_set
+    assert(len(mac_set) == mac_num)
+    for i in xrange(0,mac_num):
+        if i == 0:
+            OUTPUT_CMD_LOG = " 1>" + output_file_path + " 2>&1 &" ## this will flush the log to a file
+            cmd = (base_cmd % (i)) + OUTPUT_CMD_LOG ## disable remote output
+        else:
+            cmd = (base_cmd % (i)) + NO_OUTPUT_CMD_LOG
+        print ' '.join(["ssh", "-n","-f", mac_set[i], "\"" + cmd + "\""])
+        subprocess.call(["ssh", "-n","-f", mac_set[i], cmd], stderr=subprocess.STDOUT)
     return
-
-def parse_hosts(f):
-    global mac_set
-    tree = ET.ElementTree(file=f)
-    root = tree.getroot()
-    assert root.tag == "hosts"
-
-    mac_set = []
-    black_list = {}
-
-    # parse black list
-    for e in root.find("black").findall("a"):
-       black_list[e.text.strip()] = True
-    # parse hosts
-    for e in root.find("macs").findall("a"):
-        server = e.text.strip()
-        if not black_list.has_key(server):
-            mac_set.append(server)
-    return
-
-def start_servers(macset, config, bcmd, num):
-    assert(len(macset) >= num)
-    for i in xrange(0,num):
-        cmd = (bcmd % (i)) + (OUTPUT_CMD_LOG % (i)) ## disable remote output
-        # print ' '.join(["ssh","-n","-f",macset[i],"\"" + "cd " + DIR + (" && rm tmp/drtmh-%s.log" % (i)) + "\""])
-        #subprocess.call(["ssh","-n","-f",macset[i],"rm tmp/drtmh-%s.log" % (i)],stdout=FNULL,stderr=subprocess.STDOUT) ## clean remaining log
-        print ' '.join(["ssh", "-n","-f", macset[i], "\"" + cmd + "\""])
-        # subprocess.call(["ssh", "-n","-f", macset[i], cmd],stdout=FNULL,stderr=subprocess.STDOUT)
-        subprocess.call(["ssh", "-n","-f", macset[i], cmd], stderr=subprocess.STDOUT)
-    ## local process is executed right here
-    ## cmd = "perf stat " + (bcmd % 0)
-    # cmd = bcmd % 0V
-    # print cmd
-    # subprocess.call(cmd, shell=True) ## init local command for debug
-    #subprocess.call(["ssh","-n","-f",macset[0],cmd])
-    return
-
-def prepare_files(files):
-    print "Start preparing start file"
-    global mac_num
-
-    cached_file_stat = {}
-    try:
-        cache = open("run2.cache")
-        cached_file_stat = pickle.load(cache)
-        cache.close()
-    except:
-        pass
-    if not cached_file_stat.has_key("mac_num"):
-        cached_file_stat["mac_num"] = -1
-    print cached_file_stat
-
-    need_copy = False
-    for f in files:
-        ## check whether file has changed or not
-        if cached_file_stat.has_key(f) \
-           and cached_file_stat[f] == os.stat(f).st_mtime \
-           and cached_file_stat["mac_num"] >= mac_num:
-            continue
-        need_copy = True
-        cached_file_stat[f] = os.stat(f).st_mtime
-
-    for f in files:
-        copy_file(f)
-
-    cache = open("run2.cache","w")
-    cached_file_stat["mac_num"] = mac_num
-    pickle.dump(cached_file_stat,cache)
-    cache.close()
-    return
-
-
 
 #====================================#
 ## main function
 def main():
 
-    global base_cmd
     parse_input() ## parse input from command line
-    #parse_bench_parameters(config_file) ## parse bench parameter from config file
-    parse_hosts("hosts.xml")
     print "[START] Input parsing done."
-
-    #kill_servers(exe)
-    #prepare_files([exe,config_file,"hosts.xml"])    ## copy related files to remote
-
     print "[START] cleaning remaining processes."
 
     time.sleep(1) ## ensure that all related processes are cleaned
 
     signal.signal(signal.SIGINT, signal_int_handler) ## register signal interrupt handler
-    subprocess.call(["mkdir", "-p", "tmp/"]);
-    subprocess.call(["rm", "-fr", "tmp/drtmh-*.log"]);
-    start_servers(mac_set, config_file, base_cmd, mac_num) ## start server processes
+    start_servers() ## start server processes
     for i in xrange(10):
         ## forever loop
         time.sleep(10)
