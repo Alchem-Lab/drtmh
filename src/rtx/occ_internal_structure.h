@@ -37,6 +37,28 @@ struct ReadSetItem {
 
 }  __attribute__ ((aligned (8)));
 
+struct SundialReadSetItem : public ReadSetItem {
+  uint32_t wts = 0, rts = 0;
+  inline SundialReadSetItem(int tableid,uint64_t key,MemNode *node,char *data_ptr,uint64_t seq, 
+    int len,int pid, int wts = 0, int rts = 0): ReadSetItem (tableid, key, node, data_ptr, seq, len,
+    pid), wts(wts), rts(rts)
+    {
+    }
+
+  inline SundialReadSetItem(const SundialReadSetItem &item) :
+      tableid(item.tableid),
+      key(item.key),
+      node(item.node),
+      data_ptr(item.data_ptr),
+      seq(item.seq),
+      len(item.len),
+      pid(item.pid),
+      wts(item.wts),
+      rts(item.rts)
+  {
+  }
+};
+
 struct RtxLockItem {
   uint8_t pid;
   uint8_t tableid;
