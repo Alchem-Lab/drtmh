@@ -26,6 +26,8 @@ __thread rtx::OCC      **new_txs_ = NULL;
 __thread rtx::NOWAIT   **new_txs_ = NULL;
 #elif defined(WAITDIE_TX)
 __thread rtx::WAITDIE  **new_txs_ = NULL;
+#elif defined(SUNDIAL_TX)
+__thread rtx::SUNDIAL  **new_txs_ = NULL;
 #endif
 
 extern uint64_t total_ring_sz;

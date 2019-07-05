@@ -13,6 +13,7 @@
 #include "rtx/occ_rdma.h"
 #include "rtx/occ_variants.hpp"
 #include "rtx/nowait_rdma.h"
+#include "rtx/sundial_rdma.h"
 #include "rtx/waitdie_rdma.h"
 
 #include <boost/bind.hpp>

@@ -30,20 +30,21 @@ class SUNDIAL : public TXOpBase {
 #include "occ_internal_structure.h"
 protected:
 
-  int local_read() {
-
+  bool try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield);
+  int local_read(int tableid,uint64_t key,int len,yield_func_t &yield) {
+    return 0;
   }
 
   int local_write(int tableid, uint64_t key, int len, yield_func_t &yield) {
-
+    return 0;
   }
 
-  int local_insert() {
-
+  int local_insert(int tableid,uint64_t key,char *val,int len,yield_func_t &yield) {
+    return 0;
   }
 
-  int remote_read() {
-
+  int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    return 0;
   }
 
   int remote_write(int pid, int tableid, uint64_t key, int len, yield_func_t &yield) {
@@ -53,18 +54,22 @@ protected:
         return 0;
       }
     }
+    write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid, -1, -1);
+    int index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ
 
 #else
-    
+    if(!try_lock_write_w_rwlock_rpc(index, yield)) {
+      release_reads(yield);
+      release_writes(yield);
+      return -1;
+    }
 #endif
-
-
   }
 
-  int remote_insert() {
-
+  int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    return 0;
   }
 
 public:
@@ -101,19 +106,91 @@ public:
   }
 
   inline __attribute__((always_inline))
-  virtual int read() {
+  virtual int read(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
+    int index = -1;
 
+    if(pid == node_id_)
+      index = local_read(tableid, key, len, yield);
+    else
+      index = remote_read(pid, tableid, key, len, yield);
+    return index;
+  }
+
+  template <int tableid,typename V>
+  inline __attribute__((always_inline))
+  int read(int pid,uint64_t key,yield_func_t &yield) {
+    return read(pid, tableid, key, sizeof(V), yield);
   }
 
   inline __attribute__((always_inline))
-  virtual int load_write() {
-
+  virtual char* load_write(int idx, size_t len, yield_func_t &yield) {
+    return NULL;
   }
 
   inline __attribute__((always_inline))
-  virtual int load_read() {
+  virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
+    return NULL;
+  }
 
-  }  
+    template <typename V>
+  inline __attribute__((always_inline))
+  V *get_readset(int idx,yield_func_t &yield) {
+    return NULL;
+    // return get_set_helper<V>(read_set_, idx, yield);
+  }
+
+  template <typename V>
+  inline __attribute__((always_inline))
+  V *get_writeset(int idx,yield_func_t &yield) {
+    return NULL;
+    // return get_set_helper<V>(write_set_, idx, yield);
+  }
+
+  template <typename V>
+  inline __attribute__((always_inline))
+  V* get_set_helper(std::vector<ReadSetItem> &set, int idx,yield_func_t &yield) {
+    assert(idx < set.size());
+    ASSERT(sizeof(V) == set[idx].len) <<
+        "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
+
+    // if(set[idx].data_ptr == NULL
+    //    && set[idx].pid != node_id_) {
+
+    //   // do actual reads here
+    //   auto replies = send_batch_read();
+    //   assert(replies > 0);
+    //   worker_->indirect_yield(yield);
+
+    //   parse_batch_result(replies);
+    //   assert(set[idx].data_ptr != NULL);
+    //   start_batch_rpc_op(read_batch_helper_);
+    // }
+
+    return (V*)(set[idx].data_ptr);
+  }
+
+  template <int tableid,typename V>
+  inline __attribute__((always_inline))
+  int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
+    if(pid == node_id_)
+      return local_insert(tableid,key,(char *)val,sizeof(V),yield);
+    else {
+      return remote_insert(pid,tableid,key,sizeof(V),yield);
+    }
+    return -1;
+  }
+
+  // start a TX
+  virtual void begin(yield_func_t &yield) {
+    read_set_.clear();
+    write_set_.clear();
+    #if USE_DSLR
+      dslr_lock_manager->init();
+    #endif
+    txn_start_time = rwlock::get_now();
+    // the txn_end_time is approximated using the LEASE_TIME
+    txn_end_time = txn_start_time + rwlock::LEASE_TIME;
+  }
 
   virtual bool commit(yield_func_t &yield) {
 
@@ -122,8 +199,30 @@ protected:
   std::vector<SundialReadSetItem> read_set_;
   std::vector<SundialReadSetItem> write_set_;
 
+  // helper to send batch read/write operations
+  BatchOpCtrlBlock read_batch_helper_;
+  BatchOpCtrlBlock write_batch_helper_;
+  RDMACASLockReq* lock_req_;
+  RDMAReadReq* read_req_;
+
   const int cor_id_;
   const int response_node_;
 
+  char* rpc_op_send_buf_;
+  char reply_buf_[MAX_MSG_SIZE];
+
+  uint64_t txn_start_time = 0;
+  uint64_t txn_end_time = 0;
+
+public:
+#include "occ_statistics.h"
+
+  void register_default_rpc_handlers();
+private:
+  void read_write_rpc_handler(int id,int cid,char *msg,void *arg){}
+  void lock_rpc_handler(int id,int cid,char *msg,void *arg);
+  void release_rpc_handler(int id,int cid,char *msg,void *arg){}
+  void commit_rpc_handler(int id,int cid,char *msg,void *arg){}
+};
 }
 }

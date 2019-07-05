@@ -112,6 +112,15 @@ void TpccWorker::thread_local_init() {
       assert(false);
 #endif
     }
+#elif defined(SUNDIAL_TX)
+    if(txs_[i]  == NULL) {    
+#if ONE_SIDED_READ
+      assert(false);
+#else
+      new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                   cm,rdma_sched_,total_partition);
+#endif
+    }
 #elif defined(SI_TX)
     txs_[i] = new DBSI(store_,worker_id_,rpc_,i);
 #elif defined(FARM)
@@ -446,7 +455,7 @@ txn_result_t TpccWorker::txn_payment(yield_func_t &yield) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX)
     DBTXIterator iter((DBTX *)tx_,CUST_INDEX,false);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -618,7 +627,7 @@ txn_result_t TpccWorker::txn_delivery(yield_func_t &yield) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX)
     DBTXIterator iter((DBTX *)tx_,NEWO);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -675,7 +684,7 @@ txn_result_t TpccWorker::txn_delivery(yield_func_t &yield) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX)
     DBTXIterator iter1((DBTX *)tx_,ORLI);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -768,7 +777,7 @@ txn_result_t TpccWorker::txn_stock_level(yield_func_t &yield) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
     assert(false);
   }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX)
   DBTXIterator iter((DBTX *)tx_,ORLI);
   if(tx_ != NULL) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -922,7 +931,7 @@ txn_result_t TpccWorker::txn_super_stock_level(yield_func_t &yield) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX)
     DBTXIterator iter((DBTX *)tx_,ORLI);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -1034,7 +1043,7 @@ txn_result_t TpccWorker::txn_order_status(yield_func_t &yield) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
     assert(false);
   }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX)
   DBTXIterator citer((DBTX *)tx_,CUST_INDEX,false);
   if(tx_ != NULL) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -1103,7 +1112,7 @@ txn_result_t TpccWorker::txn_order_status(yield_func_t &yield) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
     assert(false);
   }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX)
   DBTXIterator iter((DBTX *)tx_,ORDER_INDEX);
   if(tx_ != NULL) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -1258,7 +1267,7 @@ void TpccWorker::check_consistency() {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX)
     DBTXIterator iter((DBTX *)tx_,NEWO);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -1605,7 +1614,7 @@ txn_result_t TpccWorker::txn_payment_naive(yield_func_t &yield) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX)
     DBTXIterator iter((DBTX *)tx_,CUST_INDEX,false);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");

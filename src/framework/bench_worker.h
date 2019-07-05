@@ -18,6 +18,8 @@
 #include "rtx/nowait_rdma.h"
 #elif defined(WAITDIE_TX)
 #include "rtx/waitdie_rdma.h"
+#elif defined(SUNDIAL_TX)
+#include "rtx/sundial_rdma.h"
 #if ONE_SIDED_READ == 0
 // TODO: this includes incurs dependecy on the rtx folder,
 //       which should be refactored later after.
@@ -48,6 +50,8 @@ extern __thread rtx::OCC      **new_txs_;
 extern __thread rtx::NOWAIT   **new_txs_;
 #elif defined(WAITDIE_TX)
 extern __thread rtx::WAITDIE  **new_txs_;
+#elif defined(SUNDIAL_TX)
+extern __thread rtx::SUNDIAL  **new_txs_;
 #endif
 
 extern     RdmaCtrl *cm;
@@ -197,6 +201,9 @@ class BenchWorker : public RWorker {
 #elif defined(WAITDIE_TX)
   rtx::WAITDIE *rtx_;
   rtx::WAITDIE *rtx_hook_ = NULL;
+#elif defined(SUNDIAL_TX)
+  rtx::SUNDIAL *rtx_;
+  rtx::SUNDIAL *rtx_hook_ = NULL;
 #endif
   LAT_VARS(yield);
 
