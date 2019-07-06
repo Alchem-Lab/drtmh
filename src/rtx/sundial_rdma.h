@@ -29,11 +29,11 @@ class SUNDIAL : public TXOpBase {
 #endif
 #include "occ_internal_structure.h"
 protected:
-
-  bool try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield);
-  bool try_remote_read_rpc(int index, yield_func_t &yield);
-  bool renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
-  bool unlock_rpc();
+// rpc functions
+  bool try_lock_read_rpc(int index, yield_func_t &yield);
+  bool try_read_rpc(int index, yield_func_t &yield);
+  bool try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
+  bool try_update_rpc(yield_func_t &yield);
   int local_read(int tableid,uint64_t key,int len,yield_func_t &yield) {
     return 0;
   }
@@ -54,14 +54,14 @@ protected:
       if(item.key == key) {
         memcpy(data_ptr, item.data_ptr, len); // not efficient
         read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
-        return 0;
+        return read_set_.size() - 1;
       }
     }
     for(auto&item : read_set_) {
       if(item.key == key) {
         memcpy(data_ptr, item.data_ptr, len); // not efficient
         read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
-        return 0;
+        return read_set_.size() - 1;
       }
     }
 
@@ -71,7 +71,7 @@ protected:
 #if ONE_SIDED_READ
 
 #else
-    if(!try_remote_read_rpc(index, yield)) {
+    if(!try_read_rpc(index, yield)) {
       release_reads(yield);
       release_writes(yield);
       return -1;
@@ -84,24 +84,25 @@ protected:
     memcpy(item.data_ptr, remote_data_ptr, item.len);
     commit_id_ = max(commit_id_, item.wts);
 #endif
-
-    return 0;
+    return index;
   }
 
   int remote_write(int pid, int tableid, uint64_t key, int len, yield_func_t &yield) {
+    int index = 0;
     for(auto& item : write_set_) {
       if(item.key == key) {
         fprintf(stdout, "[SUNDIAL INFO] remote write already in write set (no data in write set now)\n");
-        return 0;
+        return index;
       }
+      ++index;
     }
     write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid, -1, -1);
-    int index = write_set_.size() - 1;
+    index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ
 
 #else
-    if(!try_lock_write_w_rwlock_rpc(index, yield)) {
+    if(!try_lock_read_rpc(index, yield)) {
       release_reads(yield);
       release_writes(yield);
       return -1;
@@ -116,6 +117,7 @@ protected:
     memcpy(item.data_ptr, data_ptr, item.len);
 
     commit_id_ = max(commit_id_, item.rts + 1);
+    return index;
 #endif
   }
 
@@ -141,13 +143,7 @@ public:
 
   inline __attribute__((always_inline))
   virtual int write(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
-    int index = -1;
-
-    if(pid == node_id_)
-      index = local_write(tableid, key, len, yield);
-    else
-      index = remote_write(pid, tableid, key, len, yield);
-    return index;
+    return remote_write(pid, tableid, key, len, yield);
   }
 
   template <int tableid,typename V>
@@ -158,13 +154,7 @@ public:
 
   inline __attribute__((always_inline))
   virtual int read(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
-    int index = -1;
-
-    if(pid == node_id_)
-      index = local_read(tableid, key, len, yield);
-    else
-      index = remote_read(pid, tableid, key, len, yield);
-    return index;
+    return remote_read(pid, tableid, key, len, yield);
   }
 
   template <int tableid,typename V>
@@ -181,14 +171,14 @@ public:
   void prepare(yield_func_t &yield) {
     int index = 0;
     for(auto & item : read_set_) {
-      if(!renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
-
+      if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+        // fail in renew lease, should abort
       }  
     }
     
   }
 
-  void write_back(yield_func_t &yield);
+  
 
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
@@ -256,7 +246,7 @@ public:
   }
 
   virtual bool commit(yield_func_t &yield) {
-
+    try_update_rpc(yield);
   }
 protected:
   std::vector<SundialReadSetItem> read_set_;
@@ -284,11 +274,9 @@ public:
 
   void register_default_rpc_handlers();
 private:
-  void read_write_rpc_handler(int id,int cid,char *msg,void *arg){}
+// rpc handlers
   void lock_rpc_handler(int id,int cid,char *msg,void *arg);
   void read_rpc_handler(int id,int cid,char *msg,void *arg);
-  void release_rpc_handler(int id,int cid,char *msg,void *arg){}
-  void commit_rpc_handler(int id,int cid,char *msg,void *arg){}
   void renew_lease_rpc_handler(int id,int cid,char *msg,void *arg);
   void update_rpc_handler(int id,int cid,char *msg,void *arg);
 };

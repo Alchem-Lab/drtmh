@@ -6,9 +6,8 @@ namespace nocc {
 namespace rtx {
 
 
-void SUNDIAL::write_back(yield_func_t &yield) {
+bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
   start_batch_rpc_op(write_batch_helper_);
-
   for(auto& item : write_set_){
     if(item.pid != node_id_) {
       add_batch_entry<RTXUpdateItem>(write_batch_helper_, item.pid, 
@@ -22,6 +21,7 @@ void SUNDIAL::write_back(yield_func_t &yield) {
   }
   send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
   worker_->indirect_yield(yield);
+  return true;
 }
 
 void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
@@ -37,7 +37,7 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
   rpc_->send_reply(reply_msg,0,id,cid); // a dummy reply
 }
 
-bool SUNDIAL::renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield) {
+bool SUNDIAL::try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield) {
   if(pid != node_id_) {
     rpc_op<RTXRenewLeaseItem>(cor_id_, RTX_Renew_Lease_RPC_ID, pid, 
                                  rpc_op_send_buf_,reply_buf_, 
@@ -95,7 +95,7 @@ void SUNDIAL::renew_lease_rpc_handler(int id,int cid,char *msg,void *arg) {
   rpc_->send_reply(reply_msg,sizeof(uint8_t),id,cid);
 }
 
-bool SUNDIAL::try_remote_read_rpc(int index, yield_func_t &yield) {
+bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
   std::vector<SundialReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
   if((*it).pid != node_id_) {
@@ -158,7 +158,7 @@ END:
 }
 
 
-bool SUNDIAL::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
+bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
   using namespace rwlock;
   START(lock);
   std::vector<SundialReadSetItem> &set = write_set_;
@@ -289,12 +289,11 @@ END:
 
 void SUNDIAL::register_default_rpc_handlers() {
   // register rpc handlers
-  ROCC_BIND_STUB(rpc_,&SUNDIAL::read_write_rpc_handler,this,RTX_RW_RPC_ID);
   ROCC_BIND_STUB(rpc_,&SUNDIAL::lock_rpc_handler,this,RTX_LOCK_RPC_ID);
   ROCC_BIND_STUB(rpc_,&SUNDIAL::read_rpc_handler,this,RTX_READ_RPC_ID);
-  ROCC_BIND_STUB(rpc_,&SUNDIAL::release_rpc_handler,this,RTX_RELEASE_RPC_ID);
-  ROCC_BIND_STUB(rpc_,&SUNDIAL::commit_rpc_handler,this,RTX_COMMIT_RPC_ID);
   ROCC_BIND_STUB(rpc_,&SUNDIAL::renew_lease_rpc_handler,this,RTX_Renew_Lease_RPC_ID);
+  ROCC_BIND_STUB(rpc_,&SUNDIAL::update_rpc_handler,this,RTX_UPDATE_RPC_ID);
 }
+
 }
 }
