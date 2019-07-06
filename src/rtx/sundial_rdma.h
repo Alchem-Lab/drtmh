@@ -31,6 +31,9 @@ class SUNDIAL : public TXOpBase {
 protected:
 
   bool try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield);
+  bool try_remote_read_rpc(int index, yield_func_t &yield);
+  bool renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
+  bool unlock_rpc();
   int local_read(int tableid,uint64_t key,int len,yield_func_t &yield) {
     return 0;
   }
@@ -44,6 +47,43 @@ protected:
   }
 
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    // for(auto& item : write_set_)
+    char* data_ptr = (char*)malloc(len);
+    for(auto&item : write_set_) {
+      if(item.key == key) {
+        memcpy(data_ptr, item.data_ptr, len); // not efficient
+        read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
+        return 0;
+      }
+    }
+    for(auto&item : read_set_) {
+      if(item.key == key) {
+        memcpy(data_ptr, item.data_ptr, len); // not efficient
+        read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
+        return 0;
+      }
+    }
+
+    read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
+    int index = read_set_.size() - 1;
+
+#if ONE_SIDED_READ
+
+#else
+    if(!try_remote_read_rpc(index, yield)) {
+      release_reads(yield);
+      release_writes(yield);
+      return -1;
+    }
+    char* remote_data_ptr = reply_buf_ + 1 + sizeof(SundialResponse);
+    auto& item = read_set_.back();
+    SundialResponse* header = (SundialResponse*)(reply_buf_ + 1);
+    item.wts = header.wts;
+    item.rts = header.rts;
+    memcpy(item.data_ptr, remote_data_ptr, item.len);
+    commit_id_ = max(commit_id_, item.wts);
+#endif
+
     return 0;
   }
 
@@ -65,6 +105,16 @@ protected:
       release_writes(yield);
       return -1;
     }
+    // get the results
+    char* data_ptr = reply_buf_ + 1 + sizeof(SundialResponse);
+    auto& item = write_set_.back();
+    SundialResponse* header = (SundialResponse*)(reply_buf_ + 1);
+    item.wts = header.wts;
+    item.rts = header.rts;
+    item.data_ptr = (char*)malloc(item.len);
+    memcpy(item.data_ptr, data_ptr, item.len);
+
+    commit_id_ = max(commit_id_, item.rts + 1);
 #endif
   }
 
@@ -126,6 +176,17 @@ public:
   virtual char* load_write(int idx, size_t len, yield_func_t &yield) {
     return NULL;
   }
+
+  void prepare(yield_func_t &yield) {
+    for(auto & item : read_set_) {
+      if(!renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+
+      }  
+    }
+    
+  }
+
+  void write_back(yield_func_t &yield);
 
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
@@ -199,6 +260,8 @@ protected:
   std::vector<SundialReadSetItem> read_set_;
   std::vector<SundialReadSetItem> write_set_;
 
+  uint32_t commit_id_ = 0;
+
   // helper to send batch read/write operations
   BatchOpCtrlBlock read_batch_helper_;
   BatchOpCtrlBlock write_batch_helper_;
@@ -221,8 +284,11 @@ public:
 private:
   void read_write_rpc_handler(int id,int cid,char *msg,void *arg){}
   void lock_rpc_handler(int id,int cid,char *msg,void *arg);
+  void read_rpc_handler(int id,int cid,char *msg,void *arg);
   void release_rpc_handler(int id,int cid,char *msg,void *arg){}
   void commit_rpc_handler(int id,int cid,char *msg,void *arg){}
+  void renew_lease_rpc_handler(int id,int cid,char *msg,void *arg);
+  void update_rpc_handler(int id,int cid,char *msg,void *arg);
 };
 }
 }

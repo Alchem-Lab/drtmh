@@ -20,6 +20,8 @@
 #define RTX_LOG_RPC_ID     5
 #define RTX_LOG_CLEAN_ID   6
 #define RTX_BACKUP_GET_ID  7
+#define RTX_Renew_Lease_RPC_ID 8
+#define RTX_UPDATE_RPC_ID 9
 
 #endif
 

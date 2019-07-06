@@ -16,6 +16,8 @@
 #define RTX_LOG_RPC_ID     5
 #define RTX_LOG_CLEAN_ID   6
 #define RTX_BACKUP_GET_ID  7
+#define RTX_Renew_Lease_RPC_ID 8
+#define RTX_UPDATE_RPC_ID 9
 
 #endif
 
@@ -88,7 +90,7 @@ class TXOpBase {
   bool     local_validate_op(int tableid,uint64_t key,uint64_t seq);
   bool     local_validate_op(MemNode *node,uint64_t seq);
 
-  MemNode  *inplace_write_op(int tableid,uint64_t key,char *val,int len);
+  MemNode  *inplace_write_op(int tableid,uint64_t key,char *val,int len, uint32_t commit_id = -1);
   MemNode  *inplace_write_op(MemNode *node,char *val,int len,int meta = 0);
 
   // basically its only a wrapper to send a get request with Argument REQ

@@ -86,6 +86,11 @@ struct OCCResponse {
   uint64_t seq;
 };
 
+struct SundialResponse {
+  uint32_t wts;
+  uint32_t rts;
+};
+
 /* 16 bit mac | 6 bit thread | 10 bit cor_id  */
 #define ENCODE_LOCK_CONTENT(mac,tid,cor_id) ( ((mac) << 16) | ((tid) << 10) | (cor_id) )
 #define DECODE_LOCK_MAC(lock) (((lock) & 0xffffffff ) >> 16)

@@ -116,10 +116,13 @@ MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta) {
 }
 
 inline __attribute__((always_inline))
-MemNode *TXOpBase::inplace_write_op(int tableid,uint64_t key,char *val,int len) {
+MemNode *TXOpBase::inplace_write_op(int tableid,uint64_t key,char *val,int len, uint32_t commit_id) {
   MemNode *node = db_->stores_[tableid]->Get(key);
   ASSERT(node != NULL) << "get node error, at [tab " << tableid
                        << "], key: "<< key;
+  if(commit_id != -1) {
+    *(uint32_t*)(&(node->read_lock)) = *((uint32_t*)(&(node->read_lock)) + 1) = commit_id;
+  }
   return inplace_write_op(node,val,len,db_->_schemas[tableid].meta_len);
 }
 

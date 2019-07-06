@@ -33,6 +33,18 @@ struct RTXReadItem {
   }
 } __attribute__ ((aligned (8)));
 
+struct RTXRenewLeaseItem {
+  uint8_t pid;
+  uint8_t tableid;
+  uint64_t key;
+  uint32_t wts;
+  uint32_t commit_id;
+  inline RTXRenewLeaseItem(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id)
+      : pid(pid), tableid(tableid),key(key), wts(wts), commit_id(commit_id)
+  {
+  }
+} __attribute__ ((aligned (8)));
+
 // entries of the request message
 struct RTXRemoteWriteItem {
   uint8_t pid;
@@ -51,6 +63,18 @@ struct RtxWriteItem {
   uint16_t len;
   RtxWriteItem(int pid,int tableid,uint64_t key,int len) :
       pid(pid),tableid(tableid),key(key),len(len) {
+
+  }
+} __attribute__ ((aligned (8)));
+
+struct RTXUpdateItem {
+  uint8_t  pid;
+  uint8_t  tableid;
+  uint64_t key;
+  uint16_t len;
+  uint32_t commit_id;
+  RTXUpdateItem(int pid,int tableid,uint64_t key,int len, uint32_t commit_id) :
+      pid(pid),tableid(tableid),key(key),len(len), commit_id(commit_id) {
 
   }
 } __attribute__ ((aligned (8)));
