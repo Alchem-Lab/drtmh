@@ -43,6 +43,7 @@ protected:
   }
 
   int local_insert(int tableid,uint64_t key,char *val,int len,yield_func_t &yield) {
+    assert(false);
     return 0;
   }
 
@@ -178,6 +179,7 @@ public:
   }
 
   void prepare(yield_func_t &yield) {
+    int index = 0;
     for(auto & item : read_set_) {
       if(!renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
 

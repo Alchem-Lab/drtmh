@@ -101,6 +101,8 @@ struct RTXLockRequestItem {
 #define LOCK_SUCCESS_MAGIC 73
 #define LOCK_FAIL_MAGIC 12
 #define LOCK_WAIT_MAGIC 41
+#define RPC_SUCCESS_MAGIC 26
+#define RPC_FAIL_MAGIC 27
 
 }; // namespace rtx
 }; // namespace nocc
