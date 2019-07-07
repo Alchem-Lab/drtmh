@@ -30,8 +30,11 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
     ttptr += item->len;
     if(item->pid != response_node_) continue;
     inplace_write_op(item->tableid, item->key, (char*)item + sizeof(RTXUpdateItem), item->len, item->commit_id);
-    local_try_release_op(item->tableid,item->key,
-                                    rwlock::LOCKED(item->pid));
+    MemNode *node = db_->stores_[item->tableid]->Get(item->key);
+    uint64_t l = node->lock;
+    volatile uint64_t *lockptr = &(node->lock);
+    __sync_bool_compare_and_swap(lockptr, l ,l & 0xffffffff7fffffff);
+    // *lockptr =  l & 0xffffffff7fffffff;
   }
   char* reply_msg = rpc_->get_reply_buf();
   rpc_->send_reply(reply_msg,0,id,cid); // a dummy reply
@@ -71,7 +74,7 @@ bool SUNDIAL::try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, ui
 void SUNDIAL::renew_lease_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   // char* reply_msg = reply_buf_;
-  uint8_t res = 1;
+  uint8_t res = RPC_SUCCESS_MAGIC;
   int request_item_parsed = 0;
   RTX_ITER_ITEM(msg, sizeof(RTXRenewLeaseItem)) {
     auto item = (RTXRenewLeaseItem*)ttptr;
@@ -81,12 +84,12 @@ void SUNDIAL::renew_lease_rpc_handler(int id,int cid,char *msg,void *arg) {
       continue;
     auto node = db_->stores_[item->tableid]->Get(item->key);
     assert(node != NULL);
-
+//
     uint32_t &node_wts = *(uint32_t*)(&(node->read_lock));
     uint32_t &node_rts = *((uint32_t*)(&(node->read_lock)) + 1);
 
     if(item->wts != node_wts || (item->commit_id > node_rts && (node->lock & 0x1) == rwlock::W_LOCKED))
-      res = 0;
+      res = RPC_FAIL_MAGIC;
     else
       if(node_rts < item->commit_id)
         node_rts = item->commit_id;
@@ -113,10 +116,24 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
       return false;
     assert(false);
   } else {
-    assert(false); // read from local
-
+    while(true) {
+      volatile uint64_t l = it->node->lock;
+      if(WLOCKTS(l) == SUNDIALWLOCK) {
+        worker_->yield_next(yield);
+      } else {
+        ++it->node->read_lock;
+        char* reply = rpc_->get_reply_buf() + 1;
+        uint64_t seq;
+        auto node = local_get_op(it->tableid, it->key, reply + sizeof(SundialResponse),
+          it->len, seq, db_->_schemas[it->tableid].meta_len);
+        SundialResponse *reply_item = (SundialResponse*)reply;
+        reply_item->wts = WTS(l);
+        reply_item->rts = RTS(l);
+        --(it->node->read_lock);
+        return true;
+      }
+    }
   }
-
 }
 
 
@@ -124,7 +141,7 @@ void SUNDIAL::read_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   char* reply = reply_msg + 1;
 
-  uint8_t res = 1;
+  uint8_t res = RPC_SUCCESS_MAGIC;
   int request_item_parsed = 0;
   MemNode *node = NULL;
   size_t nodelen = 0;
@@ -137,22 +154,35 @@ void SUNDIAL::read_rpc_handler(int id,int cid,char *msg,void *arg) {
     if(item->pid != response_node_)
       continue;
 
-    node = db_->stores_[item->tableid]->Get(item->key);
-    assert(node != NULL && node->value != NULL);
-
     uint64_t seq;
-    auto node = local_get_op(item->tableid, item->key, reply + sizeof(SundialResponse),
-      item->len, seq, db_->_schemas[item->tableid].meta_len);
-    SundialResponse *reply_item = (SundialResponse *)reply;
-    reply_item->wts = *((uint32_t*)node->read_lock);
-    reply_item->rts = *((uint32_t*)node->read_lock + 1);
-    nodelen = item->len + sizeof(SundialResponse);
-    goto NEXT_ITEM;
+    node = db_->stores_[item->tableid]->Get(item->key);
+    // read lock
+    while (true) {
+      volatile uint64_t l = node->lock;
+      if(WLOCKTS(l) == SUNDIALWLOCK) {
+        // worker_->yield_next(yield);
+      }
+      else {
+        ++node->read_lock; // TODO: should be atomic
+        // get local data
+        char* reply_msg = rpc_->get_reply_buf();
+        char* reply = reply_msg + 1;
+        uint64_t seq;
+        local_get_op(item->tableid, item->key, reply + sizeof(SundialResponse),
+          item->len, seq, db_->_schemas[item->tableid].meta_len);
+        SundialResponse *reply_item = (SundialResponse *)reply;
+        reply_item->wts = WTS(l);
+        reply_item->rts = RTS(l);
+        nodelen = item->len + sizeof(SundialResponse);
+        --node->read_lock;
+        goto NEXT_ITEM;
+      }
+    }
   }
 NEXT_ITEM:
   ;
 END:
-  assert(res != 0);
+  assert(res == RPC_SUCCESS_MAGIC);
   *((uint8_t *)reply_msg) = res;
   rpc_->send_reply(reply_msg,sizeof(uint8_t) + nodelen,id,cid);
 }
@@ -182,33 +212,26 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
   } else {
       while (true) {
         volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          continue;
-          // END(lock);
-          // return false;
+        volatile uint64_t readl = it->node->read_lock;
+        if((WLOCKTS(l) == SUNDIALWLOCK) || (readl > 0)) {
+          worker_->yield_next(yield);
         } else {
-          if (EXPIRED(END_TIME(l))) {
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         LOCKED(response_node_)))) {
-              continue;
-            } else {
-              END(lock);
-              // get local data
-              char* reply_msg = rpc_->get_reply_buf();
-              char* reply = reply_msg + 1;
-              uint64_t seq;
-              auto node = local_get_op(it->tableid, it->key, reply + sizeof(SundialResponse),
-                it->len, seq, db_->_schemas[it->tableid].meta_len);
-              SundialResponse *reply_item = (SundialResponse *)reply;
-              reply_item->wts = *((uint32_t*)node->read_lock);
-              reply_item->rts = *((uint32_t*)node->read_lock + 1);
-              return true; 
-            }       
-          } else { //read locked
+          volatile uint64_t *lockptr = &(it->node->lock);
+          if( unlikely(!__sync_bool_compare_and_swap(lockptr, l, l | SUNDIALWLOCK)))
+            continue;
+          else {
             END(lock);
-            return false;
-          }
+            // get local data
+            char* reply_msg = rpc_->get_reply_buf();
+            char* reply = reply_msg + 1;
+            uint64_t seq;
+            auto node = local_get_op(it->tableid, it->key, reply + sizeof(SundialResponse),
+              it->len, seq, db_->_schemas[it->tableid].meta_len);
+            SundialResponse *reply_item = (SundialResponse *)reply;
+            reply_item->wts = WTS(*lockptr);
+            reply_item->rts = RTS(*lockptr);
+            return true; 
+          }       
         }
       }
   }
@@ -244,28 +267,23 @@ void SUNDIAL::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
     switch(item->type) {
       case RTX_REQ_LOCK_WRITE: {
         while(true) {
-          uint64_t l = node->lock;
-          if(l & 0x1 == W_LOCKED) {
-            continue; // TODO: now is busy waiting, can optimize?
+          volatile uint64_t l = node->lock;
+          volatile uint64_t readl = node->read_lock;
+          if((WLOCKTS(l) == SUNDIALWLOCK) || (readl > 0)) {
+            // worker_->yield_next(yield);
           } else {
-            if (EXPIRED(END_TIME(l))) {
-              // clear expired lease (optimization)
-              volatile uint64_t *lockptr = &(node->lock);
-              if( unlikely(!__sync_bool_compare_and_swap(lockptr,l, LOCKED(item->pid)))) // locked
-                continue;
-              else{
-                uint64_t seq;
-                auto node = local_get_op(item->tableid, item->key, reply + sizeof(SundialResponse),
-                  item->len, seq, db_->_schemas[item->tableid].meta_len);
-                SundialResponse *reply_item = (SundialResponse *)reply;
-                reply_item->wts = *((uint32_t*)node->read_lock);
-                reply_item->rts = *((uint32_t*)node->read_lock + 1);
-                nodelen = item->len + sizeof(SundialResponse);
-                goto NEXT_ITEM;
-              }
-            } else { //read locked: conflict
-                res = LOCK_FAIL_MAGIC;
-                goto END;
+            volatile uint64_t *lockptr = &(node->lock);
+            if( unlikely(!__sync_bool_compare_and_swap(lockptr, l, l | SUNDIALWLOCK))) // locked
+              continue;
+            else {
+              uint64_t seq;
+              local_get_op(item->tableid, item->key, reply + sizeof(SundialResponse),
+                item->len, seq, db_->_schemas[item->tableid].meta_len);
+              SundialResponse *reply_item = (SundialResponse *)reply;
+              reply_item->wts = WTS(*lockptr);
+              reply_item->rts = RTS(*lockptr);
+              nodelen = item->len + sizeof(SundialResponse);
+              goto NEXT_ITEM;
             }
           }
         }
@@ -280,7 +298,7 @@ NEXT_ITEM:
   }
 
 END:
-  assert(res != LOCK_WAIT_MAGIC);
+  assert(res == LOCK_SUCCESS_MAGIC);
   *((uint8_t *)reply_msg) = res;
   rpc_->send_reply(reply_msg,sizeof(uint8_t) + nodelen,id,cid);
 }

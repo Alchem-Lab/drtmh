@@ -121,7 +121,10 @@ MemNode *TXOpBase::inplace_write_op(int tableid,uint64_t key,char *val,int len, 
   ASSERT(node != NULL) << "get node error, at [tab " << tableid
                        << "], key: "<< key;
   if(commit_id != -1) {
-    *(uint32_t*)(&(node->read_lock)) = *((uint32_t*)(&(node->read_lock)) + 1) = commit_id;
+    // *(uint32_t*)(&(node->read_lock)) = *((uint32_t*)(&(node->read_lock)) + 1) = commit_id;
+    uint64_t l = (node->lock)&0x0000000080000000;
+    l += (uint64_t)commit_id + ((uint64_t)commit_id) << 32;
+    node->lock = l;
   }
   return inplace_write_op(node,val,len,db_->_schemas[tableid].meta_len);
 }
