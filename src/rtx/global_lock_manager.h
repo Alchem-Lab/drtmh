@@ -8,6 +8,7 @@
 #include "rwlock.hpp"
 #include "core/rworker.h"
 
+#define CONFLICT_WRITE_FLAG 73
 namespace nocc {
 
 namespace rtx {
@@ -18,6 +19,8 @@ struct lock_waiter_t {
 	int tid;
 	int cid;
 	uint64_t txn_start_time;
+	RTXReadItem item;
+	MemDB* db;
 };
 
 class GlobalLockManager {
@@ -51,7 +54,7 @@ public:
 				continue;
 
 			char* reply_msg = rpc_->get_reply_buf();
-
+			size_t more = 0;
 		    switch(first_waiter.type) {
 		      case RTX_REQ_LOCK_READ: {
 		          while (true) {
@@ -93,13 +96,48 @@ public:
 		        }
 		      }
 		        break;
+		    case SUNDIAL_REQ_READ: { // sundial read
+		      	while(true) {
+		      		volatile uint64_t l = *lockptr;
+		      		if(WLOCKTS(l) == SUNDIALWLOCK) { // still locked
+		      			goto NEXT_ITEM;
+		      		} else {
+		      			// auto node = db_->stores_[item.tableid]->Get(item.key);
+		      			auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
+		      			++node->read_lock; // TODO: should be atomic
+				        prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
+				        more = first_waiter.item.len + sizeof(SundialResponse);
+				        --node->read_lock; // TODO: should be atomic
+				        goto SUCCESS;
+		      		}
+		      	}
+		    }
+		      break;
+		    case SUNDIAL_REQ_LOCK_READ: { // sundial lock and read
+		    	while(true) {
+		    		auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
+		    		volatile uint64_t l = *lockptr;
+		    		volatile uint64_t readl = node->read_lock;
+		    		if((WLOCKTS(l) == SUNDIALWLOCK) || (readl > 0)) {
+		    			goto NEXT_ITEM;
+		    		} else {
+		    			if( unlikely(!__sync_bool_compare_and_swap(lockptr, l, l | SUNDIALWLOCK)))
+		    				continue;
+		    			else {
+		    				prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
+		    				more = first_waiter.item.len + sizeof(SundialResponse);
+		    				goto SUCCESS;
+		    			}
+		    		}
+		    	}
+		    }
 		      default:
 		        assert(false);
 		    }
 
 SUCCESS:
 	  		*((uint8_t *)reply_msg) = LOCK_SUCCESS_MAGIC;
-	  		rpc_->send_reply(reply_msg,sizeof(uint8_t),first_waiter.pid,first_waiter.cid);
+	  		rpc_->send_reply(reply_msg,sizeof(uint8_t) + more, first_waiter.pid, first_waiter.cid);
 			itr->second -= 1;
 			mtx->lock();
 			(*waiters)[lockptr].erase((*waiters)[lockptr].begin());
@@ -116,7 +154,42 @@ NEXT_ITEM:
 	void thread_local_init() {
 		locks_to_check = new std::map<volatile uint64_t*, uint64_t>();
 	}
+#include "occ_internal_structure.h"
 private:
+
+	inline __attribute__((always_inline))
+	MemNode *local_get_op(MemNode *node,char *val,uint64_t &seq,int len,int meta) {
+	retry: // retry if there is a concurrent writer
+	  char *cur_val = (char *)(node->value);
+	  seq = node->seq;
+	  asm volatile("" ::: "memory");
+	#if INLINE_OVERWRITE
+	  memcpy(val,node->padding + meta,len);
+	#else
+	  memcpy(val,cur_val + meta,len);
+	#endif
+	  asm volatile("" ::: "memory");
+	  if( unlikely(node->seq != seq || seq == CONFLICT_WRITE_FLAG) ) {
+	    goto retry;
+	  }
+	  return node;
+	}
+
+	inline __attribute__((always_inline))
+	MemNode *local_lookup_op(int tableid,uint64_t key, MemDB *db) {
+	  MemNode *node = db->stores_[tableid]->Get(key);
+	  return node;
+	}
+
+	inline __attribute__((always_inline))
+	MemNode * local_get_op(int tableid,uint64_t key,char *val,int len,uint64_t &seq,int meta, MemDB* db) {
+	  MemNode *node = local_lookup_op(tableid,key, db);
+	  assert(node != NULL);
+	  assert(node->value != NULL);
+	  return local_get_op(node,val,seq,len,meta);
+	}
+
+
 
 
 public:
@@ -126,6 +199,31 @@ public:
 
 	// the set of lock addresses each thread needs to keep an eye on.
 	thread_local static std::map<volatile uint64_t*, uint64_t>* locks_to_check;
+
+	bool prepare_buf(char* reply_msg, RTXReadItem *item, MemDB* db) {
+		char* reply = reply_msg + 1;
+		uint64_t seq;
+		auto node = local_get_op(item->tableid, item->key, reply + sizeof(SundialResponse),
+			item->len, seq, db->_schemas[item->tableid].meta_len, db);
+		SundialResponse *reply_item = (SundialResponse*)reply;
+		reply_item->wts = WTS(node->lock);
+		reply_item->rts = RTS(node->lock);
+		*((uint8_t*)reply_msg) = LOCK_SUCCESS_MAGIC;
+		return true;
+	}
+
+	bool prepare_buf(char* reply_msg, uint32_t tableid, uint64_t key, int len, MemDB* db) {
+		char* reply = reply_msg + 1;
+		uint64_t seq;
+		auto node = local_get_op(tableid, key, reply + sizeof(SundialResponse),
+			len, seq, db->_schemas[tableid].meta_len, db);
+		SundialResponse *reply_item = (SundialResponse*)reply;
+		reply_item->wts = WTS(node->lock);
+		reply_item->rts = RTS(node->lock);
+		*((uint8_t*)reply_msg) = LOCK_SUCCESS_MAGIC;
+		return true;
+	}
+
 };
 
 

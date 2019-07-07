@@ -31,6 +31,7 @@ struct RTXReadItem {
       :type(type),pid(pid),key(key),tableid(tableid),len(len),idx(idx)
   {
   }
+  RTXReadItem(){}
 } __attribute__ ((aligned (8)));
 
 struct RTXRenewLeaseItem {
@@ -82,7 +83,9 @@ struct RTXUpdateItem {
 enum req_lock_type_t {
   RTX_REQ_LOCK_READ = 0,
   RTX_REQ_LOCK_WRITE,
-  RTX_REQ_LOCK_INSERT // may be not necessary?
+  RTX_REQ_LOCK_INSERT, // may be not necessary?
+  SUNDIAL_REQ_READ,
+  SUNDIAL_REQ_LOCK_READ,
 };
 
 struct RTXLockRequestItem {
