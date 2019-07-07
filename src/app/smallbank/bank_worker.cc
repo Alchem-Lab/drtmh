@@ -458,6 +458,9 @@ void BankWorker::thread_local_init() {
 #elif defined(NOWAIT_TX)
     new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
+#elif defined(SUNDIAL_TX)
+    new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,-1,
+                                   cm,rdma_sched_,total_partition);
 #elif defined(WAITDIE_TX)
     new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);

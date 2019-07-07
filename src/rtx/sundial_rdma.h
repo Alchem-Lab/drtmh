@@ -8,7 +8,6 @@
 #include "tx_operator.hpp"
 #include "core/utils/latency_profier.h"
 #include "core/utils/count_vector.hpp"
-#include "dslr.h"
 #endif
 
 #include "logger.hpp"
@@ -35,21 +34,14 @@ protected:
   bool try_read_rpc(int index, yield_func_t &yield);
   bool try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
   bool try_update_rpc(yield_func_t &yield);
-  int local_read(int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return 0;
-  }
 
-  int local_write(int tableid, uint64_t key, int len, yield_func_t &yield) {
-    return 0;
-  }
+  void release_reads(yield_func_t &yield);
+  void release_writes(yield_func_t &yield);
 
-  int local_insert(int tableid,uint64_t key,char *val,int len,yield_func_t &yield) {
-    assert(false);
-    return 0;
-  }
+
+  bool renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id);
 
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    // for(auto& item : write_set_)
     char* data_ptr = (char*)malloc(len);
     for(auto&item : write_set_) {
       if(item.key == key) {
@@ -77,13 +69,7 @@ protected:
       release_writes(yield);
       return -1;
     }
-    char* remote_data_ptr = reply_buf_ + 1 + sizeof(SundialResponse);
-    auto& item = read_set_.back();
-    SundialResponse* header = (SundialResponse*)(reply_buf_ + 1);
-    item.wts = header.wts;
-    item.rts = header.rts;
-    memcpy(item.data_ptr, remote_data_ptr, item.len);
-    commit_id_ = max(commit_id_, item.wts);
+    process_received_data(reply_buf_, read_set_.back(), false);
 #endif
     return index;
   }
@@ -109,21 +95,25 @@ protected:
       return -1;
     }
     // get the results
-    char* data_ptr = reply_buf_ + 1 + sizeof(SundialResponse);
-    auto& item = write_set_.back();
-    SundialResponse* header = (SundialResponse*)(reply_buf_ + 1);
-    item.wts = header.wts;
-    item.rts = header.rts;
-    item.data_ptr = (char*)malloc(item.len);
-    memcpy(item.data_ptr, data_ptr, item.len);
-
-    commit_id_ = max(commit_id_, item.rts + 1);
-    return index;
+    process_received_data(reply_buf_, write_set_.back(), true);
 #endif
+
+    return index;
   }
 
-  int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return 0;
+  void process_received_data(char* received_data_ptr, SundialReadSetItem& item, bool is_write = false) {
+    char* value = received_data_ptr + 1 + sizeof(SundialResponse);
+    SundialResponse* header = (SundialResponse*)(received_data_ptr + 1);
+    item.wts = header->wts;
+    item.rts = header->rts;
+    if(item.data_ptr == NULL) {
+      item.data_ptr = (char*)malloc(item.len);
+    }
+    memcpy(item.data_ptr, value, item.len);
+    if(is_write)
+      commit_id_ = std::max(commit_id_, item.rts + 1);
+    else
+      commit_id_ = std::max(commit_id_, item.wts);
   }
 
 public:
@@ -166,26 +156,28 @@ public:
 
   inline __attribute__((always_inline))
   virtual char* load_write(int idx, size_t len, yield_func_t &yield) {
-    return NULL;
-  }
-
-  void prepare(yield_func_t &yield) {
-    int index = 0;
-    for(auto & item : read_set_) {
-      if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
-        // fail in renew lease, should abort
-      }  
+    auto& item = write_set_[idx];
+    if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+      // abort
     }
-    
+    return item.data_ptr;
   }
-
-  
 
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
-    return NULL;
+    return read_set_[idx].data_ptr;
   }
 
+  // void prepare(yield_func_t &yield) {
+  //   int index = 0;
+  //   for(auto & item : read_set_) {
+  //     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+  //       // fail in renew lease, should abort
+  //     } 
+  //   } 
+  // }
+
+  
     template <typename V>
   inline __attribute__((always_inline))
   V *get_readset(int idx,yield_func_t &yield) {
@@ -226,11 +218,7 @@ public:
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    if(pid == node_id_)
-      return local_insert(tableid,key,(char *)val,sizeof(V),yield);
-    else {
-      return remote_insert(pid,tableid,key,sizeof(V),yield);
-    }
+    assert(false);
     return -1;
   }
 
@@ -276,7 +264,7 @@ public:
   void register_default_rpc_handlers();
 private:
 // rpc handlers
-  void lock_rpc_handler(int id,int cid,char *msg,void *arg);
+  void lock_read_rpc_handler(int id,int cid,char *msg,void *arg);
   void read_rpc_handler(int id,int cid,char *msg,void *arg);
   void renew_lease_rpc_handler(int id,int cid,char *msg,void *arg);
   void update_rpc_handler(int id,int cid,char *msg,void *arg);
