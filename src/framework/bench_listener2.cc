@@ -110,7 +110,7 @@ WAIT_RETRY:
     const char *fmt = "%d worker finish initilization: ";
     char char_buf[64];
     snprintf(char_buf,64,fmt,done);
-    PrintProgress((double)done / workers.size(),char_buf,stderr);
+    // PrintProgress((double)done / workers.size(),char_buf,stderr);
     usleep(3000);
     done = 0;
     goto WAIT_RETRY;

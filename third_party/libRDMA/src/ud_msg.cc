@@ -238,7 +238,7 @@ Qp::IOStatus UDMsg::prepare_pending() {
   send_qp_ = (*send_qps)[send_qp_idx_];
   if(unlikely(current_idx_ != 0)){
     fprintf(stderr,"curr idx %d @%d\n",current_idx_,thread_id_);
-    assert(false);
+    // assert(false);
   }
 }
 

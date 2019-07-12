@@ -399,8 +399,9 @@ void RdmaCtrl::link_connect_qps(int tid, int dev_id, int port_idx, int idx, ibv_
     // }
 
     int retry_cnt = 0;
+    int connected = 0;
     while(1) {
-        int connected = 0;
+        connected = 0;    
         for(uint i = 0;i < get_num_nodes();++i) {
             Qp *qp = (this->*create_qp_func)(tid,i,dev_id,port_idx,idx);
             if(qp->inited_)
@@ -419,6 +420,7 @@ void RdmaCtrl::link_connect_qps(int tid, int dev_id, int port_idx, int idx, ibv_
             retry_cnt++;
         }
     }
+    fprintf(stderr, "threadid=%d: all %d qps connected\n", tid, connected);
 }
 
 /**

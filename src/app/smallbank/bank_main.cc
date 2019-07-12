@@ -335,7 +335,7 @@ std::vector<RWorker *> BankMainRunner::make_workers() {
   ret.push_back(ts_manager);
 #endif
 
-#if defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#if defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX)
   // add ts worker
   ts_manager = new TSManager(nthreads + nclients + 1,cm,0,0);
   ret.push_back(ts_manager);  

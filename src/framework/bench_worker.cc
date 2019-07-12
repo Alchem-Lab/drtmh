@@ -102,6 +102,12 @@ void BenchWorker::init_tx_ctx() {
 #elif defined(WAITDIE_TX)
   new_txs_          = new rtx::WAITDIE*[1 + server_routine + 2];
   std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::WAITDIE*>(NULL));
+#elif defined(SUNDIAL_TX)
+  new_txs_          = new rtx::SUNDIAL*[1 + server_routine + 2];
+  std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::SUNDIAL*>(NULL));  
+  // assert(false);
+#else
+  assert(false);
 #endif
 
   //msg_buf_alloctors = new RPCMemAllocator[1 + server_routine];
@@ -335,11 +341,14 @@ BenchWorker::worker_routine(yield_func_t &yield) {
 
 
 void BenchWorker::events_handler() {
+  LOG(3) << "in bench event handler";
   RWorker::events_handler();
 
 #if defined(WAITDIE_TX) && ONE_SIDED_READ == 0
 
     // handling locking events deligated by corountines
+    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
+#elif defined(SUNDIAL_TX) && ONE_SIDED_READ == 0
     nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
 #endif
 }

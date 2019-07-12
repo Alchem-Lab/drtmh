@@ -11,6 +11,7 @@
 #include "ud_msg.h"
 #include "rdma_sched.h"
 #include "routine.h"
+#include "rtx/global_vars.h"
 
 #include <vector>
 #include <string>
@@ -114,6 +115,13 @@ class RWorker : public ndb_thread {
   virtual void events_handler() const {
     if(client_handler_ != NULL)
       client_handler_->poll_comps(); // poll reqs from clients
+    
+#if defined(WAITDIE_TX) && ONE_SIDED_READ == 0
+    // handling locking events deligated by corountines
+    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
+#elif defined(SUNDIAL_TX) && ONE_SIDED_READ == 0
+    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
+#endif
     if(msg_handler_ != NULL)
       msg_handler_->poll_comps(); // poll rpcs requests/replies
     rdma_sched_->poll_comps();  // poll RDMA completions
@@ -128,6 +136,7 @@ class RWorker : public ndb_thread {
           // fprintf(stdout, "routine %d added back.\n", next_routine_array[i].id_);
       }
     }
+
   }
 
   void indirect_yield(yield_func_t &yield);

@@ -18,6 +18,7 @@
 
 #include "rwlock.hpp"
 
+// #define SUNDIAL_NO_LOCK
 
 namespace nocc {
 
@@ -46,19 +47,19 @@ protected:
     for(auto&item : write_set_) {
       if(item.key == key) {
         memcpy(data_ptr, item.data_ptr, len); // not efficient
-        read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
+        read_set_.emplace_back(tableid, key, item.node, data_ptr, 0, len, pid, -1, -1);
         return read_set_.size() - 1;
       }
     }
     for(auto&item : read_set_) {
       if(item.key == key) {
         memcpy(data_ptr, item.data_ptr, len); // not efficient
-        read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
+        read_set_.emplace_back(tableid, key, item.node, data_ptr, 0, len, pid, -1, -1);
         return read_set_.size() - 1;
       }
     }
 
-    read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
+    read_set_.emplace_back(tableid, key, local_lookup_op(tableid, key), data_ptr, 0, len, pid, -1, -1);
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
@@ -75,21 +76,23 @@ protected:
   }
 
   int remote_write(int pid, int tableid, uint64_t key, int len, yield_func_t &yield) {
+    LOG(3) << "in remote write";
     int index = 0;
     for(auto& item : write_set_) {
       if(item.key == key) {
-        fprintf(stdout, "[SUNDIAL INFO] remote write already in write set (no data in write set now)\n");
+        fprintf(stderr, "[SUNDIAL INFO] remote write already in write set (no data in write set now)\n");
         return index;
       }
       ++index;
     }
-    write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid, -1, -1);
+    write_set_.emplace_back(tableid,key,local_lookup_op(tableid, key),(char *)NULL,0,len,pid, -1, -1);
     index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ
-
+    assert(false);
 #else
     if(!try_lock_read_rpc(index, yield)) {
+      assert(false);
       release_reads(yield);
       release_writes(yield);
       return -1;
@@ -129,6 +132,16 @@ public:
       write_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
       rpc_op_send_buf_(rpc_->get_static_buf(MAX_MSG_SIZE)),
       cor_id_(cid),response_node_(nid) {
+        LOG(3) << "tid" << tid << ":begin";
+        if(worker_id_ == 0 && cor_id_ == 0) {
+          LOG(3) << "Use one-sided for read.";
+        }
+
+        register_default_rpc_handlers();
+        memset(reply_buf_,0,MAX_MSG_SIZE);
+        read_set_.clear();
+        write_set_.clear();
+        LOG(3) << "tid" << tid << ":end";
 
       }
 
@@ -156,16 +169,20 @@ public:
 
   inline __attribute__((always_inline))
   virtual char* load_write(int idx, size_t len, yield_func_t &yield) {
-    auto& item = write_set_[idx];
-    if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
-      // abort
-    }
-    return item.data_ptr;
+    assert(write_set_[idx].data_ptr != NULL);
+    return write_set_[idx].data_ptr;
+    
   }
 
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
-    return read_set_[idx].data_ptr;
+    auto& item = read_set_[idx];
+    if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+      // abort
+      LOG(3) << "fail renew lease " << (int)item.pid;
+    }
+    assert(item.data_ptr != NULL);
+    return item.data_ptr;
   }
 
   // void prepare(yield_func_t &yield) {
@@ -235,7 +252,7 @@ public:
   }
 
   virtual bool commit(yield_func_t &yield) {
-    try_update_rpc(yield);
+    return try_update_rpc(yield);
   }
 protected:
   std::vector<SundialReadSetItem> read_set_;

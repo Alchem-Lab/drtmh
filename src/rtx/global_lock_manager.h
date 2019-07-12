@@ -6,9 +6,11 @@
 #include <mutex>
 #include "msg_format.hpp"
 #include "rwlock.hpp"
-#include "core/rworker.h"
+#include "core/rrpc.h"
+// #include "core/rworker.h"
 
 #define CONFLICT_WRITE_FLAG 73
+#define SUNDIAL_WAIT_NO_LOCK
 namespace nocc {
 
 namespace rtx {
@@ -38,15 +40,17 @@ public:
 	}
 
 	inline __attribute__((always_inline))
-	void check_to_notify(int my_worker_id, RRpc *rpc_) {
+	void check_to_notify(int my_worker_id, oltp::RRpc *rpc_) {
 	using namespace rwlock_4_waitdie;
-
+		// LOG(3) << "check to notify " << my_worker_id;
+		if(locks_to_check == NULL) return;
 		for (auto itr = locks_to_check->begin(); itr != locks_to_check->end(); ) {
 			volatile uint64_t* lockptr = itr->first;
 			assert(itr->second > 0);
 
 			mtx->lock();
 			assert(!(*waiters)[lockptr].empty());
+			// LOG(3) << "before get waiter";
 			lock_waiter_t& first_waiter = *(*waiters)[lockptr].begin();
 			mtx->unlock();
 
@@ -98,8 +102,14 @@ public:
 		        break;
 		    case SUNDIAL_REQ_READ: { // sundial read
 		      	while(true) {
+		      		LOG(3) << "in wait SUNDIAL req read";
 		      		volatile uint64_t l = *lockptr;
-		      		if(WLOCKTS(l) == SUNDIALWLOCK) { // still locked
+		      		
+#ifdef SUNDIAL_WAIT_NO_LOCK
+		      		if (false){ // debug
+#else
+		      		if(WLOCKTS(l) == SUNDIALWLOCK) { // still locked	
+#endif
 		      			goto NEXT_ITEM;
 		      		} else {
 		      			// auto node = db_->stores_[item.tableid]->Get(item.key);
@@ -114,14 +124,20 @@ public:
 		    }
 		      break;
 		    case SUNDIAL_REQ_LOCK_READ: { // sundial lock and read
+		    	auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
 		    	while(true) {
-		    		auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
+		    		LOG(3) << "in wait SUNDIAL req lock read";
 		    		volatile uint64_t l = *lockptr;
 		    		volatile uint64_t readl = node->read_lock;
+		    		
+#ifdef SUNDIAL_WAIT_NO_LOCK
+		    		if(false){ // debug
+#else
 		    		if((WLOCKTS(l) == SUNDIALWLOCK) || (readl > 0)) {
+#endif
 		    			goto NEXT_ITEM;
 		    		} else {
-		    			if( unlikely(!__sync_bool_compare_and_swap(lockptr, l, l | SUNDIALWLOCK)))
+						if( unlikely(!__sync_bool_compare_and_swap(lockptr, l, l | SUNDIALWLOCK)))
 		    				continue;
 		    			else {
 		    				prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
