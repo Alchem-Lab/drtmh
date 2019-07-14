@@ -17,7 +17,7 @@
 #define WTS(y) (uint32_t)(((y)&0x7fffffff00000000) >> 32)
 #define RTS(y) (uint32_t)((y)&0x000000007fffffff)
 #define RLOCKTS(y) ((y)&0x8000000000000000)
-#define WLOCKTS(y) ((y)&0x0000000080000000)
+#define WLOCKTS(y) (((y)&0x0000000080000000) == 0x0000000080000000)
 #define SUNDIALRLOCK 0x8000000000000000
 #define SUNDIALWLOCK 0x0000000080000000
 #define WUNLOCK(y) (y & 0xffffffff7fffffff)

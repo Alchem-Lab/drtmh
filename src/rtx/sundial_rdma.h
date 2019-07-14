@@ -76,7 +76,7 @@ protected:
   }
 
   int remote_write(int pid, int tableid, uint64_t key, int len, yield_func_t &yield) {
-    LOG(3) << "in remote write";
+
     int index = 0;
     for(auto& item : write_set_) {
       if(item.key == key) {
@@ -132,7 +132,6 @@ public:
       write_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
       rpc_op_send_buf_(rpc_->get_static_buf(MAX_MSG_SIZE)),
       cor_id_(cid),response_node_(nid) {
-        LOG(3) << "tid" << tid << ":begin";
         if(worker_id_ == 0 && cor_id_ == 0) {
           LOG(3) << "Use one-sided for read.";
         }
@@ -141,7 +140,6 @@ public:
         memset(reply_buf_,0,MAX_MSG_SIZE);
         read_set_.clear();
         write_set_.clear();
-        LOG(3) << "tid" << tid << ":end";
 
       }
 

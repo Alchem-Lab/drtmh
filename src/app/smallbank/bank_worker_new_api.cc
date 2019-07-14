@@ -17,7 +17,7 @@ namespace bank {
 
 txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   int index = -1;
-
+  assert(rtx_ != NULL);
   rtx_->begin(yield);
 
   uint64_t id0,id1;
