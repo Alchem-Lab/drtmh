@@ -83,6 +83,11 @@ void TXOpBase::add_batch_entry_wo_mac(BatchOpCtrlBlock &ctrl,int pid, _Args&& ..
   ctrl.req_buf_end_ += sizeof(REQ);
 }
 
+inline __attribute__((always_inline))
+void TXOpBase::add_mac(BatchOpCtrlBlock &ctrl, int mac) {
+  ctrl.add_mac(mac);
+}
+
 inline  __attribute__((always_inline))
 int TXOpBase::send_batch_rpc_op(BatchOpCtrlBlock &ctrl,int cid,int rpc_id,bool pa) {
   return ctrl.send_batch_op(rpc_,cid,rpc_id,pa);

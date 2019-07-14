@@ -14,15 +14,19 @@
 
 #ifdef OCC_TX
 #include "rtx/occ.h"
+
 #elif defined(NOWAIT_TX)
 #include "rtx/nowait_rdma.h"
+
 #elif defined(WAITDIE_TX)
 #include "rtx/waitdie_rdma.h"
+
 #if ONE_SIDED_READ == 0
-// TODO: this includes incurs dependecy on the rtx folder,
-//       which should be refactored later after.
 #include "rtx/global_vars.h"
 #endif
+
+#elif defined(CALVIN_TX)
+#include "rtx/calvin_rdma.h"
 #endif
 
 #include <queue>          // std::queue
@@ -48,13 +52,47 @@ extern __thread rtx::OCC      **new_txs_;
 extern __thread rtx::NOWAIT   **new_txs_;
 #elif defined(WAITDIE_TX)
 extern __thread rtx::WAITDIE  **new_txs_;
+#elif defined(CALVIN_TX)
+extern __thread rtx::CALVIN  **new_txs_;
+
+typedef uint64_t timestamp_t;
+struct calvin_request {
+  calvin_request(int req_idx, timestamp_t timestamp) : 
+          req_idx(req_idx), timestamp(timestamp) {}
+
+  int req_idx;
+  timestamp_t timestamp;
+
+  uint64_t n_reads;
+  rtx::CALVIN::ReadSetItem read_set[MAX_SET_ITEMS];
+  uint64_t n_writes;
+  rtx::CALVIN::ReadSetItem write_set[MAX_SET_ITEMS];
+};
+
+struct calvin_header {
+  uint8_t node_id;
+  uint64_t epoch_id;
+  uint64_t batch_size; // the batch size
+  uint64_t chunk_size; // the number of calvin_requests in this rpc call
+};
+
+class calvin_request_compare {
+public:
+  bool operator()(const calvin_request& lhs, 
+                  const calvin_request& rhs) {
+    return lhs.timestamp < rhs.timestamp;
+  }
+};
+
+
 #endif
 
 extern     RdmaCtrl *cm;
 
 extern __thread int *pending_counts_;
 
-#define RPC_REQ 0
+#define RPC_REQ 30
+#define RPC_CALVIN_SCHEDULE 31
 
 namespace oltp {
 
@@ -66,18 +104,36 @@ extern View* my_view; // replication setting of the data
 typedef std::pair<bool, double> txn_result_t;
 
 /* Registerered Txn execution function */
+#ifdef CALVIN_TX
+typedef txn_result_t (*calvin_txn_fn_t)(BenchWorker *, calvin_request *, yield_func_t &yield);
+#else
 typedef txn_result_t (*txn_fn_t)(BenchWorker *,yield_func_t &yield);
+#endif
+
+typedef void (*txn_gensets_fn_t)(BenchWorker *, char*, yield_func_t &yield);
 struct workload_desc {
   workload_desc() {}
+#ifdef CALVIN_TX
+  workload_desc(const std::string &name, double frequency, calvin_txn_fn_t fn, txn_gensets_fn_t gen_sets_fn = NULL)
+      : name(name), frequency(frequency), fn(fn), gen_sets_fn(gen_sets_fn)
+#else
   workload_desc(const std::string &name, double frequency, txn_fn_t fn)
       : name(name), frequency(frequency), fn(fn)
+#endif
   {
     ALWAYS_ASSERT(frequency >= 0.0);
     ALWAYS_ASSERT(frequency <= 1.0);
   }
   std::string name;
   double frequency;
-  txn_fn_t fn;
+
+#ifdef CALVIN_TX
+  calvin_txn_fn_t fn;
+  txn_gensets_fn_t gen_sets_fn;
+#else
+  txn_fn_t fn;  
+#endif
+
   util::BreakdownTimer latency_timer; // calculate the latency for each TX
   Profile p; // per tx profile
 };
@@ -119,8 +175,13 @@ class BenchWorker : public RWorker {
   virtual void exit_handler();
   virtual void run(); // run -> call worker routine
   virtual void worker_routine(yield_func_t &yield);
-
   void req_rpc_handler(int id,int cid,char *msg,void *arg);
+
+#ifdef CALVIN_TX
+  void worker_routine_for_calvin(yield_func_t &yield);
+  void calvin_schedule_rpc_handler(int id,int cid,char *msg,void *arg);
+  void check_schedule_done();
+#endif
 
   void change_ctx(int cor_id) {
     tx_ = txs_[cor_id];
@@ -197,6 +258,18 @@ class BenchWorker : public RWorker {
 #elif defined(WAITDIE_TX)
   rtx::WAITDIE *rtx_;
   rtx::WAITDIE *rtx_hook_ = NULL;
+#elif defined(CALVIN_TX)
+  rtx::CALVIN *rtx_;
+  rtx::CALVIN *rtx_hook_ = NULL;
+  uint64_t current_epoch = 0;
+  std::vector<calvin_request> deterministic_requests;
+  std::vector<std::vector<calvin_request>> received_requests;
+  std::map<int, uint64_t> batch_size_for_current_epoch;
+  bool epoch_done_schedule = true;
+  std::set<int> mach_received;
+  std::vector<rtx::CALVIN::ReadSetItem>** read_set_ptr;
+  std::vector<rtx::CALVIN::ReadSetItem>** write_set_ptr;
+
 #endif
   LAT_VARS(yield);
 

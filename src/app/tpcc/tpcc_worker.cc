@@ -1224,6 +1224,8 @@ workload_desc_vec_t TpccWorker::get_workload() const {
 workload_desc_vec_t TpccWorker::_get_workload() {
 
   workload_desc_vec_t w;
+
+#ifndef CALVIN_TX
   unsigned m = 0;
   for (size_t i = 0; i < ARRAY_NELEMS(g_txn_workload_mix); i++)
     m += g_txn_workload_mix[i];
@@ -1239,7 +1241,8 @@ workload_desc_vec_t TpccWorker::_get_workload() {
     w.push_back(workload_desc("OrderStatus", double(g_txn_workload_mix[3])/100.0, TxnOrderStatus));
   if (g_txn_workload_mix[4])
     w.push_back(workload_desc("StockLevel", double(g_txn_workload_mix[4])/100.0, TxnStockLevel));
-
+#endif
+  
   return w;
 }
 
@@ -1258,7 +1261,7 @@ void TpccWorker::check_consistency() {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(CALVIN_TX)
     DBTXIterator iter((DBTX *)tx_,NEWO);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");

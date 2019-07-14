@@ -48,7 +48,7 @@ namespace db {
 #define TS_USE_MSG 1
 #define RPC_TS_GET 7
 #define RPC_TS_UPDATE 8
-#define RPC_TS_ACQUIRE 10
+#define RPC_TS_ACQUIRE 9
 
 #if ONE_CLOCK
 #undef LARGE_VEC

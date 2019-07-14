@@ -11,6 +11,10 @@
 #include "db/txs/dbsi.h"
 #include "db/txs/ts_manager.hpp"
 
+#ifdef CALVIN_TX
+#include "db/txs/epoch_manager.hpp"
+#endif
+
 #include "framework/bench_runner.h"
 
 #include "rdmaio.h"
@@ -37,6 +41,11 @@ extern uint64_t ops_per_worker;
 namespace nocc {
 
 extern RdmaCtrl *cm;       // global RDMA handler
+
+#ifdef CALVIN_TX
+extern db::EpochManager* epoch_manager;
+#endif
+
 namespace oltp {
 
 extern char *store_buffer; // the buffer used to store DrTM-kv
@@ -339,6 +348,12 @@ std::vector<RWorker *> BankMainRunner::make_workers() {
   // add ts worker
   ts_manager = new TSManager(nthreads + nclients + 1,cm,0,0);
   ret.push_back(ts_manager);  
+#endif
+
+#if defined(CALVIN_TX)
+  // add epoch manager
+  epoch_manager = new EpochManager(nthreads + nclients + 1,cm,0,0);
+  ret.push_back(epoch_manager);
 #endif
 
 #if CS == 1

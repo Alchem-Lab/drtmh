@@ -1,5 +1,5 @@
 // class RtxOCC
-protected:
+public:
 // a simple ReadSetItem for buffering read/write records
 struct ReadSetItem {
   uint8_t  tableid;
@@ -13,6 +13,8 @@ struct ReadSetItem {
   uint64_t seq; // buffered seq
   uint8_t  pid;
 
+  inline ReadSetItem() {}
+  
   inline ReadSetItem(int tableid,uint64_t key,MemNode *node,char *data_ptr,uint64_t seq,int len,int pid):
       tableid(tableid),
       key(key),

@@ -227,7 +227,7 @@ void MicroWorker::thread_local_init() {
 					txs_[i] = new DBRad(store_,worker_id_,rpc_,i);
 #elif defined(OCC_TX)
 					txs_[i] = new DBTX(store_,worker_id_,rpc_,i);
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(CALVIN_TX)
 					txs_[i] = new DBTX(store_,worker_id_,rpc_,i);
 #elif defined(FARM)
 					txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
@@ -330,13 +330,11 @@ workload_desc_vec_t MicroWorker::get_workload() const {
 workload_desc_vec_t MicroWorker::_get_workload() {
 
 	workload_desc_vec_t w;
-	unsigned m = 0;
+
+#ifndef CALVIN_TX
 
 	string name;
-	string name1;
-
 	txn_fn_t fn;
-	txn_fn_t fn1;
 
 	switch (micro_type) {
 		case MICRO_RPC_SCALE: {
@@ -440,6 +438,9 @@ workload_desc_vec_t MicroWorker::_get_workload() {
 			assert(false);
 	}
 	w.push_back(workload_desc(name,double(g_txn_workload_mix[0]) / 100.0,fn));
+
+#endif
+
 	return w;
 }
 

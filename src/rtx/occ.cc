@@ -159,12 +159,11 @@ int OCC::add_batch_write(int tableid,uint64_t key,int pid,int len) {
 }
 
 int OCC::add_batch_insert(int tableid,uint64_t key,int pid,int len) {
-  assert(false);
   // add a batch read request
-  int idx = read_set_.size();
+  int idx = write_set_.size();
   add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-                               /* init RTXReadItem */ RTX_REQ_INSERT,pid,key,tableid,len,idx);
-  read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
+                               /* init RTXReadItem */ RTX_REQ_INSERT,pid,key,tableid,len,(idx<<1));
+  write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
   return idx;
 }
 
@@ -434,6 +433,15 @@ void OCC::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
           reply_item->payload = item->len;
 
           reply += (sizeof(OCCResponse) + item->len);
+      }
+        break;
+      case RTX_REQ_INSERT: {
+          // we should do nothing here for OCC when receiving a insert request.
+          //
+          // char *data_ptr = (char *)malloc(item->len);
+          // uint64_t seq;
+          // auto node = local_insert_op(item->tableid,item->key,seq);
+          // memcpy(data_ptr,val,item->len);
       }
         break;
       default:

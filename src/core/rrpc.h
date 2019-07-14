@@ -11,7 +11,7 @@
 
 #include "logging.h"
 
-#define MAX_RPC_SUPPORT 16
+#define MAX_RPC_SUPPORT 256
 
 #include <functional>
 
@@ -68,11 +68,12 @@ class RRpc {
   void register_callback(rpc_func_t callback,int id,bool overwrite = false) {
     // register an RPC to a specificed ID
     assert(id >= 0 && id < MAX_RPC_SUPPORT); // check id
-    if(!overwrite)
-      assert(!register_[id]);
-    else {
-      // warning !!
+    if (register_[id]) {
+      fprintf(stdout, "warning: the RPC ID %d has been registered.\n", id);
+      if(!overwrite)
+        assert(false);
     }
+
     callbacks_[id] = callback;
     register_[id]  = true;
   }
@@ -215,7 +216,8 @@ class RRpc {
                                      std::placeholders::_1,             \
                                      std::placeholders::_2,             \
                                      std::placeholders::_3,             \
-                                     std::placeholders::_4),(id),true);
+                                     std::placeholders::_4),(id),true); \
+  fprintf(stdout, "register RPCID %d.\n", (id));
 
 }   // namespace oltp
 }   // namespace nocc

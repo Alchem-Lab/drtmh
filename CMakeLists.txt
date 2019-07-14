@@ -67,6 +67,10 @@ target_compile_options(noccnowait PRIVATE "-DNOWAIT_TX")
 add_executable(noccwaitdie ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccwaitdie PRIVATE "-DWAITDIE_TX")
 
+# add_executable(nocccalvin ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+add_executable(nocccalvin ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(nocccalvin PRIVATE "-DCALVIN_TX")
+
 add_executable(noccsi ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsi PRIVATE "-DSI_TX")
 
@@ -90,7 +94,7 @@ include(cmake/Dependencies.cmake)
 #
 # Configure binary linking
 #
-set( apps noccrad noccocc noccsi noccfarm noccnowait noccwaitdie nn nr )
+set( apps noccrad noccocc noccsi noccfarm noccnowait noccwaitdie nocccalvin nn nr )
 foreach( prog ${apps} )
   if( LINK_STATIC_LIB )
     target_link_libraries( ${prog}
@@ -115,9 +119,9 @@ set(CMAKE_INSTALL_PREFIX ./)
 install(TARGETS noccocc  	DESTINATION scripts) 
 install(TARGETS noccfarm 	DESTINATION scripts)
 install(TARGETS noccsi   	DESTINATION scripts)
-install(TARGETS noccnowait 	DESTINATION scripts)
-install(TARGETS noccwaitdie   	DESTINATION scripts)
-
+install(TARGETS noccnowait  DESTINATION scripts)
+install(TARGETS noccwaitdie DESTINATION scripts)
+install(TARGETS nocccalvin  DESTINATION scripts)
 ## for tests
 if(GTEST)
     include(cmake/gtest.cmake)

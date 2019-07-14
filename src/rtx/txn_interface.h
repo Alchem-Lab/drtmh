@@ -11,15 +11,15 @@
 
 #if ENABLE_TXN_API
 // RPC ids
-#define RTX_READ_RPC_ID 0
-#define RTX_RW_RPC_ID 8
-#define RTX_LOCK_RPC_ID 1
-#define RTX_RELEASE_RPC_ID 2
-#define RTX_COMMIT_RPC_ID  3
-#define RTX_VAL_RPC_ID     4
-#define RTX_LOG_RPC_ID     5
-#define RTX_LOG_CLEAN_ID   6
-#define RTX_BACKUP_GET_ID  7
+#define RTX_READ_RPC_ID     20
+#define RTX_RW_RPC_ID       21
+#define RTX_LOCK_RPC_ID     22
+#define RTX_RELEASE_RPC_ID  23
+#define RTX_COMMIT_RPC_ID   24
+#define RTX_VAL_RPC_ID      25
+#define RTX_LOG_RPC_ID      26
+#define RTX_LOG_CLEAN_ID    27
+#define RTX_BACKUP_GET_ID   28
 
 #endif
 

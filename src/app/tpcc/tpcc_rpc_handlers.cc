@@ -55,7 +55,7 @@ namespace nocc {
           fprintf(stderr, "rtx_ should be used instead of tx_");
           assert(false);
         }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(CALVIN_TX)
         DBTXIterator iter((DBTX *)tx_,ORLI);
         if(tx_ != NULL) {
           fprintf(stderr, "rtx_ should be used instead of tx_");

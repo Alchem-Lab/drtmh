@@ -162,7 +162,7 @@ Qp::IOStatus UDMsg::send_to(int nid,char *msg,int len) {
 
 Qp::IOStatus UDMsg::send_to(int node_id,int tid,char *msg,int len) {
   //Qp::IOStatus UDMsg::send_to(int node_id,char *msg,int len) {
-
+  // fprintf(stdout, "sending using ud_msg.\n");
   Qp *send_qp = (*send_qps)[send_qp_idx_];
   int ret = (int) Qp::IO_SUCC;
   int key = _UD_ENCODE_ID(node_id,tid);
@@ -226,6 +226,7 @@ Qp::IOStatus UDMsg::broadcast_to(int *node_ids, int num_of_node, char *msg,int l
 
   send_qp_idx_ = (send_qp_idx_ + 1) % total_send_qps_;
 #endif
+  // fprintf(stdout, "broadcasting using ud_msg.\n");
   prepare_pending();
   for(uint i = 0;i < num_of_node;++i) {
     post_pending(node_ids[i],msg,len);

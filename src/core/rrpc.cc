@@ -50,6 +50,8 @@ bool RRpc::poll_comp_callback(char *msg,int from,int from_t) {
   if(header->meta.type == REQ) {
     // normal rpcs
     try {
+      if (header->meta.rpc_id != 13)
+        // fprintf(stdout, "Do RPC using ID = %d\n", header->meta.rpc_id);
       callbacks_[header->meta.rpc_id](from,header->meta.cid,msg + sizeof(rrpc_header),
                                       (void *)(header->meta.payload));
       processed_rpc_ += 1;

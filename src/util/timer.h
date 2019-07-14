@@ -3,12 +3,27 @@
 
 #include <stdint.h>
 #include <vector>
+#include <chrono>
 #include "util/util.h"
 
 #define CPU_FREQ 2.6e9
 
 namespace nocc {
 namespace util {
+
+// get current wall-time to the precision of microseconds
+inline __attribute__((always_inline))
+uint64_t get_now() {
+    using namespace std::chrono;
+    // Get current time with precision of microseconds
+    auto now = time_point_cast<microseconds>(system_clock::now());
+    // sys_microseconds is type time_point<system_clock, microseconds>
+    using sys_microseconds = decltype(now);
+    // Convert time_point to signed integral type
+    auto integral_duration = now.time_since_epoch().count();
+
+    return (uint64_t)integral_duration;
+}
 
 class BreakdownTimer {
   const uint64_t max_elems = 1000000;

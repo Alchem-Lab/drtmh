@@ -2,8 +2,8 @@
 #define NOCC_RTX_RWLOCK_H
 
 #define USE_RWLOCK 1
-#include <chrono>
 #include "core/rworker.h"
+#include "util/timer.h"
 #include "db/txs/ts_manager.hpp"
 
 
@@ -30,15 +30,7 @@ const uint64_t LEASE_TIME = 400; // 0.4 milli-seconds
 // get current wall-time to the precision of microseconds
 inline __attribute__((always_inline))
 uint64_t get_now() {
-    using namespace std::chrono;
-    // Get current time with precision of microseconds
-    auto now = time_point_cast<microseconds>(system_clock::now());
-    // sys_microseconds is type time_point<system_clock, microseconds>
-    using sys_microseconds = decltype(now);
-    // Convert time_point to signed integral type
-    auto integral_duration = now.time_since_epoch().count();
-
-    return (uint64_t)integral_duration;
+  return nocc::util::get_now();
 }
 
 inline __attribute__((always_inline))
@@ -74,15 +66,7 @@ const uint64_t LEASE_TIME = 400; // 0.4 milli-seconds
 // get current wall-time to the precision of microseconds
 inline __attribute__((always_inline))
 uint64_t get_now() {
-    using namespace std::chrono;
-    // Get current time with precision of microseconds
-    auto now = time_point_cast<microseconds>(system_clock::now());
-    // sys_microseconds is type time_point<system_clock, microseconds>
-    using sys_microseconds = decltype(now);
-    // Convert time_point to signed integral type
-    auto integral_duration = now.time_since_epoch().count();
-
-    return (uint64_t)integral_duration;
+  return nocc::util::get_now();
 }
 
 inline __attribute__((always_inline))

@@ -25,6 +25,7 @@ namespace rdmaio {
     virtual Qp::IOStatus broadcast_to(int *node_ids, int num_of_node, char *msg,int len) = 0;
 
     virtual Qp::IOStatus broadcast_to(const std::set<int> &server_set, char *msg,int len) {
+      // fprintf(stdout, "broadcasting using ud_msg.\n");
       prepare_pending();
       for(auto it = server_set.begin();it != server_set.end();++it) {
         post_pending(*it,msg,len);
