@@ -54,6 +54,7 @@ namespace rdmaio {
 
     // poll all pending messages
     virtual void  poll_comps() = 0;
+    virtual void  poll_comps(bool prepared){}
 
     virtual int get_num_nodes() = 0;
     virtual int get_thread_id() = 0;

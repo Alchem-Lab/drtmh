@@ -10,7 +10,7 @@
 // #include "core/rworker.h"
 
 #define CONFLICT_WRITE_FLAG 73
-#define SUNDIAL_WAIT_NO_LOCK
+// #define SUNDIAL_WAIT_NO_LOCK
 namespace nocc {
 
 namespace rtx {
@@ -90,13 +90,12 @@ public:
 		        break;
 		    case SUNDIAL_REQ_READ: { // sundial read
 		      	while(true) {
-		      		LOG(3) << "in wait SUNDIAL req read";
 		      		volatile uint64_t l = *lockptr;
 		      		
 #ifdef SUNDIAL_WAIT_NO_LOCK
 		      		if (false){ // debug
 #else
-		      		if(WLOCKTS(l) == SUNDIALWLOCK) { // still locked	
+		      		if(WLOCKTS(l)) { // still locked	
 #endif
 		      			goto NEXT_ITEM;
 		      		} else {
@@ -114,14 +113,13 @@ public:
 		    case SUNDIAL_REQ_LOCK_READ: { // sundial lock and read
 		    	auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
 		    	while(true) {
-		    		LOG(3) << "in wait SUNDIAL req lock read";
 		    		volatile uint64_t l = *lockptr;
 		    		volatile uint64_t readl = node->read_lock;
 		    		
 #ifdef SUNDIAL_WAIT_NO_LOCK
 		    		if(false){ // debug
 #else
-		    		if((WLOCKTS(l) == SUNDIALWLOCK) || (readl > 0)) {
+		    		if(WLOCKTS(l) || (readl > 0)) {
 #endif
 		    			goto NEXT_ITEM;
 		    		} else {
@@ -141,16 +139,12 @@ public:
 
 SUCCESS:
 	  		*((uint8_t *)reply_msg) = LOCK_SUCCESS_MAGIC;
-	  		LOG(3) << "in wait success send back to " << first_waiter.pid << " " << first_waiter.cid << " " << more;
-	  		// more = 0;
 	  		rpc_->send_reply(reply_msg,sizeof(uint8_t) + more, first_waiter.pid, first_waiter.cid);
 
 			itr->second.erase(itr->second.begin());
-			LOG(3) << "erase waiter now:" << itr->second.size();
 NEXT_ITEM:
 			if (itr->second.empty()) {
 				itr = waiters->erase(itr);
-				LOG(3) << "erase itr";
 			} else {
 				++itr;
 			}

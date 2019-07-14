@@ -308,6 +308,7 @@ void UDMsg::report() {
   pre_total_costs_ = total_costs_;
 }
 
+
 void UDMsg::poll_comps() {
 
 #if STATICS == 1
@@ -318,9 +319,48 @@ void UDMsg::poll_comps() {
 
   // prepare for replies
   assert(poll_result >= 0); // FIXME: ignore error
+  // if(poll_result > 2) fprintf(stderr, "Poll more than 1, is %d\n", poll_result);
   for(uint i = 0;i < poll_result;++i) {
     // msg_num: poll_result
     if(wc_[i].status != IBV_WC_SUCCESS) assert(false); // FIXME!
+    
+    callback_((char *)(wc_[i].wr_id + GRH_SIZE),_QP_DECODE_MAC(wc_[i].imm_data),_QP_DECODE_INDEX(wc_[i].imm_data));
+  }
+  flush_pending(); // send replies
+
+  idle_recv_num_ += poll_result;
+  if(idle_recv_num_ > max_idle_recv_num_) {
+    // re-post
+    post_recvs(idle_recv_num_);
+    idle_recv_num_ = 0;
+  }
+#if STATICS == 1
+  auto total = rdtsc() - start;
+  if(poll_result > 0) {
+    counts_      += 1;
+    total_costs_ += total;
+  }
+#endif
+  // end UD polls comps
+}
+
+void UDMsg::poll_comps(bool prepared) {
+
+#if STATICS == 1
+  auto start = rdtsc();
+#endif
+  if(!prepared){
+    prepare_pending();
+  }
+  int poll_result = ibv_poll_cq(recv_qp_->recv_cq, MAX_RECV_SIZE,wc_);
+
+  // prepare for replies
+  assert(poll_result >= 0); // FIXME: ignore error
+  // if(poll_result > 2) fprintf(stderr, "Poll more than 1, is %d\n", poll_result);
+  for(uint i = 0;i < poll_result;++i) {
+    // msg_num: poll_result
+    if(wc_[i].status != IBV_WC_SUCCESS) assert(false); // FIXME!
+    
     callback_((char *)(wc_[i].wr_id + GRH_SIZE),_QP_DECODE_MAC(wc_[i].imm_data),_QP_DECODE_INDEX(wc_[i].imm_data));
   }
   flush_pending(); // send replies
