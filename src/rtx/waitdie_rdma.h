@@ -567,6 +567,10 @@ public:
   virtual void begin(yield_func_t &yield) {
     read_set_.clear();
     write_set_.clear();
+    #if ONE_SIDED_READ == 0
+      start_batch_rpc_op(read_batch_helper_);
+    #endif
+
     #if USE_DSLR
       dslr_lock_manager->init();
     #endif
