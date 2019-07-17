@@ -40,11 +40,22 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
 
     // SUNDIAL: release lock
     // need retry?
-    volatile uint64_t l = node->lock;
-    volatile uint64_t *lockptr = &(node->lock);
-    if(!__sync_bool_compare_and_swap(lockptr, l ,WUNLOCK(l))){
-      LOG(3) << "fail release lock " << id << ' ' << cid;
+    while(true){
+      volatile uint64_t l = node->lock;
+      volatile uint64_t *lockptr = &(node->lock);
+      // assert(l != WUNLOCK(l));
+      if(l == WUNLOCK(l)) {
+        LOG(7) << "already unlocked!";
+        break;
+      }
+      if(!__sync_bool_compare_and_swap(lockptr, l ,WUNLOCK(l))){
+        LOG(3) << "fail release lock " << id << ' ' << cid;
+      }  
+      else{
+        break;
+      }
     }
+    
   }
   char* reply_msg = rpc_->get_reply_buf();
   rpc_->send_reply(reply_msg, 0, id, cid);
@@ -64,9 +75,13 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
   }
   else {
     if(node_rts < commit_id) {
+      LOG(3) << "success renew lease" << node_rts << ' ' << commit_id ;
       uint64_t newl = l & 0xffffffff80000000;
       newl += commit_id;
       node->lock = newl;
+    }
+    else{
+      LOG(3) << "nosu renew lease";
     }
     return true;
   }
@@ -116,7 +131,8 @@ void SUNDIAL::renew_lease_rpc_handler(int id,int cid,char *msg,void *arg) {
 }
 
 bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
-  std::vector<SundialReadSetItem> &set = write_set_;
+  std::vector<SundialReadSetItem> &set = read_set_;
+  assert(index < set.size());
   auto it = set.begin() + index;
   if((*it).pid != node_id_) {
     rpc_op<RTXReadItem>(cor_id_, RTX_READ_RPC_ID, (*it).pid, 
@@ -179,9 +195,11 @@ void SUNDIAL::read_rpc_handler(int id,int cid,char *msg,void *arg) {
     while (true) {
       volatile uint64_t l = node->lock;
 #ifdef SUNDIAL_NO_LOCK
+      assert(false);
       if (false){ // debug
 #else
-      if(WLOCKTS(l)) {
+      // if(WLOCKTS(l)) {
+      if (false) { // do not have to wait for the write lock
 #endif  
         lock_waiter_t waiter = {
                   .type = SUNDIAL_REQ_READ,
@@ -316,9 +334,12 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
         goto NO_REPLY;
       } else {
         volatile uint64_t *lockptr = &(node->lock);
-        if( unlikely(!__sync_bool_compare_and_swap(lockptr, l, l | SUNDIALWLOCK))) // locked
+        if( unlikely(!__sync_bool_compare_and_swap(lockptr, l, l | SUNDIALWLOCK))) { // locked
           continue;
+        }
         else {
+          volatile uint64_t *lockptr = &(node->lock);
+          assert((*lockptr) != WUNLOCK(*lockptr));
           global_lock_manager->prepare_buf(reply_msg, item, db_);
           nodelen = item->len + sizeof(SundialResponse);
           goto NEXT_ITEM;

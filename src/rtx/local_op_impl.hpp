@@ -94,7 +94,7 @@ bool TXOpBase::local_validate_op(int tableid,uint64_t key,uint64_t seq) {
 }
 
 inline __attribute__((always_inline))
-MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta) {
+MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta, uint32_t commit_id) {
 
   auto old_seq = node->seq;assert(node->seq != 1);
   node->seq = CONFLICT_WRITE_FLAG;
@@ -110,8 +110,10 @@ MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta) {
   // release the locks
   asm volatile("" ::: "memory");
   node->seq = old_seq + 2;
-  asm volatile("" ::: "memory");
-  node->lock = 0;
+  if(commit_id == -1) {
+    asm volatile("" ::: "memory");
+    node->lock = 0;
+  }
   return node;
 }
 
@@ -120,7 +122,7 @@ MemNode *TXOpBase::inplace_write_op(int tableid,uint64_t key,char *val,int len, 
   MemNode *node = db_->stores_[tableid]->Get(key);
   ASSERT(node != NULL) << "get node error, at [tab " << tableid
                        << "], key: "<< key;
-  node = inplace_write_op(node,val,len,db_->_schemas[tableid].meta_len);
+  node = inplace_write_op(node,val,len,db_->_schemas[tableid].meta_len, commit_id);
   if(commit_id != -1) {
     // *(uint32_t*)(&(node->read_lock)) = *((uint32_t*)(&(node->read_lock)) + 1) = commit_id;
     uint64_t l = (node->lock)&0x0000000080000000;

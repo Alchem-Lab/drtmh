@@ -39,6 +39,8 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   //Actual loads of values
   c0 = (checking::value*)rtx_->load_write(0,sizeof(checking::value),yield);
   c1 = (checking::value*)rtx_->load_write(1,sizeof(checking::value),yield);
+  // LOG(3) << c0->c_balance << ' ' << c1->c_balance;
+
 
   // transactional logic
   if(c0->c_balance < amount) {
@@ -68,7 +70,9 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
   index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
   if (index < 0) return txn_result_t(false,73);
   savings::value  *sv = (savings::value*)rtx_->load_read(0, sizeof(savings::value), yield);
+  if(sv == NULL) return txn_result_t(false,73);
   checking::value *cv = (checking::value*)rtx_->load_write(0, sizeof(checking::value), yield);
+  if(cv == NULL) return txn_result_t(false, 73);
 
   auto total = sv->s_balance + cv->c_balance;
   if(total < amount) {
