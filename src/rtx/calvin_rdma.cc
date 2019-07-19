@@ -1,5 +1,6 @@
 #include "calvin_rdma.h"
 #include "framework/bench_worker.h"
+
 #include "rdma_req_helper.hpp"
 
 namespace nocc {
@@ -752,6 +753,225 @@ bool CALVIN::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
   }
 }
 
+
+// return false I am not supposed to execute
+// the actual transaction logic. (i.e., I am either not participating or am just a passive participant)
+bool CALVIN::sync_reads(int req_idx, yield_func_t &yield) {
+  // sync_reads accomplishes phase 3 and phase 4: 
+  // serving remote reads and collecting remote reads result.
+  // LOG(3) << "rsize in sync: " << read_set_.size();
+  // LOG(3) << "wsize in sync: " << write_set_.size();
+  assert (!read_set_.empty() || !write_set_.empty());
+  
+  std::set<int> passive_participants;
+  std::set<int> active_participants;
+  for (int i = 0; i < write_set_.size(); ++i) {
+    // LOG(3) << write_set_[i].pid;
+    active_participants.insert(write_set_[i].pid);
+  }
+  for (int i = 0; i < read_set_.size(); ++i) {
+    if (active_participants.find(read_set_[i].pid) == active_participants.end()) {
+        // LOG(3) << read_set_[i].pid;
+        passive_participants.insert(read_set_[i].pid);
+      }
+  }
+  bool am_I_active_participant = active_participants.find(response_node_) != active_participants.end();
+  bool am_I_passive_participant = passive_participants.find(response_node_) != passive_participants.end();
+
+  if (!am_I_passive_participant && !am_I_active_participant)
+    return false;
+
+  // phase 3: serving remote reads to active participants
+  // If I am an active participant, only send to *other* active participants
+#if ONE_SIDED_READ == 0
+  start_batch_read();
+
+  // fprintf(stdout, "active participants: \n");
+  // for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
+  //   fprintf(stdout, "%d ", *itr);
+  // }
+  // fprintf(stdout, "\n");
+  
+  // fprintf(stdout, "passive participants: \n");
+  // for (auto itr = passive_participants.begin(); itr != passive_participants.end(); itr++) {
+  //   fprintf(stdout, "%d ", *itr);
+  // }
+  // fprintf(stdout, "\n");
+
+  // broadcast the active participants ONLY.
+  
+  for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
+    if (*itr != response_node_)
+      add_mac(read_batch_helper_, *itr);
+  }
+
+  if (!read_batch_helper_.mac_set_.empty()) {
+    for (int i = 0; i < read_set_.size(); ++i) {
+      if (read_set_[i].pid == response_node_) {
+        assert(write_set_[i].data_ptr != NULL);
+        add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
+                                     read_set_[i].pid,
+                                   /* init read_val_t */ 
+                                     req_idx, 0, i, read_set_[i].len, read_set_[i].data_ptr);
+      }
+    }
+
+    for (int i = 0; i < write_set_.size(); ++i) {
+      if (write_set_[i].pid == response_node_) {
+        assert(write_set_[i].data_ptr != NULL);
+        add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
+                                     write_set_[i].pid,
+                                   /* init read_val_t */ 
+                                     req_idx, 1, i, write_set_[i].len, write_set_[i].data_ptr);
+      }
+    }
+
+    auto replies = send_batch_read(RTX_CALVIN_FORWARD_RPC_ID);
+    assert(replies > 0);
+    worker_->indirect_yield(yield);
+    // fprintf(stdout, "forward done.\n");
+  } else {
+    // fprintf(stdout, "No need to forward.\n");
+  }
+
+  if (!am_I_active_participant)
+    return false;
+  
+  // phase 4: check if all read_set and write_set has been collected.
+  //          if not, wait.
+  std::map<uint, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values;
+  while (true) {
+    bool has_collected_all = true;
+    for (auto i = 0; i < read_set_.size(); ++i) {
+      if (read_set_[i].data_ptr == NULL) {
+        uint key = req_idx << 5;
+        key |= (i<<1);
+        auto it = fv.find(key);
+        if (it != fv.end()) {
+          read_set_[i].data_ptr = (char*)malloc(it->second.len);
+          memcpy(read_set_[i].data_ptr, it->second.value, it->second.len);
+        } else {
+          has_collected_all = false;
+          break;
+        }
+      }
+    }
+    for (auto i = 0; i < write_set_.size(); ++i) {
+      if (write_set_[i].data_ptr == NULL) {
+        uint key = req_idx << 5;
+        key |= ((i<<1) + 1);
+        auto it = fv.find(key);
+        if (it != fv.end()) {
+          write_set_[i].data_ptr = (char*)malloc(it->second.len);
+          memcpy(write_set_[i].data_ptr, it->second.value, it->second.len);
+        } else {
+          has_collected_all = false;
+          break;
+        }
+      }
+    }
+
+    if (has_collected_all) break;
+    else {
+      // fprintf(stdout, "waiting for read/write set ready.\n");
+      worker_->yield_next(yield);
+    }
+  }
+
+#else
+  assert(false);
+#endif
+
+  return am_I_active_participant;
+}
+
+bool CALVIN::request_locks(yield_func_t &yield) {
+using namespace nocc::rtx::rwlock;
+  assert(read_set_.size() > 0 || write_set_.size() > 0);
+
+  // lock local reads
+  for (auto i = 0; i < read_set_.size(); i++) {
+    if (read_set_[i].pid != response_node_)  // skip remote read
+      continue;
+
+    auto it = read_set_.begin() + i;
+    char* temp_val = (char *)malloc(it->len);
+    uint64_t seq;
+    auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
+    if (unlikely(node == NULL)) {
+      free(temp_val);
+      release_reads(yield);
+      release_writes(yield);
+      return false;
+    }
+    it->node = node;
+
+    while(true) {
+      volatile uint64_t l = it->node->lock;
+      if(l & 0x1 == W_LOCKED) {
+        release_reads(yield);
+        release_writes(yield);
+        return false;
+      } else {
+        if (EXPIRED(END_TIME(l))) {
+          volatile uint64_t *lockptr = &(it->node->lock);
+          if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                       R_LEASE(txn_end_time)))) {
+            continue;
+          } else {
+            break; // lock the next local read
+          }
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  // lock local writes
+  for (auto i = 0; i < write_set_.size(); i++) {
+    if (write_set_[i].pid != response_node_)  // skip remote read
+      continue;
+
+    auto it = write_set_.begin() + i;
+    char* temp_val = (char *)malloc(it->len);
+    uint64_t seq;
+    auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
+    if (unlikely(node == NULL)) {
+      free(temp_val);
+      release_reads(yield);
+      release_writes(yield);
+      return false;
+    }
+    it->node = node;
+    
+    while (true) {
+      volatile uint64_t l = it->node->lock;
+      if(l & 0x1 == W_LOCKED) {
+        release_reads(yield);
+        release_writes(yield);
+        return false;
+      } else {
+        if (EXPIRED(END_TIME(l))) {
+          volatile uint64_t *lockptr = &(it->node->lock);
+          if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                       LOCKED(response_node_)))) {
+            continue;
+          } else {
+            break; // lock the next local read
+          }       
+        } else { //read locked
+          release_reads(yield);
+          release_writes(yield);
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
 void CALVIN::release_reads(yield_func_t &yield) {
   using namespace rwlock;
 
@@ -807,15 +1027,36 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
     // and update the value using the forwarded value.
     
     if (item->read_or_write == 0)  { // READ
-      char*& data_ptr = (*(static_cast<BenchWorker*>(worker_))->read_set_ptr[cid])[item->index_in_set].data_ptr;
-      assert(data_ptr == NULL);
-      data_ptr = (char*)malloc(item->len);
-      memcpy(data_ptr, item->value, item->len);
-    } else if (item->read_or_write == 1) {
-      char*& data_ptr = (*(static_cast<BenchWorker*>(worker_))->write_set_ptr[cid])[item->index_in_set].data_ptr;
-      assert(data_ptr == NULL);
-      data_ptr = (char*)malloc(item->len);
-      memcpy(data_ptr, item->value, item->len);
+      // ReadSetItem& set_item = (*(static_cast<BenchWorker*>(worker_))->read_set_ptr[cid])[item->index_in_set];
+      assert(id != response_node_);
+      // assert(set_item.pid != response_node_);
+      // // assert(data_ptr == NULL);
+      // if (set_item.data_ptr == NULL)
+      //   fprintf(stdout, "data_ptr @ %p updated.\n", &set_item.data_ptr);
+      // else
+      //   fprintf(stdout, "data_ptr @ %p re-updated.\n", &set_item.data_ptr);
+
+      // set_item.data_ptr = (char*)malloc(item->len);
+      // memcpy(set_item.data_ptr, item->value, item->len);
+
+      uint key = item->req_idx << 5;
+      key |= ((item->index_in_set << 1));
+      static_cast<BenchWorker*>(worker_)->forwarded_values[key] = *item;
+    } else if (item->read_or_write == 1) { // WRITE
+      // ReadSetItem& set_item = (*(static_cast<BenchWorker*>(worker_))->write_set_ptr[cid])[item->index_in_set];
+      assert(id != response_node_);
+      // assert(set_item.pid != response_node_);
+      // assert(data_ptr == NULL);
+      // if (set_item.data_ptr == NULL)
+      //   fprintf(stdout, "data_ptr @ %p updated.\n", &set_item.data_ptr);
+      // else
+      //   fprintf(stdout, "data_ptr @ %p re-updated.\n", &set_item.data_ptr);
+
+      // set_item.data_ptr = (char*)malloc(item->len);
+      // memcpy(set_item.data_ptr, item->value, item->len);
+      uint key = item->req_idx << 5;
+      key |= ((item->index_in_set << 1) + 1);
+      static_cast<BenchWorker*>(worker_)->forwarded_values[key] = *item;
     } else
       assert(false);
 

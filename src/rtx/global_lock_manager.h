@@ -6,7 +6,7 @@
 #include <mutex>
 #include "msg_format.hpp"
 #include "rwlock.hpp"
-#include "core/rworker.h"
+#include "core/rrpc.h"
 
 namespace nocc {
 
@@ -35,7 +35,7 @@ public:
 	}
 
 	inline __attribute__((always_inline))
-	void check_to_notify(int my_worker_id, RRpc *rpc_) {
+	void check_to_notify(int my_worker_id, oltp::RRpc *rpc_) {
 	using namespace rwlock_4_waitdie;
 
 		for (auto itr = locks_to_check->begin(); itr != locks_to_check->end(); ) {

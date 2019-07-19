@@ -2,9 +2,9 @@
 #define NOCC_RTX_RWLOCK_H
 
 #define USE_RWLOCK 1
-#include "core/rworker.h"
+// #include "core/rrpc.h"
 #include "util/timer.h"
-#include "db/txs/ts_manager.hpp"
+// #include "db/txs/ts_manager.hpp"
 
 
 // the following macros are used by namespace rwlock

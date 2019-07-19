@@ -136,6 +136,10 @@ class RRpc {
                           (char *)(msg - rpc_padding()),size + sizeof(rrpc_header));
   }
 
+  inline void prepare_pending() {
+    msg_handler_->prepare_pending();
+  }
+  
   inline void append_pending_req(char *msg,
                                  int rpc_id,int size,int cid,int type,
                                  int server_id) {

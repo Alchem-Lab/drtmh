@@ -62,7 +62,7 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   // if return false, it means that current transaction does not need
   // to execute transaction logic, i.e., the logic was executed at
   // some other active participating node.
-  if(!rtx_->sync_reads(yield))
+  if(!rtx_->sync_reads(req->req_idx, yield))
     return txn_result_t(true, 73);
 
   c0 = (checking::value*)rtx_->load_write(0,sizeof(checking::value),yield);

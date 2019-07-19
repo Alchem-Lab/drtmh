@@ -60,6 +60,11 @@ struct calvin_request {
   calvin_request(int req_idx, timestamp_t timestamp) : 
           req_idx(req_idx), timestamp(timestamp) {}
 
+  calvin_request(calvin_request* copy) :
+          req_idx(copy->req_idx), timestamp(copy->timestamp), n_reads(copy->n_reads), n_writes(copy->n_writes) {
+          memcpy((char*)read_set, (char*)copy->read_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
+          memcpy((char*)write_set, (char*)copy->write_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
+  }
   int req_idx;
   timestamp_t timestamp;
 
@@ -78,13 +83,14 @@ struct calvin_header {
 
 class calvin_request_compare {
 public:
-  bool operator()(const calvin_request& lhs, 
-                  const calvin_request& rhs) {
-    return lhs.timestamp < rhs.timestamp;
+  bool operator()(const calvin_request* lhs, 
+                  const calvin_request* rhs) {
+    return lhs->timestamp < rhs->timestamp;
   }
 };
 
-
+#define CALVIN_EPOCH_READY 0
+#define CALVIN_EPOCH_DONE  1
 #endif
 
 extern     RdmaCtrl *cm;
@@ -93,7 +99,7 @@ extern __thread int *pending_counts_;
 
 #define RPC_REQ 30
 #define RPC_CALVIN_SCHEDULE 31
-
+#define RPC_CALVIN_EPOCH_STATUS 29
 namespace oltp {
 
 class BenchWorker;
@@ -181,6 +187,8 @@ class BenchWorker : public RWorker {
   void worker_routine_for_calvin(yield_func_t &yield);
   void calvin_schedule_rpc_handler(int id,int cid,char *msg,void *arg);
   void check_schedule_done();
+  void calvin_epoch_status_rpc_handler(int id, int cid, char *msg, void *arg);
+  bool check_epoch_done();
 #endif
 
   void change_ctx(int cor_id) {
@@ -262,14 +270,15 @@ class BenchWorker : public RWorker {
   rtx::CALVIN *rtx_;
   rtx::CALVIN *rtx_hook_ = NULL;
   uint64_t current_epoch = 0;
-  std::vector<calvin_request> deterministic_requests;
-  std::vector<std::vector<calvin_request>> received_requests;
+  std::vector<calvin_request*> deterministic_requests;
+  std::vector<std::vector<calvin_request*>> received_requests;
   std::map<int, uint64_t> batch_size_for_current_epoch;
   bool epoch_done_schedule = true;
   std::set<int> mach_received;
   std::vector<rtx::CALVIN::ReadSetItem>** read_set_ptr;
   std::vector<rtx::CALVIN::ReadSetItem>** write_set_ptr;
-
+  std::map<uint, rtx::read_val_t> forwarded_values;
+  std::map<uint, std::vector<uint8_t>> epoch_status_;
 #endif
   LAT_VARS(yield);
 

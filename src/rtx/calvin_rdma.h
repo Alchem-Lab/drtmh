@@ -24,20 +24,30 @@ namespace nocc {
 namespace rtx {
 
 
-#define RTX_CALVIN_FORWARD_RPC_ID 30
+#define RTX_CALVIN_FORWARD_RPC_ID 28
 #define MAX_VAL_LENGTH 128
 struct read_val_t {
+  uint32_t req_idx;
   int read_or_write;
   int index_in_set;
   uint32_t len;
   char value[MAX_VAL_LENGTH];
-  read_val_t(int rw, int index, uint32_t len, char* val) :
+  read_val_t(int req_idx, int rw, int index, uint32_t len, char* val) :
+    req_idx(req_idx),
     read_or_write(rw),
     index_in_set(index),
     len(len) {
       assert(len < MAX_VAL_LENGTH);
       memcpy(value, val, len);
     }
+  read_val_t(const read_val_t& copy) {
+    req_idx = copy.req_idx;
+    read_or_write = copy.read_or_write;
+    index_in_set = copy.index_in_set;
+    len = copy.len;
+    memcpy(value, copy.value, len);
+  }
+  read_val_t() {}
 };
 
 #if ENABLE_TXN_API
@@ -562,8 +572,18 @@ public:
   void deserialize_read_set(uint64_t n, ReadSetItem* items) {
     read_set_.clear();
     assert(n < MAX_SET_ITEMS);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; i++) {
       read_set_.push_back(items[i]);
+      // fprintf(stdout, "deserializing write %d\n", i);
+      // for (int j = 0; j < sizeof(ReadSetItem); j++) {
+      //   fprintf(stdout, "%x ", ((char*)(items+i))[j]);
+      // }
+      // fprintf(stdout, "\n");
+      // fprintf(stdout, "pid = %d", items[i].pid);
+      // fprintf(stdout, "tableid = %d", items[i].tableid);
+      // fprintf(stdout, "len = %d", items[i].len);
+      // fprintf(stdout, "key = %d", items[i].key);
+    }
   }
 
   void deserialize_write_set(uint64_t n, ReadSetItem* items) {
@@ -591,186 +611,8 @@ public:
     write_set_.clear();
   }
 
-  // return false I am not supposed to execute
-  // the actual transaction logic. (i.e., I am either not participating or am just a passive participant)
-  bool sync_reads(yield_func_t &yield) {
-    // sync_reads accomplishes phase 3 and phase 4: 
-    // serving remote reads and collecting remote reads result.
-    assert (!read_set_.empty() || !write_set_.empty());
-    std::set<int> passive_participants;
-    std::set<int> active_participants;
-    for (int i = 0; i < write_set_.size(); ++i) {
-      active_participants.insert(write_set_[i].pid);
-    }
-    for (int i = 0; i < read_set_.size(); ++i) {
-      if (active_participants.find(read_set_[i].pid) != active_participants.end())
-        passive_participants.insert(read_set_[i].pid);
-    }
-    bool am_I_active_participant = active_participants.find(response_node_) != active_participants.end();
-    bool am_I_passive_participant = passive_participants.find(response_node_) != passive_participants.end();
-
-    if (!am_I_passive_participant && !am_I_active_participant)
-      return false;
-
-    // phase 3: serving remote reads to active participants
-    // If I am an active participant, only send to *other* active participants
-#if ONE_SIDED_READ == 0
-    start_batch_read();
-
-    // fprintf(stdout, "active participants: \n");
-    // for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
-    //   fprintf(stdout, "%d ", *itr);
-    // }
-    // fprintf(stdout, "\n");
-    
-    // fprintf(stdout, "passive participants: \n");
-    // for (auto itr = passive_participants.begin(); itr != passive_participants.end(); itr++) {
-    //   fprintf(stdout, "%d ", *itr);
-    // }
-    // fprintf(stdout, "\n");
-
-    for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
-      if (*itr != response_node_)
-        add_mac(read_batch_helper_, *itr);
-    }
-
-    for (int i = 0; i < read_set_.size(); ++i) {
-      if (read_set_[i].pid == response_node_) {
-        add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
-                                     read_set_[i].pid,
-                                   /* init read_val_t */ 
-                                     0, i, read_set_[i].len, read_set_[i].data_ptr);
-      }
-    }
-
-    for (int i = 0; i < write_set_.size(); ++i) {
-      if (write_set_[i].pid == response_node_) {
-        add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
-                                     write_set_[i].pid,
-                                   /* init read_val_t */ 
-                                     1, i, write_set_[i].len, write_set_[i].data_ptr);
-      }
-    }
-
-
-    auto replies = send_batch_read(RTX_CALVIN_FORWARD_RPC_ID);
-    assert(replies > 0);
-    worker_->indirect_yield(yield);
-    // fprintf(stdout, "forward done.\n");
-
-    // phase 4: check if all read_set and write_set has been collected.
-    //          if not, wait.
-    while (true) {
-      bool has_collected_all = true;
-      for (auto i = 0; i < read_set_.size(); ++i) {
-        if (read_set_[i].data_ptr == NULL) {
-          has_collected_all = false;
-          break;
-        }
-      }
-      for (auto i = 0; i < write_set_.size(); ++i) {
-        if (write_set_[i].data_ptr == NULL) {
-          has_collected_all = false;
-          break;
-        }
-      }
-      if (has_collected_all) break;
-      worker_->yield_next(yield);
-    }
-
-#else
-    assert(false);
-#endif
-
-    return am_I_active_participant;
-  }
-
-  bool request_locks(yield_func_t &yield) {
-  using namespace nocc::rtx::rwlock;
-    assert(read_set_.size() > 0 || write_set_.size() > 0);
-
-    // lock local reads
-    for (auto i = 0; i < read_set_.size(); i++) {
-      if (read_set_[i].pid != response_node_)  // skip remote read
-        continue;
-
-      auto it = read_set_.begin() + i;
-      char* temp_val = (char *)malloc(it->len);
-      uint64_t seq;
-      auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
-      if (unlikely(node == NULL)) {
-        free(temp_val);
-        release_reads(yield);
-        release_writes(yield);
-        return false;
-      }
-      it->node = node;
-
-      while(true) {
-        volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          release_reads(yield);
-          release_writes(yield);
-          return false;
-        } else {
-          if (EXPIRED(END_TIME(l))) {
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         R_LEASE(txn_end_time)))) {
-              continue;
-            } else {
-              break; // lock the next local read
-            }
-          } else {
-            break;
-          }
-        }
-      }
-    }
-
-    // lock local writes
-    for (auto i = 0; i < write_set_.size(); i++) {
-      if (write_set_[i].pid != response_node_)  // skip remote read
-        continue;
-
-      auto it = write_set_.begin() + i;
-      char* temp_val = (char *)malloc(it->len);
-      uint64_t seq;
-      auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
-      if (unlikely(node == NULL)) {
-        free(temp_val);
-        release_reads(yield);
-        release_writes(yield);
-        return false;
-      }
-      it->node = node;
-      
-      while (true) {
-        volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          release_reads(yield);
-          release_writes(yield);
-          return false;
-        } else {
-          if (EXPIRED(END_TIME(l))) {
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         LOCKED(response_node_)))) {
-              continue;
-            } else {
-              break; // lock the next local read
-            }       
-          } else { //read locked
-            release_reads(yield);
-            release_writes(yield);
-            return false;
-          }
-        }
-      }
-    }
-
-    return true;
-  }
+  bool sync_reads(int req_idx, yield_func_t &yield);
+  bool request_locks(yield_func_t &yield);
 
 #else
 
