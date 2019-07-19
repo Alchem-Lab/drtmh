@@ -66,12 +66,35 @@ protected:
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
-    if(!try_read_rpc(index, yield)) {
-      release_reads(yield);
-      release_writes(yield);
-      return -1;
+    uint64_t off = 0;
+    if(pid != node_id_) {
+      char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
+      // atomicly read?
+      off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
+      RdmaValHeader *header = (RdmaValHeader*)data_ptr;
+      // auto seq = header->seq;
+      data_ptr += sizeof(RdmaValHeader);
+      read_set_.back().node = (MemNode*)off;
+      read_set_.back().data_ptr = data_ptr;
+      read_set_.back().wts = WTS(header->seq);
+      read_set_.back().rts = RTS(header->seq);
+      assert(off != 0);
     }
-    process_received_data(reply_buf_, read_set_.back(), false);
+    else {
+      auto node = local_lookup_op(tableid, key);
+      assert(node != NULL);
+
+      char* data_ptr = (char*)malloc(sizeof(MemNode) + len);
+      char* value = (char*)(node->value);
+      memcpy(data_ptr, (char*)value - sizeof(RdmaValHeader), sizeof(RdmaValHeader) + len);
+      // get real value
+      read_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
+      read_set_.back().value = value;
+      RdmaValHeader* h = (RdmaValHeader*)value;
+      // get wts and rts
+      read_set_.back().wts = WTS(h->seq);
+      read_set_.back().rts = RTS(h->seq);
+    }
 #else
     if(!try_read_rpc(index, yield)) {
       release_reads(yield);
@@ -113,12 +136,12 @@ protected:
     else {
       auto node = local_lookup_op(tableid, key);
       assert(node != NULL);
+
       char* data_ptr = (char*)malloc(sizeof(MemNode) + len);
-      auto ptr = node->value;
-      memcpy(data_ptr, (char*)ptr - sizeof(RdmaValHeader), sizeof(RdmaValHeader)
-        + len);
+      char* value = (char*)(node->value);
+      memcpy(data_ptr, (char*)value - sizeof(RdmaValHeader), sizeof(RdmaValHeader) + len);
       write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
-      write_set_.back().node = (MemNode*)ptr;
+      write_set_.back().value = value;
     }
     if(!try_lock_read_rdma(index, yield)) {
       assert(false);
@@ -204,7 +227,6 @@ public:
 
   inline __attribute__((always_inline))
   virtual char* load_write(int idx, size_t len, yield_func_t &yield) {
-    LOG(3) << "in load_write";
     assert(write_set_[idx].data_ptr != NULL);
     return write_set_[idx].data_ptr;
   }
@@ -278,7 +300,6 @@ public:
   }
 
   virtual bool commit(yield_func_t &yield) {
-    LOG(3) << "in commit";
 #if ONE_SIDED_READ
     return try_update_rdma(yield);
     // return try_update_rpc(yield);

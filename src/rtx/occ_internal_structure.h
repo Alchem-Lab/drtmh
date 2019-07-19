@@ -8,6 +8,7 @@ struct ReadSetItem {
   union {
     MemNode *node;
     uint64_t off;
+    char* value;
   };
   char    *data_ptr;
   uint64_t seq; // buffered seq
@@ -39,16 +40,16 @@ struct ReadSetItem {
 
 struct SundialReadSetItem : public ReadSetItem {
   uint32_t wts = 0, rts = 0;
-  inline SundialReadSetItem(int tableid,uint64_t key,MemNode *node,char *data_ptr,uint64_t seq, 
+  inline SundialReadSetItem(int tableid,uint64_t key,MemNode *node,char *data_ptr,uint64_t seq,
     int len,int pid, int wts = 0, int rts = 0): ReadSetItem (tableid, key, node, data_ptr, seq, len,
-    pid), wts(wts), rts(rts)  
+    pid), wts(wts), rts(rts)
     {
     }
 
   inline SundialReadSetItem(const SundialReadSetItem &item) : ReadSetItem(item) {
     wts = item.wts;
     rts = item.rts;
-  } 
+  }
 };
 
 struct RtxLockItem {

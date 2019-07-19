@@ -87,13 +87,19 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
   // atomic?
   // retry?
   assert(node != NULL);
+#if ONE_SIDED_READ
+  RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value) - sizeof(RdmaValHeader));
+  uint64_t l = h->lock;
+  uint64_t tss = h->seq;
+#else
   uint64_t l = node->lock;
   uint64_t tss = node->read_lock;
+#endif
   uint32_t node_wts = WTS(tss);
   uint32_t node_rts = RTS(tss);
   if(wts != node_wts || (commit_id > node_rts && WLOCKTS(node->lock))) {
-    LOG(3) << "no renew " << wts << ' ' << node_wts << ' ' << commit_id << ' ' << node_rts << ' '
-      << (int)(WLOCKTS(node->lock));
+    // LOG(3) << "no renew " << wts << ' ' << node_wts << ' ' << commit_id << ' ' << node_rts << ' '
+    //   << (int)(WLOCKTS(node->lock));
     return false;
   }
   else {
@@ -101,7 +107,11 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
       LOG(3) << "success renew lease" << node_rts << ' ' << commit_id ;
       uint64_t newl = tss & 0xffffffff00000000;
       newl += commit_id;
+#if ONE_SIDED_READ
+      h->seq = newl;
+#else
       node->read_lock = newl;
+#endif
     }
     else{
       LOG(3) << "nosu renew lease";
@@ -280,29 +290,17 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
       if(h->lock != 0) { // fail to lock remote
       // if(false) {
         // debug
-        LOG(3) << "fail to get lock " << (int)(h->lock);
+        // LOG(3) << "fail to get lock " << (int)(h->lock);
         continue;
       }
       else { // get the lock
-        LOG(3) << "success get lock";
+        // LOG(3) << "success get lock";
         off = rdma_read_val((*it).pid, (*it).tableid, (*it).key, (*it).len,
           local_buf, yield, sizeof(RdmaValHeader)); // reread the data, can optimize
-          // worker_->indirect_yield(yield);
-          return true;
-        // rpc_op<RTXReadItem>(cor_id_, RTX_RDMA_READ_RPC_ID, (*it).pid,
-        //   rpc_op_send_buf_, reply_buf_,
-        //   /*init RTXReadItem*/
-        //   RTX_REQ_READ_LOCK,
-        //   (*it).pid, (*it).key, (*it).tableid, (*it).len, 0);
-        // worker_->indirect_yield(yield);
-        // uint8_t res = *(uint8_t*)reply_buf_;
-        // if(res == LOCK_SUCCESS_MAGIC) {
-        //   return true;
-        // }
-        // else if(res == LOCK_FAIL_MAGIC) {
-        //   return false;
-        // }
-        // assert(false);
+        uint64_t tss = h->seq;
+        (*it).wts = WTS(tss);
+        (*it).rts = RTS(tss);
+        return true;
       }
     }
   }
@@ -314,33 +312,16 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
       if(unlikely(!__sync_bool_compare_and_swap((uint64_t*)lockptr, 0, 1)))
         continue;
       else {
-        memcpy((*it).data_ptr, (char*)((*it).off), (*it).len);
+        memcpy((*it).data_ptr, (char*)((*it).value), (*it).len);
+        RdmaValHeader* h = (RdmaValHeader*)((char*)((*it).value) - 2*sizeof(uint64_t));
+        uint64_t tss = h->seq;
+        (*it).wts = WTS(tss);
+        (*it).rts = RTS(tss);
         return true;
       }
     }
   }
 }
-//
-// void SUNDIAL::read_rdma_rpc_handler(int id,int cid,char *msg,void *arg) {
-//   char* reply_msg = rpc_->get_reply_buf();
-//   uint8_t res = LOCK_SUCCESS_MAGIC;
-//   int request_item_parsed = 0;
-//   size_t nodelen = 0;
-//   RTX_ITER_ITEM(msg, sizeof(RTXReadItem)) {
-//     auto item = (RTXReadItem*)ttptr;
-//     request_item_parsed++;
-//     assert(request_item_parsed <= 1);
-//     if(item->pid != response_node_)
-//       continue;
-//     global_lock_manager->prepare_buf(reply_msg, item, db_);
-//     nodelen = item->len + sizeof(SundialResponse);
-//     goto END;
-//   }
-// END:
-//   assert(res == LOCK_SUCCESS_MAGIC);
-//   *((uint8_t *)reply_msg) = res;
-//   rpc_->send_reply(reply_msg,sizeof(uint8_t) + nodelen,id,cid);
-// }
 
 bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
   using namespace rwlock;
