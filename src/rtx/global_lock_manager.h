@@ -91,11 +91,11 @@ public:
 		    case SUNDIAL_REQ_READ: { // sundial read
 		      	while(true) {
 		      		volatile uint64_t l = *lockptr;
-		      		
+
 #ifdef SUNDIAL_WAIT_NO_LOCK
 		      		if (false){ // debug
 #else
-		      		if(WLOCKTS(l)) { // still locked	
+		      		if(WLOCKTS(l)) { // still locked
 #endif
 		      			goto NEXT_ITEM;
 		      		} else {
@@ -115,7 +115,7 @@ public:
 		    	while(true) {
 		    		volatile uint64_t l = *lockptr;
 		    		volatile uint64_t readl = node->read_lock;
-		    		
+
 #ifdef SUNDIAL_WAIT_NO_LOCK
 		    		if(false){ // debug
 #else
@@ -206,8 +206,8 @@ public:
 		auto node = local_get_op(item->tableid, item->key, reply + sizeof(SundialResponse),
 			item->len, seq, db->_schemas[item->tableid].meta_len, db);
 		SundialResponse *reply_item = (SundialResponse*)reply;
-		reply_item->wts = WTS(node->lock);
-		reply_item->rts = RTS(node->lock);
+		reply_item->wts = WTS(node->read_lock);
+		reply_item->rts = RTS(node->read_lock);
 		*((uint8_t*)reply_msg) = LOCK_SUCCESS_MAGIC;
 		return true;
 	}
@@ -218,8 +218,8 @@ public:
 		auto node = local_get_op(tableid, key, reply + sizeof(SundialResponse),
 			len, seq, db->_schemas[tableid].meta_len, db);
 		SundialResponse *reply_item = (SundialResponse*)reply;
-		reply_item->wts = WTS(node->lock);
-		reply_item->rts = RTS(node->lock);
+		reply_item->wts = WTS(node->read_lock);
+		reply_item->rts = RTS(node->read_lock);
 		*((uint8_t*)reply_msg) = LOCK_SUCCESS_MAGIC;
 		return true;
 	}

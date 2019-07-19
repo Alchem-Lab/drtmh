@@ -17,11 +17,16 @@
 // used by sundial 
 #define WTS(y) (uint32_t)(((y)&0x7fffffff00000000) >> 32)
 #define RTS(y) (uint32_t)((y)&0x000000007fffffff)
-#define RLOCKTS(y) ((y)&0x8000000000000000)
-#define WLOCKTS(y) (((y)&0x0000000080000000) == 0x0000000080000000)
+// #define RLOCKTS(y) ((y)&0x8000000000000000)
+// #define WLOCKTS(y) (((y)&0x0000000080000000) == 0x0000000080000000)
+#define WLOCKTS(y) (((y)&0x0000000000000001) == 0x0000000000000001)
+#define RLOCKTS(y) (((y)&0xffffffff00000000) > 0x0000000000000000) 
 #define SUNDIALRLOCK 0x8000000000000000
-#define SUNDIALWLOCK 0x0000000080000000
-#define WUNLOCK(y) (y & 0xffffffff7fffffff)
+// #define SUNDIALWLOCK 0x0000000080000000
+#define SUNDIALWLOCK 0x0000000000000001
+// #define WUNLOCK(y) (y & 0xffffffff7fffffff)
+#define WUNLOCK(y) (y & 0xffffffff00000000)
+#define READLOCKADDONE 0x0000000100000000
 
 
 

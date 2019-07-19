@@ -22,6 +22,7 @@
 #define RTX_BACKUP_GET_ID  7
 #define RTX_RENEW_LEASE_RPC_ID 10
 #define RTX_UPDATE_RPC_ID 9
+#define RTX_RDMA_READ_RPC_ID 13
 #define RTX_LOCK_READ_RPC_ID 14
 
 #endif
@@ -32,8 +33,8 @@ namespace rtx {
 
 /**
  * The transaction algorithm interface.
- * Each actual transaction algorithms should 
- * implement all the virtual functions 
+ * Each actual transaction algorithms should
+ * implement all the virtual functions
  * defined in this interface.
  */
 class TxnAlg : public TXOpBase {

@@ -134,6 +134,15 @@ class RDMACASLockReq  : public RDMAReqBase<1> {
     sge[0].addr = (uint64_t)local_addr;
   }
 
+  inline void set_lock_meta_int32(uint64_t remote_off,uint32_t compare, uint32_t swap,
+                            char *local_addr) {
+    sr[0].wr.atomic.remote_addr = remote_off;
+    sr[0].wr.atomic.compare_add = compare;
+    sr[0].wr.atomic.swap = swap;
+    sge[0].length = sizeof(uint32_t);
+    sge[0].addr = (uint64_t)local_addr;
+  }
+
   inline void post_reqs(oltp::RScheduler *s,Qp *qp) {
     sr[0].wr.atomic.remote_addr += qp->remote_attr_.memory_attr_.buf;
     sr[0].wr.atomic.rkey = qp->remote_attr_.memory_attr_.rkey;

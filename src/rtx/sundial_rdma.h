@@ -36,6 +36,9 @@ protected:
   bool try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
   bool try_update_rpc(yield_func_t &yield);
 
+  bool try_lock_read_rdma(int index, yield_func_t &yield);
+  bool try_update_rdma(yield_func_t &yield);
+
   void release_reads(yield_func_t &yield);
   void release_writes(yield_func_t &yield);
 
@@ -63,7 +66,12 @@ protected:
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
-
+    if(!try_read_rpc(index, yield)) {
+      release_reads(yield);
+      release_writes(yield);
+      return -1;
+    }
+    process_received_data(reply_buf_, read_set_.back(), false);
 #else
     if(!try_read_rpc(index, yield)) {
       release_reads(yield);
@@ -89,7 +97,23 @@ protected:
     index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ
-    assert(false);
+    uint64_t off = 0;
+    char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
+    // LOG(3) << "before get off, key " << (int)key;
+    off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
+    // LOG(3) << "after get off";
+    RdmaValHeader *header = (RdmaValHeader*)data_ptr;
+    // auto seq = header->seq;
+    data_ptr += sizeof(RdmaValHeader);
+    write_set_.back().node = (MemNode*)off;
+    write_set_.back().data_ptr = data_ptr;
+    assert(off != 0);
+    if(!try_lock_read_rdma(index, yield)) {
+      assert(false);
+      release_reads(yield);
+      release_writes(yield);
+      return -1;
+    }
 #else
     if(!try_lock_read_rpc(index, yield)) {
       assert(false);
@@ -140,6 +164,7 @@ public:
         memset(reply_buf_,0,MAX_MSG_SIZE);
         read_set_.clear();
         write_set_.clear();
+        lock_req_ = new RDMACASLockReq(cid);
 
       }
 
@@ -167,9 +192,9 @@ public:
 
   inline __attribute__((always_inline))
   virtual char* load_write(int idx, size_t len, yield_func_t &yield) {
+    LOG(3) << "in load_write";
     assert(write_set_[idx].data_ptr != NULL);
     return write_set_[idx].data_ptr;
-    
   }
 
   inline __attribute__((always_inline))
@@ -184,16 +209,6 @@ public:
     return item.data_ptr;
   }
 
-  // void prepare(yield_func_t &yield) {
-  //   int index = 0;
-  //   for(auto & item : read_set_) {
-  //     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
-  //       // fail in renew lease, should abort
-  //     } 
-  //   } 
-  // }
-
-  
     template <typename V>
   inline __attribute__((always_inline))
   V *get_readset(int idx,yield_func_t &yield) {
@@ -251,7 +266,13 @@ public:
   }
 
   virtual bool commit(yield_func_t &yield) {
+    LOG(3) << "in commit";
+#if ONE_SIDED_READ
+    return try_update_rdma(yield);
+    // return try_update_rpc(yield);
+#else
     return try_update_rpc(yield);
+#endif
   }
 protected:
   std::vector<SundialReadSetItem> read_set_;
@@ -284,6 +305,7 @@ private:
   void read_rpc_handler(int id,int cid,char *msg,void *arg);
   void renew_lease_rpc_handler(int id,int cid,char *msg,void *arg);
   void update_rpc_handler(int id,int cid,char *msg,void *arg);
+  // void read_rdma_rpc_handler(int id,int cid,char *msg,void *arg);
 };
 }
 }
