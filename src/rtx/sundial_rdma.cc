@@ -11,7 +11,9 @@ bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
     if(item.pid != node_id_) {
       RdmaValHeader *node = (RdmaValHeader*)(item.data_ptr - sizeof(RdmaValHeader));
       uint64_t newlease = (uint64_t)commit_id_ + (((uint64_t)(commit_id_)) << 32);
+#ifdef SUNDIAL_DEBUG
       LOG(3) << "write back new lease " << commit_id_;
+#endif
       node->seq = newlease;
       Qp *qp = get_qp(item.pid);
       assert(qp != NULL);
@@ -23,7 +25,9 @@ bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
       // }
     }
     else {
+#ifdef SUNDIAL_DEBUG
       LOG(3) << "in else";
+#endif
       memcpy((char*)item.off, item.data_ptr, item.len);
       volatile void* lockptr = (char*)item.off - sizeof(RdmaValHeader);
       uint64_t l = ((RdmaValHeader*)lockptr)->lock;
@@ -104,12 +108,16 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
   if(wts != node_wts || (commit_id > node_rts && WLOCKTS(node->lock))) {
     // LOG(3) << "no renew " << wts << ' ' << node_wts << ' ' << commit_id << ' ' << node_rts << ' '
     //   << (int)(WLOCKTS(node->lock));
+#ifdef SUNDIAL_DEBUG
     LOG(3) << "not success renew lease " << node_rts << ' ' << commit_id;
+#endif
     return false;
   }
   else {
     if(node_rts < commit_id) {
+#ifdef SUNDIAL_DEBUG
       LOG(3) << "success renew lease " << node_rts << ' ' << commit_id;
+#endif
       uint64_t newl = tss & 0xffffffff00000000;
       newl += commit_id;
 #if ONE_SIDED_READ
@@ -119,7 +127,9 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
 #endif
     }
     else{
+#ifdef SUNDIAL_DEBUG
       LOG(3) << "nosu renew lease "<< node_rts << ' ' << commit_id << ' ' << (int)tss;
+#endif
     }
     return true;
   }
@@ -305,7 +315,9 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
         uint64_t tss = h->seq;
         (*it).wts = WTS(tss);
         (*it).rts = RTS(tss);
+#ifdef SUNDIAL_DEBUG
         LOG(3) << "get remote tss " << (*it).wts << ' ' << (*it).rts;
+#endif
         commit_id_ = std::max(commit_id_, (*it).rts + 1);
         return true;
       }
