@@ -98,16 +98,28 @@ protected:
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ
     uint64_t off = 0;
-    char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
-    // LOG(3) << "before get off, key " << (int)key;
-    off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
-    // LOG(3) << "after get off";
-    RdmaValHeader *header = (RdmaValHeader*)data_ptr;
-    // auto seq = header->seq;
-    data_ptr += sizeof(RdmaValHeader);
-    write_set_.back().node = (MemNode*)off;
-    write_set_.back().data_ptr = data_ptr;
-    assert(off != 0);
+    if(pid != node_id_) {
+      char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
+      // LOG(3) << "before get off, key " << (int)key;
+      off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
+      // LOG(3) << "after get off";
+      RdmaValHeader *header = (RdmaValHeader*)data_ptr;
+      // auto seq = header->seq;
+      data_ptr += sizeof(RdmaValHeader);
+      write_set_.back().node = (MemNode*)off;
+      write_set_.back().data_ptr = data_ptr;
+      assert(off != 0);
+    }
+    else {
+      auto node = local_lookup_op(tableid, key);
+      assert(node != NULL);
+      char* data_ptr = (char*)malloc(sizeof(MemNode) + len);
+      auto ptr = node->value;
+      memcpy(data_ptr, (char*)ptr - sizeof(RdmaValHeader), sizeof(RdmaValHeader)
+        + len);
+      write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
+      write_set_.back().node = (MemNode*)ptr;
+    }
     if(!try_lock_read_rdma(index, yield)) {
       assert(false);
       release_reads(yield);

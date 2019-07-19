@@ -429,13 +429,16 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = read_set_;
-    
+
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
 
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
+#if ONE_SIDED_READ
+      assert(false);
+#endif
 
       // do actual reads here
       auto replies = send_batch_read();
