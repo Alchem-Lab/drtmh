@@ -38,9 +38,9 @@ uint64_t TXOpBase::pending_rdma_read_val(int pid,int tableid,uint64_t key,int le
   scheduler_->post_send(qp,worker_->cor_id(),
                         IBV_WR_RDMA_READ,val,len + meta_len,data_off, IBV_SEND_SIGNALED);
 
-  if(unlikely(qp->rc_need_poll())) {
+  // if(unlikely(qp->rc_need_poll())) {
     worker_->indirect_yield(yield);
-  }
+  // }
 
   return data_off;
 }

@@ -103,7 +103,7 @@ MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta, ui
   memcpy(node->padding,val,len);
 #else
   if(node->value == NULL) {
-    node->value = (uint64_t *)malloc(len);
+    node->value = (uint64_t *)malloc(len + meta);
   }
   memcpy((char *)(node->value) + meta,val,len);
 #endif

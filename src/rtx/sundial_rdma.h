@@ -78,6 +78,7 @@ protected:
       read_set_.back().data_ptr = data_ptr;
       read_set_.back().wts = WTS(header->seq);
       read_set_.back().rts = RTS(header->seq);
+      commit_id_ = std::max(commit_id_, read_set_.back().wts);
       assert(off != 0);
     }
     else {

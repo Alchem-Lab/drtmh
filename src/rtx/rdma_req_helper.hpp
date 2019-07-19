@@ -253,6 +253,14 @@ class RDMAWriteReq : RDMAReqBase<2> {
     sge[1].length = sizeof(uint64_t);
   }
 
+  inline void set_unlock_meta_update_wts(uint64_t remote_off, uint32_t wts) {
+    sr[1].wr.rdma.remote_addr =  remote_off;
+    uint64_t* newwts = new uint64_t;
+    *newwts = (uint64_t)wts;
+    sge[1].addr = (uint64_t)(newwts);
+    sge[1].length = sizeof(uint64_t);
+  }
+
   inline void post_reqs(oltp::RScheduler *s,Qp *qp) {
 
     sr[0].wr.rdma.remote_addr += qp->remote_attr_.memory_attr_.buf;

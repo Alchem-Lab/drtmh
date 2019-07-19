@@ -10,9 +10,12 @@ bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
   for(auto& item : write_set_){
     if(item.pid != node_id_) {
       RdmaValHeader *node = (RdmaValHeader*)(item.data_ptr - sizeof(RdmaValHeader));
+      uint64_t newlease = (uint64_t)commit_id_ + (((uint64_t)(commit_id_)) << 32);
+      LOG(3) << "write back new lease " << commit_id_;
+      node->seq = newlease;
       Qp *qp = get_qp(item.pid);
       assert(qp != NULL);
-      req.set_write_meta(item.off + sizeof(RdmaValHeader), item.data_ptr, item.len);
+      req.set_write_meta(item.off + sizeof(RdmaValHeader) - sizeof(uint64_t), (char*)item.data_ptr - sizeof(uint64_t), item.len + sizeof(uint64_t));
       req.set_unlock_meta(item.off);
       req.post_reqs(scheduler_, qp);
       // if(unlikely(qp->rc_need_poll())) {
@@ -88,7 +91,8 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
   // retry?
   assert(node != NULL);
 #if ONE_SIDED_READ
-  RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value) - sizeof(RdmaValHeader));
+  // RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value) - sizeof(RdmaValHeader));
+  RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value));
   uint64_t l = h->lock;
   uint64_t tss = h->seq;
 #else
@@ -100,11 +104,12 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
   if(wts != node_wts || (commit_id > node_rts && WLOCKTS(node->lock))) {
     // LOG(3) << "no renew " << wts << ' ' << node_wts << ' ' << commit_id << ' ' << node_rts << ' '
     //   << (int)(WLOCKTS(node->lock));
+    LOG(3) << "not success renew lease " << node_rts << ' ' << commit_id;
     return false;
   }
   else {
     if(node_rts < commit_id) {
-      LOG(3) << "success renew lease" << node_rts << ' ' << commit_id ;
+      LOG(3) << "success renew lease " << node_rts << ' ' << commit_id;
       uint64_t newl = tss & 0xffffffff00000000;
       newl += commit_id;
 #if ONE_SIDED_READ
@@ -114,7 +119,7 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
 #endif
     }
     else{
-      LOG(3) << "nosu renew lease";
+      LOG(3) << "nosu renew lease "<< node_rts << ' ' << commit_id << ' ' << (int)tss;
     }
     return true;
   }
@@ -300,6 +305,8 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
         uint64_t tss = h->seq;
         (*it).wts = WTS(tss);
         (*it).rts = RTS(tss);
+        LOG(3) << "get remote tss " << (*it).wts << ' ' << (*it).rts;
+        commit_id_ = std::max(commit_id_, (*it).rts + 1);
         return true;
       }
     }
