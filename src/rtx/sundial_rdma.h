@@ -304,7 +304,6 @@ public:
   virtual bool commit(yield_func_t &yield) {
 #if ONE_SIDED_READ
     return try_update_rdma(yield);
-    // return try_update_rpc(yield);
 #else
     return try_update_rpc(yield);
 #endif
@@ -340,7 +339,6 @@ private:
   void read_rpc_handler(int id,int cid,char *msg,void *arg);
   void renew_lease_rpc_handler(int id,int cid,char *msg,void *arg);
   void update_rpc_handler(int id,int cid,char *msg,void *arg);
-  // void read_rdma_rpc_handler(int id,int cid,char *msg,void *arg);
 };
 }
 }

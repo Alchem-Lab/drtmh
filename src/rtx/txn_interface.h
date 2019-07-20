@@ -22,7 +22,6 @@
 #define RTX_BACKUP_GET_ID  7
 #define RTX_RENEW_LEASE_RPC_ID 10
 #define RTX_UPDATE_RPC_ID 9
-#define RTX_RDMA_READ_RPC_ID 13
 #define RTX_LOCK_READ_RPC_ID 14
 
 #endif
@@ -43,8 +42,8 @@ public:
           RdmaCtrl *cm,RScheduler* sched,int ms) :
       TXOpBase(worker,db,rpc_handler,cm,sched,response_node,tid,ms)
   {
-    dslr_lock_manager = new DSLR(worker, db, rpc_handler, 
-                                 nid, tid, cid, response_node, 
+    dslr_lock_manager = new DSLR(worker, db, rpc_handler,
+                                 nid, tid, cid, response_node,
                                  cm, sched, ms);
   }
 
@@ -53,7 +52,7 @@ public:
   // response_node == -1, all local operations go through network
   TxnAlg(oltp::RWorker *worker,MemDB *db,RRpc *rpc_handler,int nid,int cid,int response_node) :
       TXOpBase(worker,db,rpc_handler,response_node) {}
-      
+
   enum ACCESS_TYPE {
     READ = 0,
     WRITE

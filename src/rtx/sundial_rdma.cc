@@ -78,7 +78,8 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
         LOG(3) << "already unlocked!";
         break;
       }
-      if(!__sync_bool_compare_and_swap(lockptr, l ,WUNLOCK(l))){
+      // if(!__sync_bool_compare_and_swap(lockptr, l ,WUNLOCK(l))){
+      if(!__sync_bool_compare_and_swap(lockptr, l ,0)) {
         LOG(3) << "fail release lock " << id << ' ' << cid;
       }
       else{
@@ -210,13 +211,13 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
       } else {
         // atomic?
         // ++it->node->read_lock;
-        it->node->lock += READLOCKADDONE;
+        // it->node->lock += READLOCKADDONE;
         // get the header(wts ,rts) and the real value
         global_lock_manager->prepare_buf(rpc_->get_reply_buf(), (*it).tableid, (*it).key,
           (*it).len, db_);
         // atomic?
         // --(it->node->read_lock);
-        it->node->lock -= READLOCKADDONE;
+        // it->node->lock -= READLOCKADDONE;
         return true;
       }
     }
@@ -266,12 +267,12 @@ void SUNDIAL::read_rpc_handler(int id,int cid,char *msg,void *arg) {
       }
       else {
         // ++node->read_lock; // TODO: should be atomic
-        node->lock += READLOCKADDONE;
+        // node->lock += READLOCKADDONE;
         // get local data
         global_lock_manager->prepare_buf(reply_msg, item, db_);
         nodelen = item->len + sizeof(SundialResponse);
         // --node->read_lock;
-        node->lock -= READLOCKADDONE;
+        // node->lock -= READLOCKADDONE;
         goto NEXT_ITEM;
       }
     }
@@ -513,7 +514,6 @@ void SUNDIAL::register_default_rpc_handlers() {
   ROCC_BIND_STUB(rpc_,&SUNDIAL::read_rpc_handler,this,RTX_READ_RPC_ID);
   ROCC_BIND_STUB(rpc_,&SUNDIAL::renew_lease_rpc_handler,this,RTX_RENEW_LEASE_RPC_ID);
   ROCC_BIND_STUB(rpc_,&SUNDIAL::update_rpc_handler,this,RTX_UPDATE_RPC_ID);
-  // ROCC_BIND_STUB(rpc_,&SUNDIAL::read_rdma_rpc_handler,this,RTX_RDMA_READ_RPC_ID);
 }
 
 }

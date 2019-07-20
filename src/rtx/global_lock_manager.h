@@ -97,14 +97,15 @@ public:
 #else
 		      		if(WLOCKTS(l)) { // still locked
 #endif
+								// LOG(3) << "wait still locked";
 		      			goto NEXT_ITEM;
 		      		} else {
 		      			// auto node = db_->stores_[item.tableid]->Get(item.key);
 		      			auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
-		      			++node->read_lock; // TODO: should be atomic
+
 				        prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
 				        more = first_waiter.item.len + sizeof(SundialResponse);
-				        --node->read_lock; // TODO: should be atomic
+
 				        goto SUCCESS;
 		      		}
 		      	}
@@ -114,17 +115,18 @@ public:
 		    	auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
 		    	while(true) {
 		    		volatile uint64_t l = *lockptr;
-		    		volatile uint64_t readl = node->read_lock;
 
 #ifdef SUNDIAL_WAIT_NO_LOCK
 		    		if(false){ // debug
 #else
-		    		if(WLOCKTS(l) || (readl > 0)) {
+		    		if(WLOCKTS(l) || RLOCKTS(l)) {
 #endif
 		    			goto NEXT_ITEM;
 		    		} else {
-						if( unlikely(!__sync_bool_compare_and_swap(lockptr, l, l | SUNDIALWLOCK)))
+							if( unlikely(!__sync_bool_compare_and_swap(lockptr, 0, SUNDIALWLOCK))){
+								LOG(3) << "fail change lock";
 		    				continue;
+							}
 		    			else {
 		    				prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
 		    				more = first_waiter.item.len + sizeof(SundialResponse);
