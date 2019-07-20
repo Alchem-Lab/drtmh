@@ -210,7 +210,7 @@ protected:
       ptr += sizeof(ReplyHeader);
       for(uint j = 0;j < header->num;++j) {
         OCCResponse *item = (OCCResponse *)ptr;
-        if (item->idx & 1 == 0) { // an idx in read-set
+        if ((item->idx & 1) == 0) { // an idx in read-set
           // fprintf(stdout, "rpc response: read_set idx = %d, payload = %d\n", item->idx, item->payload);
           item->idx >>= 1;
           read_set_[item->idx].data_ptr = (char *)malloc(read_set_[item->idx].len);
