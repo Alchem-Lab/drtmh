@@ -62,12 +62,12 @@ protected:
       }
     }
 
-    read_set_.emplace_back(tableid, key, local_lookup_op(tableid, key), data_ptr, 0, len, pid, -1, -1);
+    read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
     uint64_t off = 0;
-    if(pid != node_id_) {
+    if(pid != response_node_) {
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // atomicly read?
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
@@ -78,16 +78,15 @@ protected:
       read_set_.back().data_ptr = data_ptr;
       read_set_.back().wts = WTS(header->seq);
       read_set_.back().rts = RTS(header->seq);
-      commit_id_ = std::max(commit_id_, read_set_.back().wts);
       assert(off != 0);
     }
     else {
       auto node = local_lookup_op(tableid, key);
       assert(node != NULL);
 
-      char* data_ptr = (char*)malloc(sizeof(MemNode) + len);
+      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
       char* value = (char*)(node->value);
-      memcpy(data_ptr, (char*)value - sizeof(RdmaValHeader), sizeof(RdmaValHeader) + len);
+      memcpy(data_ptr, value, sizeof(RdmaValHeader) + len);
       // get real value
       read_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
       read_set_.back().value = value;
@@ -96,6 +95,7 @@ protected:
       read_set_.back().wts = WTS(h->seq);
       read_set_.back().rts = RTS(h->seq);
     }
+    commit_id_ = std::max(commit_id_, read_set_.back().wts);
 #else
     if(!try_read_rpc(index, yield)) {
       // abort
@@ -114,17 +114,17 @@ protected:
     for(auto& item : write_set_) {
       if(item.key == key && item.tableid == tableid) {
         // fprintf(stderr, "[SUNDIAL INFO] remote write already in write set (no data in write set now)\n");
-        LOG(7) <<"[SUNDIAL INFO] remote write already in write set (no data in write set now)";
+        LOG(7) <<"[SUNDIAL WARNINg] remote write already in write set (no data in write set now)";
         return index;
       }
       ++index;
     }
-    write_set_.emplace_back(tableid,key,local_lookup_op(tableid, key),(char *)NULL,0,len,pid, -1, -1);
+    write_set_.emplace_back(tableid,key,(MemNode*)NULL,(char *)NULL,0,len,pid, -1, -1);
     index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ
     uint64_t off = 0;
-    if(pid != node_id_) {
+    if(pid != response_node_) {
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // LOG(3) << "before get off, key " << (int)key;
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
@@ -140,11 +140,10 @@ protected:
       auto node = local_lookup_op(tableid, key);
       assert(node != NULL);
 
-      char* data_ptr = (char*)malloc(sizeof(MemNode) + len);
-      char* value = (char*)(node->value);
-      memcpy(data_ptr, (char*)value - sizeof(RdmaValHeader), sizeof(RdmaValHeader) + len);
+      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
       write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
-      write_set_.back().value = value;
+      write_set_.back().value = (char*)(node->value);
+      // memcpy(data_ptr, (char*)value, sizeof(RdmaValHeader) + len);
     }
     if(!try_lock_read_rdma(index, yield)) {
       // abort
