@@ -78,7 +78,10 @@ struct calvin_header {
   uint8_t node_id;
   uint64_t epoch_id;
   uint64_t batch_size; // the batch size
-  uint64_t chunk_size; // the number of calvin_requests in this rpc call
+  union {
+    uint64_t chunk_size; // the number of calvin_requests in this rpc call
+    uint64_t received_size;
+  };
 };
 
 class calvin_request_compare {
@@ -100,6 +103,7 @@ extern __thread int *pending_counts_;
 #define RPC_REQ 30
 #define RPC_CALVIN_SCHEDULE 31
 #define RPC_CALVIN_EPOCH_STATUS 29
+
 namespace oltp {
 
 class BenchWorker;
@@ -184,9 +188,10 @@ class BenchWorker : public RWorker {
   void req_rpc_handler(int id,int cid,char *msg,void *arg);
 
 #ifdef CALVIN_TX
+  void init_calvin();
   void worker_routine_for_calvin(yield_func_t &yield);
   void calvin_schedule_rpc_handler(int id,int cid,char *msg,void *arg);
-  void check_schedule_done();
+  void check_schedule_done(int cid);
   void calvin_epoch_status_rpc_handler(int id, int cid, char *msg, void *arg);
   bool check_epoch_done();
 #endif
@@ -269,16 +274,13 @@ class BenchWorker : public RWorker {
 #elif defined(CALVIN_TX)
   rtx::CALVIN *rtx_;
   rtx::CALVIN *rtx_hook_ = NULL;
-  uint64_t current_epoch = 0;
-  std::vector<calvin_request*> deterministic_requests;
-  std::vector<std::vector<calvin_request*>> received_requests;
-  std::map<int, uint64_t> batch_size_for_current_epoch;
-  bool epoch_done_schedule = true;
-  std::set<int> mach_received;
-  std::vector<rtx::CALVIN::ReadSetItem>** read_set_ptr;
-  std::vector<rtx::CALVIN::ReadSetItem>** write_set_ptr;
-  std::map<uint, rtx::read_val_t> forwarded_values;
-  std::map<uint, std::vector<uint8_t>> epoch_status_;
+  std::vector<calvin_request*>* deterministic_requests;
+  bool* epoch_done_schedule;
+  std::set<int>* mach_received;
+  std::map<uint, rtx::read_val_t>* forwarded_values;
+  std::vector<uint8_t>* epoch_status_; // per-routine status
+  std::vector<char*>* req_buffers;     // per-routine buffers
+  char** send_buffers;
 #endif
   LAT_VARS(yield);
 

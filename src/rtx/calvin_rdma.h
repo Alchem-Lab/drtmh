@@ -23,8 +23,6 @@ namespace nocc {
 
 namespace rtx {
 
-
-#define RTX_CALVIN_FORWARD_RPC_ID 28
 #define MAX_VAL_LENGTH 128
 struct read_val_t {
   uint32_t req_idx;

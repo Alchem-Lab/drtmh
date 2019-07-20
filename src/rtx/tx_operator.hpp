@@ -7,6 +7,7 @@
 #if !ENABLE_TXN_API
 
 // RPC ids
+#define RTX_CALVIN_FORWARD_RPC_ID 19
 #define RTX_READ_RPC_ID     20
 #define RTX_RW_RPC_ID       21
 #define RTX_LOCK_RPC_ID     22

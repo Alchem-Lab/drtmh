@@ -1,7 +1,7 @@
 #ifndef NOCC_FRAMEWORK_CONFIG_H_
 #define NOCC_FRAMEWORK_CONFIG_H_
 
-#define MASTER_EPOCH 2// runtime of test
+#define MASTER_EPOCH 10// runtime of test
 
 // rdma related stuffs
 #define HUGE_PAGE  1

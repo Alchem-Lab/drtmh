@@ -839,7 +839,7 @@ bool CALVIN::sync_reads(int req_idx, yield_func_t &yield) {
   
   // phase 4: check if all read_set and write_set has been collected.
   //          if not, wait.
-  std::map<uint, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values;
+  std::map<uint, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cor_id_];
   while (true) {
     bool has_collected_all = true;
     for (auto i = 0; i < read_set_.size(); ++i) {
@@ -1016,6 +1016,8 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   char *reply = reply_msg + sizeof(ReplyHeader);
 
+  std::map<uint, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cid];
+  
   // fprintf(stdout, "in calvin forward rpc.\n");
   int num_returned(0);
   RTX_ITER_ITEM(msg,sizeof(read_val_t)) {
@@ -1041,7 +1043,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
 
       uint key = item->req_idx << 5;
       key |= ((item->index_in_set << 1));
-      static_cast<BenchWorker*>(worker_)->forwarded_values[key] = *item;
+      fv[key] = *item;
     } else if (item->read_or_write == 1) { // WRITE
       // ReadSetItem& set_item = (*(static_cast<BenchWorker*>(worker_))->write_set_ptr[cid])[item->index_in_set];
       assert(id != response_node_);
@@ -1056,7 +1058,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
       // memcpy(set_item.data_ptr, item->value, item->len);
       uint key = item->req_idx << 5;
       key |= ((item->index_in_set << 1) + 1);
-      static_cast<BenchWorker*>(worker_)->forwarded_values[key] = *item;
+      fv[key] = *item;
     } else
       assert(false);
 
