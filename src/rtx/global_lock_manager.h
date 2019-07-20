@@ -21,7 +21,7 @@ struct lock_waiter_t {
 	int tid;
 	int cid;
 	uint64_t txn_start_time;
-	RTXReadItem item;
+	RTXSundialReadItem item;
 	MemDB* db;
 };
 
@@ -202,7 +202,7 @@ public:
 	// the set of lock addresses each thread needs to keep an eye on.
 	// thread_local static std::map<volatile uint64_t*, waiter_t*>* locks_to_check;
 
-	bool prepare_buf(char* reply_msg, RTXReadItem *item, MemDB* db) {
+	bool prepare_buf(char* reply_msg, RTXSundialReadItem *item, MemDB* db) {
 		char* reply = reply_msg + 1;
 		uint64_t seq;
 		auto node = local_get_op(item->tableid, item->key, reply + sizeof(SundialResponse),

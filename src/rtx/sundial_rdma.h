@@ -19,7 +19,7 @@
 #include "rwlock.hpp"
 // #define SUNDIAL_DEBUG
 // #define SUNDIAL_NO_LOCK
-
+#define SUNDIAL_NOWAIT
 namespace nocc {
 
 namespace rtx {
@@ -98,6 +98,7 @@ protected:
     }
 #else
     if(!try_read_rpc(index, yield)) {
+      // abort
       release_reads(yield);
       release_writes(yield);
       return -1;
@@ -146,14 +147,14 @@ protected:
       write_set_.back().value = value;
     }
     if(!try_lock_read_rdma(index, yield)) {
-      assert(false);
+      // abort
       release_reads(yield);
       release_writes(yield);
       return -1;
     }
 #else
     if(!try_lock_read_rpc(index, yield)) {
-      assert(false);
+      // abort
       release_reads(yield);
       release_writes(yield);
       return -1;
@@ -161,7 +162,6 @@ protected:
     // get the results
     process_received_data(reply_buf_, write_set_.back(), true);
 #endif
-
     return index;
   }
 
@@ -202,6 +202,7 @@ public:
         read_set_.clear();
         write_set_.clear();
         lock_req_ = new RDMACASLockReq(cid);
+        unlock_req_ = new RDMAFAUnlockReq(cid, 0);
 
       }
 
@@ -318,6 +319,7 @@ protected:
   BatchOpCtrlBlock read_batch_helper_;
   BatchOpCtrlBlock write_batch_helper_;
   RDMACASLockReq* lock_req_;
+  RDMAFAUnlockReq* unlock_req_;
   RDMAReadReq* read_req_;
 
   const int cor_id_;
@@ -339,6 +341,7 @@ private:
   void read_rpc_handler(int id,int cid,char *msg,void *arg);
   void renew_lease_rpc_handler(int id,int cid,char *msg,void *arg);
   void update_rpc_handler(int id,int cid,char *msg,void *arg);
+  void release_rpc_handler(int id,int cid,char *msg,void *arg);
 };
 }
 }

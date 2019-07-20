@@ -34,6 +34,29 @@ struct RTXReadItem {
   RTXReadItem(){}
 } __attribute__ ((aligned (8)));
 
+struct RTXSundialReadItem {
+  uint8_t  pid;
+  uint64_t key;
+  uint8_t  tableid;
+  uint16_t len;
+  inline RTXSundialReadItem(uint8_t pid,uint64_t key,uint8_t tableid,uint16_t len)
+      :pid(pid),key(key),tableid(tableid),len(len)
+  {
+  }
+  RTXSundialReadItem(){}
+} __attribute__ ((aligned (8)));
+
+struct RTXSundialUnlockItem {
+  uint8_t  pid;
+  uint64_t key;
+  uint8_t  tableid;
+  inline RTXSundialUnlockItem(uint8_t pid,uint64_t key,uint8_t tableid)
+      :pid(pid),key(key),tableid(tableid)
+  {
+  }
+  RTXSundialUnlockItem(){}
+} __attribute__ ((aligned (8)));
+
 struct RTXRenewLeaseItem {
   uint8_t pid;
   uint8_t tableid;
