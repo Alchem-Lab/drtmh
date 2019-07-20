@@ -40,7 +40,7 @@ protected:
   bool try_update_rdma(yield_func_t &yield);
 
   void release_reads(yield_func_t &yield);
-  void release_writes(yield_func_t &yield);
+  void release_writes(yield_func_t &yield, bool all = true);
 
 
   bool renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id);
@@ -149,14 +149,14 @@ protected:
     if(!try_lock_read_rdma(index, yield)) {
       // abort
       release_reads(yield);
-      release_writes(yield);
+      release_writes(yield, false);
       return -1;
     }
 #else
     if(!try_lock_read_rpc(index, yield)) {
       // abort
       release_reads(yield);
-      release_writes(yield);
+      release_writes(yield, false);
       return -1;
     }
     // get the results
