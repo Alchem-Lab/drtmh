@@ -25,13 +25,13 @@ namespace rtx {
 
 #define MAX_VAL_LENGTH 128
 struct read_val_t {
-  uint32_t req_idx;
+  uint32_t req_seq;
   int read_or_write;
   int index_in_set;
   uint32_t len;
   char value[MAX_VAL_LENGTH];
-  read_val_t(int req_idx, int rw, int index, uint32_t len, char* val) :
-    req_idx(req_idx),
+  read_val_t(int req_seq, int rw, int index, uint32_t len, char* val) :
+    req_seq(req_seq),
     read_or_write(rw),
     index_in_set(index),
     len(len) {
@@ -39,7 +39,7 @@ struct read_val_t {
       memcpy(value, val, len);
     }
   read_val_t(const read_val_t& copy) {
-    req_idx = copy.req_idx;
+    req_seq = copy.req_seq;
     read_or_write = copy.read_or_write;
     index_in_set = copy.index_in_set;
     len = copy.len;
@@ -189,8 +189,8 @@ protected:
   int add_batch_read(int tableid,uint64_t key,int pid,int len) {
     // add a batch read request
     int idx = read_set_.size();
-    add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-                                 /* init RTXReadItem */ RTX_REQ_READ,pid,key,tableid,len,(idx<<1));
+    // add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
+                                 // /* init RTXReadItem */ RTX_REQ_READ,pid,key,tableid,len,(idx<<1));
     read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
     return idx;
   }
@@ -199,8 +199,8 @@ protected:
   int add_batch_write(int tableid,uint64_t key,int pid,int len) {
     // add a batch read request
     int idx = write_set_.size();
-    add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-                                 /* init RTXReadItem */ RTX_REQ_READ_LOCK,pid,key,tableid,len,(idx<<1)+1);
+    // add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
+                                 // /* init RTXReadItem */ RTX_REQ_READ_LOCK,pid,key,tableid,len,(idx<<1)+1);
     // fprintf(stdout, "write rpc batched: write_set idx = %d, payload = %d\n", idx, );
     write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
     return idx;

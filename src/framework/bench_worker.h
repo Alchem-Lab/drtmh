@@ -65,7 +65,11 @@ struct calvin_request {
           memcpy((char*)read_set, (char*)copy->read_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
           memcpy((char*)write_set, (char*)copy->write_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
   }
-  int req_idx;
+  union {
+    int req_idx;
+    int req_seq;
+  };
+  
   timestamp_t timestamp;
 
   uint64_t n_reads;

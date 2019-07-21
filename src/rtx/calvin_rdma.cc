@@ -756,7 +756,7 @@ bool CALVIN::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
 
 // return false I am not supposed to execute
 // the actual transaction logic. (i.e., I am either not participating or am just a passive participant)
-bool CALVIN::sync_reads(int req_idx, yield_func_t &yield) {
+bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   // sync_reads accomplishes phase 3 and phase 4: 
   // serving remote reads and collecting remote reads result.
   // LOG(3) << "rsize in sync: " << read_set_.size();
@@ -812,7 +812,7 @@ bool CALVIN::sync_reads(int req_idx, yield_func_t &yield) {
         add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
                                      read_set_[i].pid,
                                    /* init read_val_t */ 
-                                     req_idx, 0, i, read_set_[i].len, read_set_[i].data_ptr);
+                                     req_seq, 0, i, read_set_[i].len, read_set_[i].data_ptr);
       }
     }
 
@@ -822,7 +822,7 @@ bool CALVIN::sync_reads(int req_idx, yield_func_t &yield) {
         add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
                                      write_set_[i].pid,
                                    /* init read_val_t */ 
-                                     req_idx, 1, i, write_set_[i].len, write_set_[i].data_ptr);
+                                     req_seq, 1, i, write_set_[i].len, write_set_[i].data_ptr);
       }
     }
 
@@ -844,7 +844,7 @@ bool CALVIN::sync_reads(int req_idx, yield_func_t &yield) {
     bool has_collected_all = true;
     for (auto i = 0; i < read_set_.size(); ++i) {
       if (read_set_[i].data_ptr == NULL) {
-        uint key = req_idx << 5;
+        uint key = req_seq << 5;
         key |= (i<<1);
         auto it = fv.find(key);
         if (it != fv.end()) {
@@ -858,7 +858,7 @@ bool CALVIN::sync_reads(int req_idx, yield_func_t &yield) {
     }
     for (auto i = 0; i < write_set_.size(); ++i) {
       if (write_set_[i].data_ptr == NULL) {
-        uint key = req_idx << 5;
+        uint key = req_seq << 5;
         key |= ((i<<1) + 1);
         auto it = fv.find(key);
         if (it != fv.end()) {
@@ -1041,7 +1041,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
       // set_item.data_ptr = (char*)malloc(item->len);
       // memcpy(set_item.data_ptr, item->value, item->len);
 
-      uint key = item->req_idx << 5;
+      uint key = item->req_seq << 5;
       key |= ((item->index_in_set << 1));
       fv[key] = *item;
     } else if (item->read_or_write == 1) { // WRITE
@@ -1056,7 +1056,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
 
       // set_item.data_ptr = (char*)malloc(item->len);
       // memcpy(set_item.data_ptr, item->value, item->len);
-      uint key = item->req_idx << 5;
+      uint key = item->req_seq << 5;
       key |= ((item->index_in_set << 1) + 1);
       fv[key] = *item;
     } else

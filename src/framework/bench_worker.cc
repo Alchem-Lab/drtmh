@@ -418,7 +418,6 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
   }
 
   char* const req_buf = req_buffers[cor_id_][cm_->get_nodeid()];
-  assert(req_buf != NULL);
 
 #if USE_UD_MSG == 1
   // uint max_package_size = sizeof(calvin_header);
@@ -440,7 +439,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     // for (int i = 0; i < deterministic_requests[cor_id_].size(); i++)
     //   free((char*)deterministic_requests[cor_id_][i]);
     deterministic_requests[cor_id_].clear();
-
+    forwarded_values[cor_id_].clear();
+    
     uint64_t start = nocc::util::get_now();
     ((calvin_header*)req_buf)->node_id = cm_->get_nodeid();
     epoch_manager->get_current_epoch((char*)&((calvin_header*)req_buf)->epoch_id);
@@ -493,7 +493,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
           req_buf_end += sizeof(calvin_request);
           batch_size_++;
           // if (batch_size_ >= 16000) break;
-          if (batch_size_ >= 10) break;
+          // if (batch_size_ >= 10000) break;
           // if (batch_size_ >= 16000) break;
         } else break;
     }
@@ -657,12 +657,14 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     for (int i = 0; i < deterministic_requests[cor_id_].size(); i++) {
         auto req = deterministic_requests[cor_id_][i];
         int tx_idx = req->req_idx;
-
+        req->req_seq = i;
+        
         (*txn_counts)[tx_idx] += 1;
     abort_retry:
         ntxn_executed_ += 1;
         // fprintf(stdout, "executing %d %d %lu\n", i, req.req_idx, req.timestamp);
         auto ret = workload[tx_idx].fn(this, req, yield);
+        // auto ret = txn_result_t(true, 73);
     #if NO_ABORT == 1
         //ret.first = true;
     #endif
