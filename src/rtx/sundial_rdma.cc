@@ -34,10 +34,13 @@ bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
       RdmaValHeader *h = (RdmaValHeader*)((char*)item.data_ptr - sizeof(RdmaValHeader));
       h->seq = newlease;
       memcpy((char*)item.value + sizeof(RdmaValHeader) - sizeof(uint64_t),
-        (char*)item.data_ptr - sizeof(uint64_t), item.len + sizeof(uint64_t));
+        (char*)item.data_ptr - sizeof(uint64_t), item.len + sizeof(uint64_t)); // write tss and real value back
+      // release lock
       volatile uint64_t* lockptr = (uint64_t*)item.value;
-      uint64_t l = ((RdmaValHeader*)lockptr)->lock;
-      assert(__sync_bool_compare_and_swap((uint64_t*)lockptr, l, 0));
+      volatile uint64_t l = *lockptr;
+      assert(l != 0);
+      assert(__sync_bool_compare_and_swap(lockptr, l, 0));
+      // *lockptr = 0;
     }
   }
   // worker_->indirect_yield(yield);
@@ -48,7 +51,7 @@ bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
   start_batch_rpc_op(write_batch_helper_);
   bool need_send = false;
   for(auto& item : write_set_){
-    if(item.pid != response_node_) {
+    if(item.pid != response_node_) {//
       need_send = true;
       add_batch_entry<RTXUpdateItem>(write_batch_helper_, item.pid,
         /* init RTXUpdateItem*/item.pid, item.tableid, item.key, item.len, commit_id_);
@@ -56,12 +59,11 @@ bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
       write_batch_helper_.req_buf_end_ += item.len;
     }
     else { // local
-     auto node = inplace_write_op(item.tableid, item.key, item.data_ptr, item.len, commit_id_);
-     assert(node != NULL);
-     uint64_t l = node->lock;
-     volatile uint64_t *lockptr = &(node->lock);
-     // __sync_bool_compare_and_swap(lockptr, l, WUNLOCK(l));
-     assert(__sync_bool_compare_and_swap(lockptr, l, 0));
+      auto node = inplace_write_op(item.tableid, item.key, item.data_ptr, item.len, commit_id_);
+      assert(node != NULL);
+      uint64_t l = node->lock;
+      volatile uint64_t *lockptr = &(node->lock);
+      assert(__sync_bool_compare_and_swap(lockptr, l, 0)); // TODO
     }
   }
   if(need_send) {
@@ -84,11 +86,11 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
     while(true){
       volatile uint64_t l = node->lock;
       volatile uint64_t *lockptr = &(node->lock);
-      if(l == WUNLOCK(l)) {
+      if(l == 0) {
         LOG(3) << "already unlocked!";
         break;
       }
-      if(!__sync_bool_compare_and_swap(lockptr, l ,0)) {
+      if(!__sync_bool_compare_and_swap(lockptr, l ,0)) { // TODO
         LOG(3) << "fail release lock " << id << ' ' << cid;
       }
       else{
@@ -210,7 +212,7 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
     // atomic?
     // it->node->lock += READLOCKADDONE;
     // get the header(wts ,rts) and the real value
-    global_lock_manager->prepare_buf(rpc_->get_reply_buf(), (*it).tableid, (*it).key,
+    global_lock_manager->prepare_buf(reply_buf_, (*it).tableid, (*it).key,
       (*it).len, db_);
     return true;
     // atomic?
@@ -257,7 +259,7 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
     auto off = (*it).off;
     Qp *qp = get_qp((*it).pid);
     assert(qp != NULL);
-    char* local_buf = (char*)((*it).data_ptr) - sizeof(RdmaValHeader);
+    char* local_buf = (char*)(*it).data_ptr - sizeof(RdmaValHeader);
     RdmaValHeader *h = (RdmaValHeader*)local_buf;
     while(true) {
       // LOG(3) << "lock with " << (int)off;
@@ -292,7 +294,7 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
     RdmaValHeader* h = (RdmaValHeader*)(*it).value;
     while(true) {
       volatile uint64_t* lockptr = &(h->lock);
-      if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, 1))) {
+      if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, SUNDIALWLOCK))) {
 #ifdef SUNDIAL_NOWAIT
         return false;
 #else
@@ -316,7 +318,7 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
   START(lock);
   std::vector<SundialReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
-  if((*it).pid != response_node_) {
+  if((*it).pid != response_node_) {//
     rpc_op<RTXSundialReadItem>(cor_id_, RTX_LOCK_READ_RPC_ID, (*it).pid,
                                rpc_op_send_buf_,reply_buf_,
                                /*init RTXSundialReadItem*/
@@ -340,7 +342,7 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
 #ifdef SUNDIAL_NO_LOCK
       if(false){ // debug
 #else
-      if((WLOCKTS(l)) || RLOCKTS(l)) {
+      if((WLOCKTS(l))) {
 #endif
 
 #ifdef SUNDIAL_NOWAIT
@@ -356,7 +358,7 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
         else {
           END(lock);
           // get local data
-          global_lock_manager->prepare_buf(rpc_->get_reply_buf(), (*it).tableid, (*it).key,
+          global_lock_manager->prepare_buf(reply_buf_, (*it).tableid, (*it).key,
             (*it).len, db_);
           return true;
         }
@@ -452,16 +454,17 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
       unlock_req_->set_unlock_meta(item.off);
       unlock_req_->post_reqs(scheduler_, qp);
       need_yield = true;
-      if(unlikely(qp->rc_need_poll())) {
+      // if(unlikely(qp->rc_need_poll())) {
         worker_->indirect_yield(yield);
         need_yield = false;
-      }
+      // }
     }
     else {
       RdmaValHeader* h = (RdmaValHeader*)item.value;
       volatile uint64_t* lockptr = &(h->lock);
       volatile uint64_t l = h->lock;
       assert(__sync_bool_compare_and_swap(lockptr, l, 0));
+      // *lockptr = 0;
     }
   }
   if(need_yield) {
@@ -486,6 +489,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
       auto res = local_try_release_op(item.tableid, item.key, SUNDIALWLOCK);
   }
   if(need_send) {
+    // LOG(3) << "release write once";
     send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
     worker_->indirect_yield(yield);
   }
@@ -507,7 +511,7 @@ void SUNDIAL::release_rpc_handler(int id,int cid,char *msg,void *arg) {
     assert(node != NULL);
     volatile uint64_t *lockptr = &(node->lock);
     volatile uint64_t l = node->lock;
-    __sync_bool_compare_and_swap(lockptr, l, 0);
+    __sync_bool_compare_and_swap(lockptr, l, 0); // TODO
   }
   char* reply_msg = rpc_->get_reply_buf();
   rpc_->send_reply(reply_msg,0,id,cid); // a dummy reply

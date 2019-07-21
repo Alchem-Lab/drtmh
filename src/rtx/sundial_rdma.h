@@ -114,7 +114,7 @@ protected:
     for(auto& item : write_set_) {
       if(item.key == key && item.tableid == tableid) {
         // fprintf(stderr, "[SUNDIAL INFO] remote write already in write set (no data in write set now)\n");
-        LOG(7) <<"[SUNDIAL WARNINg] remote write already in write set (no data in write set now)";
+        LOG(7) <<"[SUNDIAL WARNING] remote write already in write set (no data in write set now)";
         return index;
       }
       ++index;
@@ -239,6 +239,8 @@ public:
     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
       // abort
       LOG(3) << "fail renew lease " << (int)item.pid;
+      release_reads(yield);
+      release_writes(yield);
       return NULL; // to abort
     }
     assert(item.data_ptr != NULL);
