@@ -131,6 +131,9 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
 #ifdef CALVIN_TX
   rtx_->deserialize_read_set(req->n_reads, req->read_set);
   rtx_->deserialize_write_set(req->n_writes, req->write_set);
+  if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false, 73);
+  }
 #else
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
@@ -146,6 +149,15 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
   savings::value  *sv = (savings::value*)rtx_->load_read(0, sizeof(savings::value), yield);
   checking::value *cv = (checking::value*)rtx_->load_write(0, sizeof(checking::value), yield);
 
+#ifdef CALVIN_TX
+  if(!rtx_->sync_reads(req->req_seq, yield))
+    return txn_result_t(true, 73);
+
+  sv = (savings::value*)rtx_->load_read(0, sizeof(savings::value), yield);
+  cv = (checking::value*)rtx_->load_write(0, sizeof(checking::value), yield);  
+#endif
+
+  // transactional logic
   auto total = sv->s_balance + cv->c_balance;
   if(total < amount) {
     cv->c_balance -= (amount - 1);
@@ -153,19 +165,21 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
     cv->c_balance -= amount;
   }
 
+  // transaction commit
   auto   ret = rtx_->commit(yield);
   return txn_result_t(ret,1);
 }
 
 #ifdef CALVIN_TX
 void BankWorker::txn_wc_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  int index = -1;
+
   rtx_->clear_read_set();
   rtx_->clear_write_set();
 
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
   int pid = AcctToPid(id);
-  int index = -1;
   index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
   assert(index >= 0);
   index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
@@ -187,7 +201,10 @@ txn_result_t BankWorker::txn_dc_new_api(yield_func_t &yield) {
 
 #ifdef CALVIN_TX
   rtx_->deserialize_read_set(req->n_reads, req->read_set);
-  rtx_->deserialize_write_set(req->n_writes, req->write_set);  
+  rtx_->deserialize_write_set(req->n_writes, req->write_set);
+  if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false,73);
+  }
 #else
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
@@ -200,23 +217,32 @@ txn_result_t BankWorker::txn_dc_new_api(yield_func_t &yield) {
   float amount = 1.3;
   checking::value *cv = (checking::value*)rtx_->load_write(0,sizeof(checking::value),yield);
 
-  // fetch cached record from read-set
+#ifdef CALVIN_TX
+  if(!rtx_->sync_reads(req->req_seq, yield))
+    return txn_result_t(true, 73);
+
+  cv = (checking::value*)rtx_->load_write(0,sizeof(checking::value),yield);    
+#endif
+
+  // transactional logic
   assert(cv != NULL);
   cv->c_balance += amount;
 
+  // transaction commit
   bool ret = rtx_->commit(yield);
   return txn_result_t(ret,1);
 }
 
 #ifdef CALVIN_TX
 void BankWorker::txn_dc_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  int index = -1;
+
   rtx_->clear_read_set();
   rtx_->clear_write_set();
 
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
   int pid = AcctToPid(id);
-  int index = -1;
   index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
   assert(index >= 0);
 
@@ -236,7 +262,10 @@ txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
 
 #ifdef CALVIN_TX
   rtx_->deserialize_read_set(req->n_reads, req->read_set);
-  rtx_->deserialize_write_set(req->n_writes, req->write_set);    
+  rtx_->deserialize_write_set(req->n_writes, req->write_set);
+  if(!rtx_->request_locks(yield)) {
+    return txn_result_t(false,73);  
+  }
 #else
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
@@ -248,20 +277,32 @@ txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
 
   float amount   = 20.20; //from original code
   auto sv = (savings::value*)rtx_->load_write(0, sizeof(savings::value), yield);
+
+#ifdef CALVIN_TX
+  if(!rtx_->sync_reads(req->req_seq, yield))
+    return txn_result_t(true, 73);
+
+  sv = (savings::value*)rtx_->load_write(0, sizeof(savings::value), yield);  
+#endif
+
+  // transaction logic
   sv->s_balance += amount;
+
+  // transaction commit
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret,73);
 }
 
 #ifdef CALVIN_TX
 void BankWorker::txn_ts_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  int index = -1;
+  
   rtx_->clear_read_set();
   rtx_->clear_write_set();
 
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
   int pid = AcctToPid(id);
-  int index = -1;
   index = rtx_->write(pid,SAV,id,sizeof(savings::value),yield);
   assert(index >= 0);
 
@@ -282,6 +323,9 @@ txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
 #ifdef CALVIN_TX
   rtx_->deserialize_read_set(req->n_reads, req->read_set);
   rtx_->deserialize_write_set(req->n_writes, req->write_set);  
+  if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false,73);
+  }
 #else
   uint64_t id;
   GetAccount(random_generator[cor_id_],&(id));
@@ -294,17 +338,29 @@ txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
   if (index < 0) return txn_result_t(false,73);
 #endif
 
-  double res = 0.0;
   auto cv = (checking::value*)rtx_->load_read(0,sizeof(checking::value),yield);
   auto sv = (savings::value*)rtx_->load_read(1,sizeof(savings::value),yield);
+
+#ifdef CALVIN_TX
+  if(!rtx_->sync_reads(req->req_seq, yield))
+    return txn_result_t(true, 73);
+
+  cv = (checking::value*)rtx_->load_read(0,sizeof(checking::value),yield);
+  sv = (savings::value*)rtx_->load_read(1,sizeof(savings::value),yield);
+#endif
+
+  // transactional logic
+  double res = 0.0;
   res = cv->c_balance + sv->s_balance;
 
+  // commit transaction
   bool ret = rtx_->commit(yield);
   return txn_result_t(ret,(uint64_t)0);
 }
 
 #ifdef CALVIN_TX
 void BankWorker::txn_balance_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  int index = -1;
   rtx_->clear_read_set();
   rtx_->clear_write_set();
 
@@ -312,7 +368,6 @@ void BankWorker::txn_balance_new_api_gen_rwsets(char* buf, yield_func_t &yield) 
   GetAccount(random_generator[cor_id_],&(id));
   int pid = AcctToPid(id);
 
-  int index = -1;
   index = rtx_->read(pid,CHECK,id,sizeof(checking::value),yield);
   assert(index >= 0);
   index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
@@ -335,6 +390,9 @@ txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
 #ifdef CALVIN_TX
   rtx_->deserialize_read_set(req->n_reads, req->read_set);
   rtx_->deserialize_write_set(req->n_writes, req->write_set);    
+  if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false,73);
+  }
 #else
   uint64_t id0,id1;
   GetTwoAccount(random_generator[cor_id_],&id0,&id1);
@@ -354,21 +412,30 @@ txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
   auto c0 = (checking::value*)rtx_->load_write(1,sizeof(checking::value),yield);
   auto c1 = (checking::value*)rtx_->load_write(2,sizeof(checking::value),yield);
 
+#ifdef CALVIN_TX
+  if(!rtx_->sync_reads(req->req_seq, yield))
+    return txn_result_t(true, 73);
+
+  s0 = (savings::value*)rtx_->load_write(0,sizeof(savings::value),yield);
+  c0 = (checking::value*)rtx_->load_write(1,sizeof(checking::value),yield);
+  c1 = (checking::value*)rtx_->load_write(2,sizeof(checking::value),yield);  
+#endif
+
+  // transactional logic
   double total = 0;
-
   total = s0->s_balance + c0->c_balance;
-
   s0->s_balance = 0;
   c0->c_balance = 0;
-
   c1->c_balance += total;
 
+  // commit transaction
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret,73); // since readlock success, so no need to abort
 }
 
 #ifdef CALVIN_TX
 void BankWorker::txn_amal_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  int index = -1;
   rtx_->clear_read_set();
   rtx_->clear_write_set();
   
@@ -377,7 +444,6 @@ void BankWorker::txn_amal_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
 
   int pid0 = AcctToPid(id0);
   int pid1 = AcctToPid(id1),idx1;
-  int index = -1;
   index = rtx_->write(pid0,SAV,id0,sizeof(savings::value),yield);
   assert(index >= 0);
   index = rtx_->write(pid0,CHECK,id0,sizeof(checking::value),yield);

@@ -499,19 +499,19 @@ workload_desc_vec_t BankWorker::_get_workload() {
     w.push_back(workload_desc("SendPayment", double(g_txn_workload_mix[0])/100.0, TxnSendPayment, TxnSendPaymentGenRWSets));
   }
   if(g_txn_workload_mix[1]) {
-    w.push_back(workload_desc("DepositChecking",double(g_txn_workload_mix[1])/100.0,TxnDepositChecking, NULL));
+    w.push_back(workload_desc("DepositChecking",double(g_txn_workload_mix[1])/100.0,TxnDepositChecking, TxnDepositCheckingGenRWSets));
   }
   if(g_txn_workload_mix[2]) {
-    w.push_back(workload_desc("Balance",double(g_txn_workload_mix[2])/100.0,TxnBalance, NULL));
+    w.push_back(workload_desc("Balance",double(g_txn_workload_mix[2])/100.0,TxnBalance, TxnBalanceGenRWSets));
   }
   if(g_txn_workload_mix[3]) {
-    w.push_back(workload_desc("Transact saving",double(g_txn_workload_mix[3])/100.0,TxnTransactSavings, NULL));
+    w.push_back(workload_desc("Transact saving",double(g_txn_workload_mix[3])/100.0,TxnTransactSavings, TxnTransactSavingsGenRWSets));
   }
   if(g_txn_workload_mix[4]) {
-    w.push_back(workload_desc("Write check",double(g_txn_workload_mix[4])/100.0,TxnWriteCheck, NULL));
+    w.push_back(workload_desc("Write check",double(g_txn_workload_mix[4])/100.0,TxnWriteCheck, TxnWriteCheckGenRWSets));
   }
   if(g_txn_workload_mix[5]) {
-    w.push_back(workload_desc("Txn amal",double(g_txn_workload_mix[5])/100.0,TxnAmal, NULL));
+    w.push_back(workload_desc("Txn amal",double(g_txn_workload_mix[5])/100.0,TxnAmal, TxnAmalGenRWSets));
   }
 #else
   if(g_txn_workload_mix[0]) {
