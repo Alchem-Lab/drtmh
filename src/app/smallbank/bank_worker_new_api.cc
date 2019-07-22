@@ -73,13 +73,18 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   // fprintf(stdout, "@%p=%f", c1, c1 == NULL ? 0 : c1->c_balance);
 #endif
 
+  // LOG(3) << req->req_seq << " " << c0 << " " << &c0->c_balance << " " << c0->c_balance;
+  // LOG(3) << req->req_seq << " " << c1 << " " << &c1->c_balance << " " << c1->c_balance;
+
   // transactional logic
   if(c0->c_balance < amount) {
   } else {
     c0->c_balance -= amount;
     c1->c_balance += amount;
   }
-
+  // LOG(3) << sizeof(c0->c_balance) << " " << sizeof(c1->c_balance);
+  // LOG(3) << req->req_seq << " " << c0 << " " << &c0->c_balance << " " << c0->c_balance;
+  // LOG(3) << req->req_seq << " " << c1 << " " << &c1->c_balance << " " << c1->c_balance;
   // fprintf(stdout, "after execution.\n");  
   // fprintf(stdout, "@%p=%f", c0, c0 == NULL ? 0 : c0->c_balance);
   // fprintf(stdout, "@%p=%f", c1, c1 == NULL ? 0 : c1->c_balance);

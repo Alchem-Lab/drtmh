@@ -244,6 +244,16 @@ class RDMAWriteReq : RDMAReqBase<2> {
     sge[1].length = sizeof(uint64_t);
   }
 
+  template<int i>
+  inline void set_write_meta_for(uint64_t remote_off,char *local_addr,int size) {
+    sr[i].wr.rdma.remote_addr =  remote_off;
+    sge[i].addr = (uint64_t)local_addr;
+    sge[i].length = size;
+    if(size < 64) {
+      sr[i].send_flags |= IBV_SEND_INLINE;
+    }
+  }
+
   inline void post_reqs(oltp::RScheduler *s,Qp *qp) {
 
     sr[0].wr.rdma.remote_addr += qp->remote_attr_.memory_attr_.buf;

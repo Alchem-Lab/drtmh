@@ -226,7 +226,9 @@ void OCC::write_back(yield_func_t &yield) {
 #if 1
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if(it->pid == node_id_) {
-      inplace_write_op(it->node,it->data_ptr,it->len);
+      // the meta_len field cannot be ignored when using the inplace_write_op
+      // with the MemNode parameter!
+      inplace_write_op(it->node,it->data_ptr,it->len,db_->_schemas[it->tableid].meta_len);
       written_items += 1;
     }
   }

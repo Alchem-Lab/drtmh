@@ -104,52 +104,16 @@ protected:
 #if ONE_SIDED_READ
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-
-    char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
-    ASSERT(data_ptr != NULL);
-
-    uint64_t off = 0;
-#if INLINE_OVERWRITE
-    off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
-    MemNode *node = (MemNode *)data_ptr;
-    auto seq = node->seq;
-    data_ptr = data_ptr + sizeof(MemNode);
-#else
-    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
-    RdmaValHeader *header = (RdmaValHeader *)data_ptr;
-    auto seq = header->seq;
-    data_ptr = data_ptr + sizeof(RdmaValHeader);
-#endif
-    ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
-
-    read_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
-                           seq,
+    read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char*)NULL,
+                           0,
                            len,pid);
     return read_set_.size() - 1;
   }
 
   // return the last index in the write-set
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-
-    char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
-    ASSERT(data_ptr != NULL);
-
-    uint64_t off = 0;
-#if INLINE_OVERWRITE
-    off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
-    MemNode *node = (MemNode *)data_ptr;
-    auto seq = node->seq;
-    data_ptr = data_ptr + sizeof(MemNode);
-#else
-    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
-    RdmaValHeader *header = (RdmaValHeader *)data_ptr;
-    auto seq = header->seq;
-    data_ptr = data_ptr + sizeof(RdmaValHeader);
-#endif
-    ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
-
-    write_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
-                           seq,
+    write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char*)NULL,
+                           0,
                            len,pid);
     return write_set_.size() - 1;
   }
@@ -211,8 +175,8 @@ protected:
     assert(false);
     // add a batch read request
     int idx = read_set_.size();
-    add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-                                 /* init RTXReadItem */ RTX_REQ_INSERT,pid,key,tableid,len,idx);
+    // add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
+    //                              /* init RTXReadItem */ RTX_REQ_INSERT,pid,key,tableid,len,idx);
     read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
     return idx;
   }
@@ -377,20 +341,6 @@ public:
       index = remote_read(pid,tableid,key,len,yield);
     }
 
-#if ONE_SIDED_READ
-    // step 2: get the read lock. If fail, return false
-    if(!try_lock_read_w_rwlock_rdma(index, txn_end_time, yield)) {
-      release_reads_w_rwlock_rdma(yield);
-      release_writes_w_rwlock_rdma(yield);
-      return -1;
-    }
-#else
-    if (!try_lock_read_w_rwlock_rpc(index, txn_end_time, yield)) {
-      release_reads(yield);
-      release_writes(yield);
-      return -1;
-    }
-#endif
     return index;
   }
 
@@ -411,21 +361,6 @@ public:
       // remote case
       index = remote_read(pid,tableid,key,sizeof(V),yield);
     }
-
-#if ONE_SIDED_READ
-    // step 2: get the read lock. If fail, return false
-    if(!try_lock_read_w_rwlock_rdma(index, txn_end_time, yield)) {
-      release_reads_w_rwlock_rdma(yield);
-      release_writes_w_rwlock_rdma(yield);
-      return -1;
-    }
-#else
-    if (!try_lock_read_w_rwlock_rpc(index, txn_end_time, yield)) {
-      release_reads(yield);
-      release_writes(yield);
-      return -1;
-    }
-#endif
 
     return index;
   }
@@ -501,6 +436,7 @@ public:
     if(set[idx].pid != response_node_) {
         ;
     } else {
+      // assert(set[idx].data_ptr == NULL);
       if (set[idx].data_ptr == NULL) {
         // local actual read
         char *temp_val = (char *)malloc(len);
@@ -511,9 +447,11 @@ public:
           assert(false);
           return NULL;
         }
-
+        
         set[idx].data_ptr = temp_val;
       }
+
+      // fprintf(stdout, "in load write: %f@%p\n", *(float*)set[idx].data_ptr, set[idx].data_ptr);
     }
 
     return (set[idx].data_ptr);
@@ -704,30 +642,15 @@ public:
     // prepare_write_contents();
     // log_remote(yield); // log remote using *logger_*
 
-    // asm volatile("" ::: "memory");
-
-#if 1
-#if USE_DSLR
-    release_reads_w_FA_rdma(yield);
-    write_back_w_FA_rdma(yield);    
-#else
-    release_reads_w_rdma(yield);
-    write_back_w_rdma(yield);
-#endif
-#else
-    /**
-     * Fixme! write back w RPC now can only work with *lock_w_rpc*.
-     * This is because lock_w_rpc helps fill the mac_set used in write_back.
-     */
-    write_back_oneshot(yield);
-#endif
-
+    // write the modifications of records back
+    write_back(yield);
     return true;
   }
   
 #else
+  
   virtual bool commit(yield_func_t &yield) {
-  // only execution phase
+  
 #if TX_ONLY_EXE
   gc_readset();
   gc_writeset();

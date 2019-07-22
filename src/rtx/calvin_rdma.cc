@@ -783,7 +783,8 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
 
   // phase 3: serving remote reads to active participants
   // If I am an active participant, only send to *other* active participants
-#if ONE_SIDED_READ == 0
+#if 1
+// #if ONE_SIDED_READ == 0
   start_batch_read();
 
   // fprintf(stdout, "active participants: \n");
@@ -895,15 +896,20 @@ using namespace nocc::rtx::rwlock;
       continue;
 
     auto it = read_set_.begin() + i;
-    char* temp_val = (char *)malloc(it->len);
-    uint64_t seq;
-    auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
-    if (unlikely(node == NULL)) {
-      free(temp_val);
-      release_reads(yield);
-      release_writes(yield);
-      return false;
-    }
+    // char* temp_val = (char *)malloc(it->len);
+    // uint64_t seq;
+    // auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
+    MemNode *node = local_lookup_op(it->tableid, it->key);
+    assert(node != NULL);
+    assert(node->value != NULL);
+
+    // if (unlikely(node == NULL)) {
+    //   free(temp_val);
+    //   release_reads(yield);
+    //   release_writes(yield);
+    //   return false;
+    // }
+
     it->node = node;
 
     while(true) {
@@ -944,7 +950,7 @@ using namespace nocc::rtx::rwlock;
       return false;
     }
     it->node = node;
-    
+  
     while (true) {
       volatile uint64_t l = it->node->lock;
       if(l & 0x1 == W_LOCKED) {
@@ -967,6 +973,8 @@ using namespace nocc::rtx::rwlock;
         }
       }
     }
+
+
   }
 
   return true;
@@ -1006,7 +1014,10 @@ void CALVIN::write_back(yield_func_t &yield) {
     if((*it).pid != response_node_) { // ignore remote write
     }
     else {
-      inplace_write_op(it->node,it->data_ptr,it->len);
+      // fprintf(stdout, "write back %f@%p with len = %d for table %d key %d\n", *(float*)(it->data_ptr), it->data_ptr, it->len, it->tableid, it->key);
+      assert(it->node != NULL);
+      //the meta_len para cannot be ignored since it defaults to 0!
+      inplace_write_op(it->node,it->data_ptr,it->len, db_->_schemas[it->tableid].meta_len);
     }
   }
 }

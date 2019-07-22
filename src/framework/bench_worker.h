@@ -80,6 +80,7 @@ struct calvin_request {
 
 struct calvin_header {
   uint8_t node_id;
+  uint8_t epoch_status;
   uint64_t epoch_id;
   uint64_t batch_size; // the batch size
   union {
@@ -282,10 +283,19 @@ class BenchWorker : public RWorker {
   bool* epoch_done_schedule;
   std::set<int>* mach_received;
   std::map<uint, rtx::read_val_t>* forwarded_values;
-  std::vector<uint8_t>* epoch_status_; // per-routine status
+
+  // the following data structures should be allocated using Rmalloc
+  // when using one-sided ops.
+#if ONE_SIDED_READ == 0
+  uint8_t** epoch_status_; // per-routine status
   std::vector<char*>* req_buffers;     // per-routine buffers
   char** send_buffers;
+#else
+  std::vector<char*>* req_buffers;
+  uint64_t** offsets_;
+#endif // ONE_SIDED_READ
 #endif
+
   LAT_VARS(yield);
 
   /* For statistics counts */
@@ -298,6 +308,9 @@ class BenchWorker : public RWorker {
   size_t ntxn_remote_counts_;
   util::BreakdownTimer latency_timer_;
   CountVector<double> latencys_;
+
+  // Use a lot more QPs to emulate a larger cluster, if necessary
+#include "rtx/qp_selection_helper.h"
 
  private:
   bool initilized_;

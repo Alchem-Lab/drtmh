@@ -25,6 +25,10 @@ retry: // retry if there is a concurrent writer
 #if INLINE_OVERWRITE
   memcpy(val,node->padding + meta,len);
 #else
+  // fprintf(stdout, "src node %p addr: %p, value = %f meta = %d\n", 
+  //                   node,
+  //                   (char *)(node->value) + meta, *(float*)((char *)(node->value) + meta),
+  //                   meta);
   memcpy(val,cur_val + meta,len);
 #endif
   asm volatile("" ::: "memory");
@@ -36,6 +40,7 @@ retry: // retry if there is a concurrent writer
 
 inline __attribute__((always_inline))
 MemNode * TXOpBase::local_get_op(int tableid,uint64_t key,char *val,int len,uint64_t &seq,int meta) {
+  // fprintf(stdout, "lookup table %d key %ld\n", tableid, key);
   MemNode *node = local_lookup_op(tableid,key);
   assert(node != NULL);
   assert(node->value != NULL);
@@ -103,9 +108,15 @@ MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta) {
   memcpy(node->padding,val,len);
 #else
   if(node->value == NULL) {
+    // fprintf(stdout, "was %p\n", node->value);
     node->value = (uint64_t *)malloc(len);
+    // fprintf(stdout, "becomes %p\n", node->value);
   }
   memcpy((char *)(node->value) + meta,val,len);
+  // fprintf(stdout, "dest node %p addr: %p, value = %f, meta = %d\n", 
+  //                   node,
+  //                   (char *)(node->value) + meta, *(float*)((char *)(node->value) + meta),
+  //                   meta);
 #endif
   // release the locks
   asm volatile("" ::: "memory");

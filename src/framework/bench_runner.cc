@@ -48,6 +48,14 @@ uint64_t total_ring_sz;
 uint64_t ring_padding;
 uint64_t ringsz;
 
+#ifdef CALVIN_TX
+/*
+ * Global config calvin request buffer.
+ */
+uint64_t calvin_request_buffer_sz;
+uint64_t per_thread_calvin_request_buffer_sz;
+#endif
+
 RdmaCtrl *cm;
 
 namespace oltp {
@@ -62,6 +70,9 @@ int rep_factor;
  */
 char *rdma_buffer = NULL;
 char *store_buffer = NULL;
+#ifdef CALVIN_TX
+char *calvin_request_buffer = NULL;
+#endif
 char *free_buffer  = NULL;
 
 uint64_t r_buffer_size = 0;
@@ -167,8 +178,21 @@ BenchRunner::run() {
 #endif
   total_sz += store_size;
 
+#ifdef CALVIN_TX
+  // 128M per co-routine
+  // TODO (chao): we may need to compress the size of each calvin_request
+  // to fit into this area when large amounts of nodes/threads/coroutines
+  // are involved. 
+  per_thread_calvin_request_buffer_sz = 128 * M * coroutine_num * net_def_.size();
+  calvin_request_buffer_sz = per_thread_calvin_request_buffer_sz * (nthreads + 1);
+  calvin_request_buffer = rdma_buffer + total_sz;
+  total_sz += calvin_request_buffer_sz;
+  LOG(3) << "add calvin request buffer of size " << get_memory_size_g(calvin_request_buffer_sz) << "G.";
+#endif
+
   // Init rmalloc
   free_buffer = rdma_buffer + total_sz; // use the free buffer as the local RDMA heap
+  assert(r_buffer_size > total_sz);
   uint64_t real_alloced = RInit(free_buffer, r_buffer_size - total_sz);
   assert(real_alloced != 0);
   LOG(3) << "[Mem] RDMA heap size " << get_memory_size_g(real_alloced) <<"G.";
