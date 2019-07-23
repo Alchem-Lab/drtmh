@@ -66,8 +66,10 @@ protected:
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
+    START(temp);
     uint64_t off = 0;
-    if(pid != response_node_) {
+    if(pid != node_id_) {
+    // if(pid != response_node_) {
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // atomicly read?
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
@@ -83,19 +85,20 @@ protected:
     else {
       auto node = local_lookup_op(tableid, key);
       assert(node != NULL);
-
-      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
       char* value = (char*)(node->value);
-      memcpy(data_ptr, value, sizeof(RdmaValHeader) + len);
-      // get real value
-      read_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
-      read_set_.back().value = value;
       RdmaValHeader* h = (RdmaValHeader*)value;
       // get wts and rts
       read_set_.back().wts = WTS(h->seq);
       read_set_.back().rts = RTS(h->seq);
+      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
+      
+      memcpy(data_ptr, value, sizeof(RdmaValHeader) + len);
+      // get real value
+      read_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
+      read_set_.back().value = value;
     }
     commit_id_ = std::max(commit_id_, read_set_.back().wts);
+    END(temp);
 #else
     if(!try_read_rpc(index, yield)) {
       // abort
@@ -123,11 +126,14 @@ protected:
     index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ
-    uint64_t off = 0;
-    if(pid != response_node_) {
+    // if(pid != response_node_) {
+    if(pid != node_id_) {
+      uint64_t off = 0;
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // LOG(3) << "before get off, key " << (int)key;
+      START(log);
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
+      END(log);
       // LOG(3) << "after get off";
       RdmaValHeader *header = (RdmaValHeader*)data_ptr;
       // auto seq = header->seq;
@@ -238,7 +244,6 @@ public:
     auto& item = read_set_[idx];
     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
       // abort
-      LOG(3) << "fail renew lease " << (int)item.pid;
       release_reads(yield);
       release_writes(yield);
       return NULL; // to abort
