@@ -34,7 +34,7 @@ PORT = 8090
 #port = 9080
 
 ## benchmark constants
-DIR = "~/git_repos/drtmh/scripts/"
+DIR = "/storage/kezhaohuang/git_repos/drtmh/scripts/"
 BASE_CMD = "cd " + DIR + " && ./%s --bench %s --txn-flags 1  --verbose --config %s"
 output_cmd = "1>/dev/null 2>&1 &" ## this will ignore all the output
 output_file_path = "drtmh.log"
@@ -134,6 +134,7 @@ def parse_input():
         assert(mac_num == len(mac_set))
     else:
         mac_set = ["nerv"+str(16-i) for i in range(mac_num)][::-1]
+    print("in run2.py mac_set is " + str(mac_set))
     if (len(sys.argv)) > 7:
         output_file_path = sys.argv[7];
     args += (" -p %d" % mac_num)
@@ -149,7 +150,9 @@ def start_servers():
             OUTPUT_CMD_LOG = " 1>" + output_file_path + " 2>&1 &" ## this will flush the log to a file
             cmd = (base_cmd % (i)) + OUTPUT_CMD_LOG ## disable remote output
         else:
-            cmd = (base_cmd % (i)) + NO_OUTPUT_CMD_LOG
+            OUTPUT_CMD_LOG = " 1>" + output_file_path + "_" + str(i) + " 2>&1 &" ## this will flush the log to a file
+            #cmd = (base_cmd % (i)) + NO_OUTPUT_CMD_LOG
+            cmd = (base_cmd % (i)) + OUTPUT_CMD_LOG 
         print ' '.join(["ssh", "-n","-f", mac_set[i], "\"" + cmd + "\""])
         subprocess.call(["ssh", "-n","-f", mac_set[i], cmd], stderr=subprocess.STDOUT)
     return

@@ -90,7 +90,6 @@ BenchWorker::BenchWorker(unsigned worker_id,bool set_core,unsigned seed,uint64_t
 }
 
 void BenchWorker::init_tx_ctx() {
-
   worker = this;
   txs_              = new TXHandler*[1 + server_routine + 2];
 #ifdef OCC_TX
@@ -104,7 +103,7 @@ void BenchWorker::init_tx_ctx() {
   std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::WAITDIE*>(NULL));
 #elif defined(SUNDIAL_TX)
   new_txs_          = new rtx::SUNDIAL*[1 + server_routine + 2];
-  std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::SUNDIAL*>(NULL));  
+  std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::SUNDIAL*>(NULL));
   // assert(false);
 #else
   assert(false);
@@ -139,8 +138,8 @@ void BenchWorker::run() {
   }
   exit_lock.Unlock();
 
-  //BindToCore(worker_id_); // really specified to platforms
-  //binding(worker_id_);
+  BindToCore(worker_id_); // really specified to platforms
+  binding(worker_id_);
   init_tx_ctx();
   init_routines(server_routine);
 
@@ -224,7 +223,7 @@ BenchWorker::worker_routine(yield_func_t &yield) {
 
 
   uint64_t retry_count(0);
-  // uint64_t max_count = 1;
+  // uint64_t max_count = 1000;
   // while (max_count-- > 0) {
   while(true) {
 #if CS == 0
@@ -363,7 +362,7 @@ void BenchWorker::exit_handler() {
     auto second_cycle = BreakdownTimer::get_one_second_cycle();
 #if 1
     //exit_lock.Lock();
-    fprintf(stdout, "stats for worker %d:\n", worker_id_);
+    fprintf(stderr, "stats for worker %d:\n", worker_id_);
     for(uint i = 0;i < workload.size();++i) {
       workload[i].latency_timer.calculate_detailed();
       fprintf(stdout,"%s executed %lu, latency: %f, rw_size %f, m %f, 90 %f, 99 %f\n",

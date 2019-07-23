@@ -19,7 +19,7 @@
 #include "rwlock.hpp"
 // #define SUNDIAL_DEBUG
 // #define SUNDIAL_NO_LOCK
-#define SUNDIAL_NOWAIT
+//#define SUNDIAL_NOWAIT
 namespace nocc {
 
 namespace rtx {
@@ -132,7 +132,7 @@ protected:
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // LOG(3) << "before get off, key " << (int)key;
       START(log);
-      off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
+      off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader), false);
       END(log);
       // LOG(3) << "after get off";
       RdmaValHeader *header = (RdmaValHeader*)data_ptr;
@@ -242,6 +242,7 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     auto& item = read_set_[idx];
+    //if(false) {
     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
       // abort
       release_reads(yield);

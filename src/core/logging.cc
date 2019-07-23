@@ -45,8 +45,8 @@ MessageLogger::MessageLogger(const char *file, int line, int level)
 MessageLogger::~MessageLogger() {
   if(level_ >= ROCC_LOG_LEVEL) {
     stream_ << "\n";
-    std::cout << "\033[" << RTX_DEBUG_LEVEL_COLOR[std::min(level_,6)] << "m"
-              << stream_.str() << EndcolorFlag();
+    // std::cerr << "\033[" << RTX_DEBUG_LEVEL_COLOR[std::min(level_,6)] << "m"
+    std::cerr << stream_.str() << EndcolorFlag();
     if(level_ >= LOG_FATAL)
       abort();
   }

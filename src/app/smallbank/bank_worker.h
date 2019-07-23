@@ -22,7 +22,7 @@
 
 #define DEFAULT_NUM_ACCOUNTS 100000  // Accounts per partition
 //#define DEFAULT_NUM_ACCOUNTS 10 // small scale for tests
-#define DEFAULT_NUM_HOT 4000  // Hot accounts per partition
+#define DEFAULT_NUM_HOT 1000  // Hot accounts per partition
 //#define DEFAULT_NUM_HOT 5  // small scale for tests
 
 #define TX_HOT 90 // Percentage of txns that use accounts from hotspot

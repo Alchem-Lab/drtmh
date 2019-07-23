@@ -299,6 +299,7 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
       else {
                   // off = rdma_read_val((*it).pid, (*it).tableid, (*it).key, (*it).len,
                     // local_buf, yield, sizeof(RdmaValHeader)); // reread the data, can optimize
+        END(lock);
         Qp *qp = get_qp((*it).pid);
         auto off = (*it).off;
         scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
@@ -313,7 +314,6 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
         LOG(3) << "get remote tss " << (*it).wts << ' ' << (*it).rts;
 #endif
         commit_id_ = std::max(commit_id_, (*it).rts + 1);
-        END(lock);
         return true;
       }
     }

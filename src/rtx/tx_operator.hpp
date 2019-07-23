@@ -107,9 +107,9 @@ class TXOpBase {
    * Read the value stored in the node->value. The offset is stored in node->off.
    * returnd the val offset.
    */
-  uint64_t     rdma_read_val(int pid,int tableid,uint64_t key,int len,char *val,yield_func_t &yield,int meta_len = 0);
+  uint64_t     rdma_read_val(int pid,int tableid,uint64_t key,int len,char *val,yield_func_t &yield,int meta_len = 0, bool need_get_msg = true);
 
-  uint64_t pending_rdma_read_val(int pid,int tableid,uint64_t key,int len,char *val,yield_func_t &yield,int meta_len = 0);
+  uint64_t pending_rdma_read_val(int pid,int tableid,uint64_t key,int len,char *val,yield_func_t &yield,int meta_len = 0, bool need_get_msg = true);
 
 
   /*

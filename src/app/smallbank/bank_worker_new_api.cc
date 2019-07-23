@@ -21,7 +21,7 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   rtx_->begin(yield);
 
   uint64_t id0,id1;
-  GetTwoAccount(random_generator[cor_id_],&id0,&id1);  
+  GetTwoAccount(random_generator[cor_id_],&id0,&id1);
   // uint64_t id0 = 100, id1 = 101;
   float amount = 5.0;
 
@@ -63,6 +63,7 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
 
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
+  // uint64_t id = 100;
   int pid = AcctToPid(id);
 
   index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
