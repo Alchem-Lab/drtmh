@@ -14,6 +14,7 @@
 #include "rtx/occ_variants.hpp"
 #include "rtx/nowait_rdma.h"
 #include "rtx/sundial_rdma.h"
+#include "rtx/mvcc_rdma.h"
 #include "rtx/waitdie_rdma.h"
 
 #include <boost/bind.hpp>
@@ -461,6 +462,10 @@ void BankWorker::thread_local_init() {
 #elif defined(SUNDIAL_TX)
     assert(new_txs_ != NULL);
     new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,-1,
+                                   cm,rdma_sched_,total_partition);
+#elif defined(MVCC_TX)
+    assert(new_txs_ != NULL);
+    new_txs_[i] = new rtx::MVCC(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #elif defined(WAITDIE_TX)
     new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,-1,

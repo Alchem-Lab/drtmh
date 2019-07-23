@@ -28,6 +28,8 @@ __thread rtx::NOWAIT   **new_txs_ = NULL;
 __thread rtx::WAITDIE  **new_txs_ = NULL;
 #elif defined(SUNDIAL_TX)
 __thread rtx::SUNDIAL  **new_txs_ = NULL;
+#elif defined(MVCC_TX)
+__thread rtx::MVCC  **new_txs_ = NULL;
 #endif
 
 extern uint64_t total_ring_sz;
@@ -104,7 +106,9 @@ void BenchWorker::init_tx_ctx() {
 #elif defined(SUNDIAL_TX)
   new_txs_          = new rtx::SUNDIAL*[1 + server_routine + 2];
   std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::SUNDIAL*>(NULL));
-  // assert(false);
+#elif defined(MVCC_TX)
+  new_txs_          = new rtx::MVCC*[1 + server_routine + 2];
+  std::fill_n(new_txs_,1 + server_routine + 2,static_cast<rtx::MVCC*>(NULL));
 #else
   assert(false);
 #endif

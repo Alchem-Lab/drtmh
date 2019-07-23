@@ -70,6 +70,9 @@ target_compile_options(noccwaitdie PRIVATE "-DWAITDIE_TX")
 add_executable(noccsundial ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsundial PRIVATE "-DSUNDIAL_TX")
 
+add_executable(noccmvcc ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccmvcc PRIVATE "-DMVCC_TX")
+
 add_executable(noccsi ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsi PRIVATE "-DSI_TX")
 
@@ -93,7 +96,7 @@ include(cmake/Dependencies.cmake)
 #
 # Configure binary linking
 #
-set( apps noccrad noccocc noccsi noccfarm noccnowait noccsundial noccwaitdie nn nr )
+set( apps noccrad noccocc noccsi noccfarm noccnowait noccsundial noccmvcc noccwaitdie nn nr )
 foreach( prog ${apps} )
   if( LINK_STATIC_LIB )
     target_link_libraries( ${prog}
@@ -121,6 +124,7 @@ install(TARGETS noccsi   	DESTINATION scripts)
 install(TARGETS noccnowait 	DESTINATION scripts)
 install(TARGETS noccwaitdie   	DESTINATION scripts)
 install(TARGETS noccsundial   	DESTINATION scripts)
+install(TARGETS noccmvcc     DESTINATION scripts)
 
 ## for tests
 if(GTEST)
