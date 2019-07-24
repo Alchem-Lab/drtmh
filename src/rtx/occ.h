@@ -195,7 +195,7 @@ class OCC : public TXOpBase {
   template <typename V>
   V *get_writeset(int idx,yield_func_t &yield) {
     assert(idx < write_set_.size());
-    return (V *)write_set_[idx].data_ptr;
+    return (V*)load_write(idx, sizeof(V), yield);
   }
 
   template <int tableid,typename V>

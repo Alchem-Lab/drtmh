@@ -19,7 +19,7 @@ void MemDB::AddSchema(int tableid,TABLE_CLASS c,  int klen, int vlen, int meta_l
 
   switch(c) {
   case TAB_BTREE:
-    ASSERT(cpuinfo_has_x86_rtm()) << "This CPU has no RTM support ! which is necessary for our B+tree.";
+    //ASSERT(cpuinfo_has_x86_rtm()) << "This CPU has no RTM support ! which is necessary for our B+tree.";
     stores_[tableid] = new MemstoreBPlusTree();
     break;
   case TAB_BTREE1:

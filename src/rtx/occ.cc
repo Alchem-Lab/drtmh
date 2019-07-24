@@ -159,7 +159,7 @@ int OCC::add_batch_write(int tableid,uint64_t key,int pid,int len) {
 }
 
 int OCC::add_batch_insert(int tableid,uint64_t key,int pid,int len) {
-  assert(false);
+  //assert(false);
   // add a batch read request
   int idx = read_set_.size();
   add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
@@ -437,7 +437,8 @@ void OCC::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
       }
         break;
       default:
-        assert(false);
+        //assert(false);
+      break;
     }
     num_returned += 1;
   } // end for
