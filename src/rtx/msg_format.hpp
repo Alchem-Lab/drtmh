@@ -124,6 +124,18 @@ struct RTXLockRequestItem {
   }
 } __attribute__ ((aligned (8)));
 
+struct RTXMVCCWriteRequestItem {
+  uint8_t  pid;
+  uint8_t  tableid;
+  uint64_t key;
+  uint16_t len;
+  uint64_t txn_starting_timestamp;
+  inline RTXMVCCWriteRequestItem(uint8_t pid,uint8_t tableid,uint64_t key, uint16_t len, uint64_t txn_start_time)
+      :pid(pid),tableid(tableid),key(key),len(len),txn_starting_timestamp(txn_start_time)
+  {
+  }
+} __attribute__ ((aligned (8)));
+
 #define LOCK_SUCCESS_MAGIC 73
 #define LOCK_FAIL_MAGIC 12
 #define LOCK_WAIT_MAGIC 41

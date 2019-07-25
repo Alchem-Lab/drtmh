@@ -17,6 +17,7 @@
 #include "rdma_req_helper.hpp"
 
 #include "rwlock.hpp"
+#define MVCC_NOWAIT
 namespace nocc {
 
 namespace rtx {
@@ -28,6 +29,9 @@ class MVCC : public TXOpBase {
 #include "occ_internal_structure.h"
 protected:
 // rpc functions
+
+  bool try_lock_read_rpc(int index, yield_func_t &yield);
+  bool try_read_rpc(int index, yield_func_t &yield);
 
   void release_reads(yield_func_t &yield);
   void release_writes(yield_func_t &yield, bool all = true);
@@ -49,12 +53,19 @@ protected:
         return read_set_.size() - 1;
       }
     }
-
     read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid);
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
 #else
+    if(!try_read_rpc(index, yield)) {
+      release_reads(yield);
+      release_writes(yield);
+      return -1;
+    }
+    if(pid != node_id_){
+      process_received_data(reply_buf_, read_set_.back());
+    }
 #endif
     return index;
   }
@@ -73,6 +84,16 @@ protected:
     index = write_set_.size() - 1;
 #if ONE_SIDED_READ
 #else
+    if(!try_lock_read_rpc(index, yield)) {
+      // abort
+      release_reads(yield);
+      release_writes(yield, false);
+      return -1;
+    }
+    // get the results
+    if(pid != node_id_) {
+      process_received_data(reply_buf_, write_set_.back());
+    }
 #endif
     return index;
   }
@@ -142,12 +163,9 @@ public:
 	virtual void begin(yield_func_t &yield) {
     read_set_.clear();
     write_set_.clear();
-    #if USE_DSLR
-      dslr_lock_manager->init();
-    #endif
-    txn_start_time = rwlock::get_now();
+    txn_start_time = (rwlock::get_now_nano() << 10) + response_node_ * 80 + worker_id_ * 10 + cor_id_ + 1; // TODO: may be too large
     // the txn_end_time is approximated using the LEASE_TIME
-    txn_end_time = txn_start_time + rwlock::LEASE_TIME;
+    // txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }
 
   virtual bool commit(yield_func_t &yield) {
@@ -193,7 +211,50 @@ public:
 
   void register_default_rpc_handlers();
 private:
+  void lock_read_rpc_handler(int id,int cid,char *msg,void *arg);
+  void read_rpc_handler(int id,int cid,char *msg,void *arg);
+  
+  inline __attribute__((always_inline))
+  bool check_write(MVCCHeader* header, uint64_t timestamp) {
+    volatile uint64_t rts = header->rts;
+    if(rts > timestamp) {
+      return false;
+    }
+    for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
+      volatile uint64_t wts = header->wts[i];
+      if(wts > timestamp){
+        return false;
+      }
+    }
+    return true;
+  }
+
+  inline __attribute__((always_inline))
+  int check_read(MVCCHeader* header, uint64_t timestamp) {
+    // earlier write is processing
+    if(header->lock < timestamp) return -1;
+    int max_wts = 0;
+    int pos = -1;
+    for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
+      if(header->wts[i] < timestamp && header->wts[i] > max_wts) {
+        max_wts = header->wts[i];
+        pos = i;
+      }
+    }
+    // pos can be -1 here, meaning no available item
+    return pos;
+  }
+
+  void process_received_data(char* ptr, ReadSetItem& item) {
+    char* reply = ptr + 1;
+    item.seq = *(uint64_t*)reply;
+    if(item.data_ptr == NULL)
+      item.data_ptr = (char*)malloc(item.len);
+    memcpy(item.data_ptr, reply + sizeof(uint64_t), item.len);
+  }
 // rpc handlers
 };
+
+
 }
 }
