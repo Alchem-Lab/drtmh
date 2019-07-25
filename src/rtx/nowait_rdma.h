@@ -133,7 +133,8 @@ protected:
   }
 
   int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    assert(false); // not implemented
+    // assert(false); // not implemented
+    return -1;
   }
 
 #else
@@ -149,7 +150,8 @@ protected:
   }
 
   int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return add_batch_insert(tableid,key,pid,len);
+    // return add_batch_insert(tableid,key,pid,len);
+    return -1;
   }
 
 #endif
@@ -186,7 +188,7 @@ protected:
 
   inline __attribute__((always_inline))
   int add_batch_insert(int tableid,uint64_t key,int pid,int len) {
-    assert(false);
+    // assert(false);
     // add a batch read request
     int idx = read_set_.size();
     add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
@@ -559,11 +561,11 @@ public:
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    if(pid == node_id_)
-      return local_insert(tableid,key,(char *)val,sizeof(V),yield);
-    else {
-      return remote_insert(pid,tableid,key,sizeof(V),yield);
-    }
+    //if(pid == node_id_)
+    //  return local_insert(tableid,key,(char *)val,sizeof(V),yield);
+    //else {
+    //  return remote_insert(pid,tableid,key,sizeof(V),yield);
+    //}
     return -1;
   }
 

@@ -100,7 +100,8 @@ void TpccWorker::thread_local_init() {
       new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
                                    cm,rdma_sched_,total_partition);
 #else
-      assert(false);
+      new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                   cm,rdma_sched_,total_partition);
 #endif
     }
 #elif defined(WAITDIE_TX)
@@ -109,7 +110,8 @@ void TpccWorker::thread_local_init() {
       new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
                                    cm,rdma_sched_,total_partition);
 #else
-      assert(false);
+      new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                   cm,rdma_sched_,total_partition);
 #endif
     }
 #elif defined(SUNDIAL_TX)
