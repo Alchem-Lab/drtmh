@@ -278,7 +278,8 @@ class BankLoader : public BenchLoader {
 
       savings::value *s = (savings::value *)(wrapper_saving + meta_size);
       s->s_balance = balance_s;
-      // here send the size of value instead of mvcc_version_num * sizeof(value), the value inside is of no use
+      ((rtx::MVCCHeader *)wrapper_saving)->wts[0] = 1;
+// here send the size of value instead of mvcc_version_num * sizeof(value), the value inside is of no use
       auto node = store_->Put(SAV,i,(uint64_t *)wrapper_saving,sizeof(savings::value));
       if (is_primary_) {
       // if(is_primary_ && ONE_SIDED_READ) {
@@ -289,6 +290,7 @@ class BankLoader : public BenchLoader {
       checking::value *c = (checking::value *)(wrapper_check + meta_size);
       c->c_balance = balance_c;
       assert(c->c_balance > 0);
+      ((rtx::MVCCHeader *)wrapper_check)->wts[0] = 1; // first wts
       node = store_->Put(CHECK,i,(uint64_t *)wrapper_check,sizeof(checking::value));
 
       if(i == 0)

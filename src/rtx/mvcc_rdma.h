@@ -156,7 +156,6 @@ public:
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    assert(false);
     return -1;
   }
 
@@ -178,14 +177,14 @@ public:
   template <typename V>
   inline __attribute__((always_inline))
   V *get_writeset(int idx,yield_func_t &yield) {
-    return NULL;
+    return (V*)load_write(idx, sizeof(V), yield);
     // return get_set_helper<V>(write_set_, idx, yield);
   }
 
   template <typename V>
   inline __attribute__((always_inline))
   V *get_readset(int idx,yield_func_t &yield) {
-    return NULL;
+    return (V*)load_read(idx, sizeof(V), yield);
     // return get_set_helper<V>(write_set_, idx, yield);
   }
 protected:
@@ -213,6 +212,7 @@ public:
 private:
   void lock_read_rpc_handler(int id,int cid,char *msg,void *arg);
   void read_rpc_handler(int id,int cid,char *msg,void *arg);
+  void release_rpc_handler(int id,int cid,char *msg,void *arg);
   
   inline __attribute__((always_inline))
   bool check_write(MVCCHeader* header, uint64_t timestamp) {

@@ -125,9 +125,9 @@ MemNode *TXOpBase::inplace_write_op(int tableid,uint64_t key,char *val,int len, 
   node = inplace_write_op(node,val,len,db_->_schemas[tableid].meta_len, commit_id);
   if(commit_id != -1) {
     // *(uint32_t*)(&(node->read_lock)) = *((uint32_t*)(&(node->read_lock)) + 1) = commit_id;
-    uint64_t l = (node->lock)&0x0000000080000000;
+    uint64_t l = 0;
     l += (uint64_t)commit_id + (((uint64_t)commit_id) << 32);
-    node->lock = l;
+    node->read_lock = l;
   }
   return node;
 }

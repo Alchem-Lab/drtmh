@@ -57,6 +57,17 @@ struct RTXSundialUnlockItem {
   RTXSundialUnlockItem(){}
 } __attribute__ ((aligned (8)));
 
+struct RTXMVCCUnlockItem {
+  uint8_t  pid;
+  uint64_t key;
+  uint8_t  tableid;
+  uint64_t txn_starting_timestamp;
+  inline RTXMVCCUnlockItem(uint8_t pid,uint64_t key,uint8_t tableid, uint64_t txn_starting_timestamp)
+      :pid(pid),key(key),tableid(tableid),txn_starting_timestamp(txn_starting_timestamp)
+  {
+  }
+} __attribute__ ((aligned (8)));
+
 struct RTXRenewLeaseItem {
   uint8_t pid;
   uint8_t tableid;
@@ -130,8 +141,8 @@ struct RTXMVCCWriteRequestItem {
   uint64_t key;
   uint16_t len;
   uint64_t txn_starting_timestamp;
-  inline RTXMVCCWriteRequestItem(uint8_t pid,uint8_t tableid,uint64_t key, uint16_t len, uint64_t txn_start_time)
-      :pid(pid),tableid(tableid),key(key),len(len),txn_starting_timestamp(txn_start_time)
+  inline RTXMVCCWriteRequestItem(uint8_t pid,uint64_t key,uint8_t tableid, uint16_t len, uint64_t txn_start_time)
+      :pid(pid),key(key),tableid(tableid),len(len),txn_starting_timestamp(txn_start_time)
   {
   }
 } __attribute__ ((aligned (8)));
