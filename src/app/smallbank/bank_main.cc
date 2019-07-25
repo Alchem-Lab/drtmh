@@ -142,14 +142,26 @@ void BankMainRunner::init_store(MemDB* &store){
   int meta_size = META_SIZE;
 #if 1
 // #if ONE_SIDED_READ
+#if MVCC_TX
+  meta_size = sizeof(rtx::MVCCHeader);
+#else  
   meta_size = sizeof(rtx::RdmaValHeader);
 #endif
 
+#endif
+
   //store->AddSchema(ACCT, TAB_HASH,sizeof(uint64_t),sizeof(account::value),meta_size);
+#if MVCC_TX
+  store->AddSchema(SAV,  TAB_HASH,sizeof(uint64_t),sizeof(savings::value) * MVCC_VERSION_NUM,meta_size,
+                   NumAccounts() / total_partition * 1.5);
+  store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value) * MVCC_VERSION_NUM,meta_size,
+                   NumAccounts() / total_partition * 1.5);
+#else
   store->AddSchema(SAV,  TAB_HASH,sizeof(uint64_t),sizeof(savings::value),meta_size,
                    NumAccounts() / total_partition * 1.5);
   store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value),meta_size,
                    NumAccounts() / total_partition * 1.5);
+#endif
 
 #if 1
 // #if ONE_SIDED_READ == 1
@@ -167,6 +179,10 @@ void BankMainRunner::init_backup_store(MemDB* &store){
 #if 1
 // #if ONE_SIDED_READ
   meta_size = sizeof(rtx::RdmaValHeader);
+#endif
+
+#if MVCC_TX
+  assert(false);
 #endif
 
   store->AddSchema(SAV,  TAB_HASH,sizeof(uint64_t),sizeof(savings::value),meta_size,
@@ -210,9 +226,18 @@ class BankLoader : public BenchLoader {
       uint64_t round_sz = CACHE_LINE_SZ << 1; // 128 = 2 * cacheline to avoid false sharing
 
       char *wrapper_acct(NULL), *wrapper_saving(NULL), *wrapper_check(NULL);
+#if MVCC_TX
+      int save_size = meta_size + MVCC_VERSION_NUM * sizeof(savings::value);
+#else
       int save_size = meta_size + sizeof(savings::value);
+#endif
       save_size = Round<int>(save_size,sizeof(uint64_t));
-      int check_size = meta_size + sizeof(checking::value);
+      
+#if MVCC_TX
+      int check_size = meta_size + MVCC_VERSION_NUM * sizeof(checking::value);
+#else
+      int check_size = meta_size + sizeof(checking::value); 
+#endif
       check_size = Round<int>(check_size, sizeof(uint64_t));
       ASSERT(check_size % sizeof(uint64_t) == 0) << "cache size " << check_size;
 
@@ -253,13 +278,14 @@ class BankLoader : public BenchLoader {
 
       savings::value *s = (savings::value *)(wrapper_saving + meta_size);
       s->s_balance = balance_s;
+      // here send the size of value instead of mvcc_version_num * sizeof(value), the value inside is of no use
       auto node = store_->Put(SAV,i,(uint64_t *)wrapper_saving,sizeof(savings::value));
       if (is_primary_) {
       // if(is_primary_ && ONE_SIDED_READ) {
         node->off = (uint64_t)wrapper_saving - (uint64_t)(cm->conn_buf_);
         ASSERT(node->off % sizeof(uint64_t) == 0) << "saving value size " << save_size;
       }
-
+// TODO: MVCC may set the meta data to correct
       checking::value *c = (checking::value *)(wrapper_check + meta_size);
       c->c_balance = balance_c;
       assert(c->c_balance > 0);
