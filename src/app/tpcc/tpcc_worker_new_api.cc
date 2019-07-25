@@ -103,7 +103,6 @@ txn_result_t TpccWorker::txn_new_order_new_api(yield_func_t &yield) {
       }
     }
   }
-
   // Execution phase ////////////////////////////////////////////////////
   // rtx_->read<CUST,customer::value>(current_partition,c_key,yield);
   // rtx_->read<WARE,warehouse::value>(current_partition,warehouse_id,yield);
@@ -111,6 +110,7 @@ txn_result_t TpccWorker::txn_new_order_new_api(yield_func_t &yield) {
   uint64_t d_key = makeDistrictKey(warehouse_id,districtID);
 
   auto idx = rtx_->write<DIST,district::value>(current_partition,d_key,yield);
+  if(idx == -1) return txn_result_t(false,73);
   district::value *d_value = rtx_->get_writeset<district::value>(idx,yield);
 
   const auto my_next_o_id = d_value->d_next_o_id;
@@ -152,6 +152,7 @@ txn_result_t TpccWorker::txn_new_order_new_api(yield_func_t &yield) {
     uint64_t s_key = local_stocks[ol_number  - 1];
 
     idx = rtx_->write<STOC,stock::value>(current_partition,s_key,yield);
+  if(idx == -1) return txn_result_t(false,73);
     stock::value *s_value = rtx_->get_writeset<stock::value>(idx,yield);
 
     if (s_value->s_quantity - ol_quantity >= 10)
@@ -199,6 +200,7 @@ txn_result_t TpccWorker::txn_new_order_new_api(yield_func_t &yield) {
     stock::value *s_value = rtx_->get_writeset<stock::value>(idx,yield);
 #else
     idx = rtx_->write<STOC,stock::value>(WarehouseToPartition(stockKeyToWare(s_key)),s_key,yield);
+  if(idx == -1) return txn_result_t(false,73);
     stock::value *s_value = rtx_->get_writeset<stock::value>(idx,yield);
 #endif
     assert(s_value != NULL);

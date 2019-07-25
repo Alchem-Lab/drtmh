@@ -182,6 +182,7 @@ class Qp {
     // post and poll wrapper
     IOStatus rc_post_batch(struct ibv_send_wr *send_sr,ibv_send_wr **bad_sr_addr,int doorbell_num = 0) {
         auto rc = (IOStatus)ibv_post_send(qp,send_sr,bad_sr_addr);
+        if(rc != 0) fprintf(stderr, "error code=%d errno=%d\n", (int)rc, errno);
         assert(rc == 0);
     }
 

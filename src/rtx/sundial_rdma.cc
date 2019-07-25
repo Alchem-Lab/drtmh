@@ -69,11 +69,18 @@ bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
       write_batch_helper_.req_buf_end_ += item.len;
     }
     else { // local
-      auto node = inplace_write_op(item.tableid, item.key, item.data_ptr, item.len, commit_id_);
+      MemNode* node;
+      if(item.data_ptr != NULL) {
+        node = inplace_write_op(item.tableid, item.key, item.data_ptr, item.len, commit_id_);
+      }
+      else {
+        node = local_lookup_op(item.tableid, item.key);
+      }
       assert(node != NULL);
       uint64_t l = node->lock;
       volatile uint64_t *lockptr = &(node->lock);
-      assert(__sync_bool_compare_and_swap(lockptr, l, 0)); // TODO
+      node->lock = 0;
+      //assert(__sync_bool_compare_and_swap(lockptr, l, 0)); // TODO
     }
   }
   if(need_send) {
@@ -98,7 +105,7 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
       volatile uint64_t l = node->lock;
       volatile uint64_t *lockptr = &(node->lock);
       if(l == 0) {
-        LOG(3) << "already unlocked!";
+        //LOG(3) << "already unlocked!";
         break;
       }
       if(!__sync_bool_compare_and_swap(lockptr, l ,0)) { // TODO
@@ -275,19 +282,23 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
   START(lock);
   if((*it).pid != node_id_) {
   // if((*it).pid != response_node_) {
-    auto off = (*it).off;
-    Qp *qp = get_qp((*it).pid);
-    assert(qp != NULL);
-    char* local_buf = (char*)((*it).data_ptr) - sizeof(RdmaValHeader);
+        char* local_buf = (char*)((*it).data_ptr) - sizeof(RdmaValHeader);
     RdmaValHeader *h = (RdmaValHeader*)local_buf;
     while(true) {
       // LOG(3) << "lock with " << (int)off;
       // debug
+      auto off = (*it).off;
+      Qp *qp = get_qp((*it).pid);
+      assert(qp != NULL);
+
+      assert(off != 0);
       lock_req_->set_lock_meta(off, 0, SUNDIALWLOCK, local_buf);
+      LOG(3) << "before lock req";
       lock_req_->post_reqs(scheduler_, qp);
+      LOG(3) << "after lock req";
       worker_->indirect_yield(yield);
-      // if(false) {
-      if(h->lock != 0) {
+       if(false) {
+      //if(h->lock != 0) {
 #ifdef SUNDIAL_NOWAIT
         END(lock);
         return false;

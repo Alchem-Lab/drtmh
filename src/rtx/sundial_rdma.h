@@ -167,6 +167,7 @@ protected:
     // get the results
     process_received_data(reply_buf_, write_set_.back(), true);
 #endif
+    assert(write_set_[index].data_ptr != NULL);
     return index;
   }
 
@@ -256,14 +257,14 @@ public:
     template <typename V>
   inline __attribute__((always_inline))
   V *get_readset(int idx,yield_func_t &yield) {
-    return NULL;
+    return (V*)load_read(idx, sizeof(V), yield);
     // return get_set_helper<V>(read_set_, idx, yield);
   }
 
   template <typename V>
   inline __attribute__((always_inline))
   V *get_writeset(int idx,yield_func_t &yield) {
-    return NULL;
+    return (V*)load_write(idx, sizeof(V), yield);
     // return get_set_helper<V>(write_set_, idx, yield);
   }
 
@@ -293,7 +294,6 @@ public:
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    assert(false);
     return -1;
   }
 

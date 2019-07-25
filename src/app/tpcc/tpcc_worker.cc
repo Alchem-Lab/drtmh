@@ -115,7 +115,8 @@ void TpccWorker::thread_local_init() {
 #elif defined(SUNDIAL_TX)
     if(txs_[i]  == NULL) {    
 #if ONE_SIDED_READ
-      assert(false);
+      new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                   cm,rdma_sched_,total_partition);
 #else
       new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
                                    cm,rdma_sched_,total_partition);
