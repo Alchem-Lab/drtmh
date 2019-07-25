@@ -150,7 +150,8 @@ protected:
   }
 
   int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return add_batch_insert(tableid,key,pid,len);
+    return -1;
+    //return add_batch_insert(tableid,key,pid,len);
   }
 
 #endif
@@ -555,11 +556,11 @@ public:
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    if(pid == node_id_)
-      return local_insert(tableid,key,(char *)val,sizeof(V),yield);
-    else {
-      return remote_insert(pid,tableid,key,sizeof(V),yield);
-    }
+    //if(pid == node_id_)
+    //  return local_insert(tableid,key,(char *)val,sizeof(V),yield);
+    //else {
+    //  return remote_insert(pid,tableid,key,sizeof(V),yield);
+    //}
     return -1;
   }
 
