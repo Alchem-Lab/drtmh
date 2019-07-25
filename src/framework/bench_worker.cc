@@ -559,8 +559,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     char* ptr = req_buf + sizeof(calvin_header);
     for (uint64_t i = 0; i < batch_size_; i++) {
       assert(ptr != NULL);
-      if (((calvin_request*)ptr)->req_idx != 0)
-        fprintf(stdout, "No 0 index!\n");
+      // if (((calvin_request*)ptr)->req_idx != 0)
+        // fprintf(stdout, "No 0 index!\n");
       assert (workload[((calvin_request*)ptr)->req_idx].gen_sets_fn != nullptr);
       assert ((char*)&((calvin_request*)ptr)->n_reads - req_buf >= sizeof(calvin_header));
       workload[((calvin_request*)ptr)->req_idx].gen_sets_fn(this,(char*)&((calvin_request*)ptr)->n_reads,yield);
