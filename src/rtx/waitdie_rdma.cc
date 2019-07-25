@@ -707,9 +707,11 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
       while (true) {
         volatile uint64_t l = it->node->lock;
         if(l & 0x1 == W_LOCKED) {
-          if (txn_start_time < START_TIME(l))
+          if (txn_start_time < START_TIME(l)){
             //need some random backoff?
+            worker_->yield_next(yield);
             continue;
+            }
           else {
             END(lock);
             return false;
@@ -719,8 +721,10 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
             // clear expired lease (optimization)
             volatile uint64_t *lockptr = &(it->node->lock);
             if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         R_LOCKED_WORD(txn_start_time, rwlock::LEASE_TIME))))
+                         R_LOCKED_WORD(txn_start_time, rwlock::LEASE_TIME)))){
+              worker_->yield_next(yield);
               continue;
+              }
             else {
               END(lock);
               return true;
@@ -766,9 +770,11 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
       while(true) {
         volatile uint64_t l = it->node->lock;
         if(l & 0x1 == W_LOCKED) {
-          if (txn_start_time < START_TIME(l))
+          if (txn_start_time < START_TIME(l)){
             //need some random backoff?
+            worker_->yield_next(yield);
             continue;
+            }
           else {
             END(lock);
             return false;
@@ -778,16 +784,20 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
             // clear expired lease (optimization)
             volatile uint64_t *lockptr = &(it->node->lock);
             if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         W_LOCKED_WORD(txn_start_time, response_node_))))
+                         W_LOCKED_WORD(txn_start_time, response_node_)))){
+              worker_->yield_next(yield);
               continue;
+              }
             else {
               END(lock);
               return true;
             }
           } else { //read locked
-            if (txn_start_time < START_TIME(l))
+            if (txn_start_time < START_TIME(l)){
               //need some random backoff?
+              worker_->yield_next(yield);
               continue;
+              }
             else {
               END(lock);
               return false;

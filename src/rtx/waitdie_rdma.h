@@ -133,8 +133,9 @@ protected:
   }
 
   int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    assert(false);
-    return add_batch_insert(tableid,key,pid,len);
+    return -1;
+   // assert(false);
+   // return add_batch_insert(tableid,key,pid,len);
   }
 
 #else
