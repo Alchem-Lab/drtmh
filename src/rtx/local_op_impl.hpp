@@ -112,6 +112,8 @@ MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta) {
     node->value = (uint64_t *)malloc(len);
     // fprintf(stdout, "becomes %p\n", node->value);
   }
+  assert(node->value != NULL);
+  assert(val != NULL);
   memcpy((char *)(node->value) + meta,val,len);
   // fprintf(stdout, "dest node %p addr: %p, value = %f, meta = %d\n", 
   //                   node,
