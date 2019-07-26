@@ -59,8 +59,8 @@ struct RTXSundialUnlockItem {
 
 struct RTXMVCCUnlockItem {
   uint8_t  pid;
-  uint64_t key;
   uint8_t  tableid;
+  uint64_t key;
   uint64_t txn_starting_timestamp;
   inline RTXMVCCUnlockItem(uint8_t pid,uint64_t key,uint8_t tableid, uint64_t txn_starting_timestamp)
       :pid(pid),key(key),tableid(tableid),txn_starting_timestamp(txn_starting_timestamp)
@@ -110,6 +110,20 @@ struct RTXUpdateItem {
   uint32_t commit_id;
   RTXUpdateItem(int pid,int tableid,uint64_t key,int len, uint32_t commit_id) :
       pid(pid),tableid(tableid),key(key),len(len), commit_id(commit_id) {
+
+  }
+} __attribute__ ((aligned (8)));
+
+struct RTXMVCCUpdateItem {
+  uint8_t  pid;
+  uint8_t  tableid;
+  uint64_t key;
+  uint16_t len;
+  uint16_t pos;
+  uint64_t txn_starting_timestamp;
+  RTXMVCCUpdateItem(int pid,uint64_t key,uint8_t tableid,int len,uint16_t pos, uint64_t txn_starting_timestamp) :
+      pid(pid),key(key),tableid(tableid),len(len), pos(pos),
+      txn_starting_timestamp(txn_starting_timestamp) {
 
   }
 } __attribute__ ((aligned (8)));

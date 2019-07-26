@@ -32,6 +32,7 @@ protected:
 
   bool try_lock_read_rpc(int index, yield_func_t &yield);
   bool try_read_rpc(int index, yield_func_t &yield);
+  bool try_update_rpc(yield_func_t &yield);
 
   void release_reads(yield_func_t &yield);
   void release_writes(yield_func_t &yield, bool all = true);
@@ -92,7 +93,7 @@ protected:
     }
     // get the results
     if(pid != node_id_) {
-      process_received_data(reply_buf_, write_set_.back());
+      process_received_data(reply_buf_, write_set_.back(), true);
     }
 #endif
     return index;
@@ -163,6 +164,7 @@ public:
     read_set_.clear();
     write_set_.clear();
     txn_start_time = (rwlock::get_now_nano() << 10) + response_node_ * 80 + worker_id_ * 10 + cor_id_ + 1; // TODO: may be too large
+    // LOG(3) << "@" << txn_start_time;
     // the txn_end_time is approximated using the LEASE_TIME
     // txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }
@@ -170,6 +172,7 @@ public:
   virtual bool commit(yield_func_t &yield) {
 #if ONE_SIDED_READ
 #else
+    try_update_rpc(yield);
 #endif
   	return true;
   }
@@ -213,6 +216,7 @@ private:
   void lock_read_rpc_handler(int id,int cid,char *msg,void *arg);
   void read_rpc_handler(int id,int cid,char *msg,void *arg);
   void release_rpc_handler(int id,int cid,char *msg,void *arg);
+  void update_rpc_handler(int id,int cid,char *msg,void *arg);
   
   inline __attribute__((always_inline))
   bool check_write(MVCCHeader* header, uint64_t timestamp) {
@@ -245,16 +249,18 @@ private:
     return pos;
   }
 
-  void process_received_data(char* ptr, ReadSetItem& item) {
+  void process_received_data(char* ptr, ReadSetItem& item, bool process_pos = false) {
     char* reply = ptr + 1;
-    item.seq = *(uint64_t*)reply;
+    if(process_pos) {
+      item.seq = *(uint64_t*)reply;
+      ASSERT(item.seq < MVCC_VERSION_NUM) << " " << item.seq;
+      reply += sizeof(uint64_t);
+    }
     if(item.data_ptr == NULL)
       item.data_ptr = (char*)malloc(item.len);
-    memcpy(item.data_ptr, reply + sizeof(uint64_t), item.len);
+    memcpy(item.data_ptr, reply, item.len);
   }
 // rpc handlers
 };
-
-
 }
 }

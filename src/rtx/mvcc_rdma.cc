@@ -139,7 +139,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
           *lockptr = 0;
           return false;
         }
-        uint64_t max_wts = 0, min_wts = 0x7fffffffffffffff;
+        uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
         int pos = -1;
         for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
           if(header->wts[i] > max_wts) {
@@ -155,6 +155,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
           return false;
         }
         (*it).seq = (uint64_t)pos;
+        assert((*it).seq < MVCC_VERSION_NUM);
         if((*it).data_ptr == NULL) 
           (*it).data_ptr = (char*)malloc((*it).len);
         char* raw_data = (char*)((*it).node->value) + sizeof(MVCCHeader);
@@ -165,6 +166,45 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
   return true;
 }
 
+bool MVCC::try_update_rpc(yield_func_t &yield) {
+  start_batch_rpc_op(write_batch_helper_);
+  bool need_send = false;
+  START(commit);
+  for(auto& item : write_set_) {
+    if(item.pid != node_id_) {
+      need_send = true;
+      assert(item.seq < MVCC_VERSION_NUM);
+      add_batch_entry<RTXMVCCUpdateItem>(write_batch_helper_, item.pid,
+        /* init RTXMVCCUpdateItem*/
+        item.pid, item.key, item.tableid, 
+        item.len, (uint16_t)item.seq, txn_start_time);
+      assert(item.data_ptr != NULL);
+      memcpy(write_batch_helper_.req_buf_end_, item.data_ptr, item.len);
+      write_batch_helper_.req_buf_end_ += item.len;
+    }
+    else {
+      assert(item.data_ptr != NULL);
+      assert(item.seq < MVCC_VERSION_NUM);
+      auto node = local_lookup_op(item.tableid, item.key);
+      assert(node != NULL);
+      MVCCHeader* header = (MVCCHeader*)node->value;
+      ASSERT(header->lock == txn_start_time) << "release lock: "
+        << header->lock << "!=" << txn_start_time;      
+      int pos = (int)item.seq;
+      header->wts[pos] = txn_start_time;
+      // LOG(3) << txn_start_time;
+      char* raw_data = (char*)node->value + sizeof(MVCCHeader);
+      memcpy(raw_data + pos * item.len, item.data_ptr, item.len);
+      header->lock = 0;
+    }
+  }
+  if(need_send) {
+    send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
+    worker_->indirect_yield(yield);
+  }
+  END(commit);
+  return true;
+}
 
 void MVCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
@@ -231,7 +271,7 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
     assert(request_item_parsed <= 1); // no batching of lock request.
     if(item->pid != response_node_)
       continue;
-    LOG(3) << (int)item->tableid << ' ' << item->key;
+    // LOG(3) << (int)item->tableid << ' ' << item->key;
     node = local_lookup_op(item->tableid, item->key);
     assert(node != NULL && node->value != NULL);
     MVCCHeader* header = (MVCCHeader*)(node->value);
@@ -262,9 +302,11 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
           header->lock = 0; // release lock
           goto END;
         }
-        uint64_t max_wts = 0, min_wts = 0x7fffffffffffffff;
+        uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
         int pos = -1;
         for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
+          // LOG(3) << header->wts[i] << " $$$ " << min_wts;
+          // fprintf(stderr, "%x\n", header->wts[i]);
           if(header->wts[i] > max_wts) {
             max_wts = header->wts[i];
           }
@@ -278,8 +320,10 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
           header->lock = 0;
           goto END;
         }
+        assert(pos != -1);
         char* reply = (char*)reply_msg + 1;
         *(uint64_t*)reply = (uint64_t)pos;
+        assert((uint64_t)pos < MVCC_VERSION_NUM);
         char* raw_data = (char*)(node->value) + sizeof(MVCCHeader);
         memcpy(reply + sizeof(uint64_t), raw_data + pos * item->len, item->len);
         nodelen = sizeof(uint64_t) + item->len;
@@ -312,11 +356,37 @@ void MVCC::release_rpc_handler(int id, int cid, char* msg, void* arg) {
   rpc_->send_reply(reply_msg, 0, id, cid);
 }
 
+void MVCC::update_rpc_handler(int id, int cid, char* msg, void* arg) {
+  RTX_ITER_ITEM(msg, sizeof(RTXMVCCUpdateItem)) {
+    auto item = (RTXMVCCUpdateItem*)ttptr;
+    ttptr += item->len;
+    if(item->pid != response_node_)
+      continue;
+    auto node = local_lookup_op(item->tableid, item->key);
+    assert(node != NULL);
+    MVCCHeader* header = (MVCCHeader*)node->value;
+    ASSERT(header->lock == item->txn_starting_timestamp) << "release lock: "
+      << header->lock << "!=" << item->txn_starting_timestamp;
+    int pos = (int)item->pos;
+    assert(pos < MVCC_VERSION_NUM);
+    header->wts[pos] = item->txn_starting_timestamp;
+    // LOG(3) << item->txn_starting_timestamp;
+    char* raw_data = (char*)node->value + sizeof(MVCCHeader);
+    memcpy(raw_data + pos * item->len, (char*)item + sizeof(RTXMVCCUpdateItem),
+      item->len);
+    header->lock = 0; // unlock
+  }
+  char* reply_msg = rpc_->get_reply_buf();
+  rpc_->send_reply(reply_msg, 0, id, cid);
+
+}
+
 void MVCC::register_default_rpc_handlers() {
   // register rpc handlers
   ROCC_BIND_STUB(rpc_,&MVCC::read_rpc_handler,this,RTX_READ_RPC_ID);
   ROCC_BIND_STUB(rpc_,&MVCC::lock_read_rpc_handler,this,RTX_LOCK_READ_RPC_ID);
   ROCC_BIND_STUB(rpc_,&MVCC::release_rpc_handler,this,RTX_RELEASE_RPC_ID);
+  ROCC_BIND_STUB(rpc_,&MVCC::update_rpc_handler,this,RTX_UPDATE_RPC_ID);
 }
 
 
