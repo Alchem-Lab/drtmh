@@ -148,6 +148,9 @@ public:
         memset(reply_buf_,0,MAX_MSG_SIZE);
         read_set_.clear();
         write_set_.clear();
+        lock_req_ = new RDMACASLockReq(cid);
+        unlock_req_ = new RDMAFAUnlockReq(cid, 0);
+        write_req_ = new RDMAWriteReq(cid, 0);
       }
 
   inline __attribute__((always_inline))
@@ -240,9 +243,9 @@ protected:
   uint64_t txn_start_time = 0;
   uint64_t txn_end_time = 0;
 
-  RDMACASLockReq* lock_req_;
-  RDMAFAUnlockReq* unlock_req_;
-  RDMAReadReq* read_req_;
+  RDMACASLockReq* lock_req_ = NULL;
+  RDMAFAUnlockReq* unlock_req_ = NULL;
+  RDMAWriteReq* write_req_ = NULL;
 
 public:
 #include "occ_statistics.h"

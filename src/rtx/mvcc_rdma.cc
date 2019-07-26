@@ -198,7 +198,7 @@ bool MVCC::try_update_rpc(yield_func_t &yield) {
       assert(node != NULL);
       MVCCHeader* header = (MVCCHeader*)node->value;
       ASSERT(header->lock == txn_start_time) << "release lock: "
-        << header->lock << "!=" << txn_start_time;      
+        << header->lock << "!=" << txn_start_time;
       int pos = (int)item.seq;
       header->wts[pos] = txn_start_time;
       // LOG(3) << txn_start_time;
@@ -437,7 +437,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader), off, IBV_SEND_SIGNALED);
     worker_->indirect_yield(yield);
     volatile uint64_t l = *((uint64_t*)local_buf);
-    assert(l == txn_start_time);
+    ASSERT(l == txn_start_time) << l << ' ' << txn_start_time;
     if(header->rts > txn_start_time) {
       return -2;
     }
@@ -456,9 +456,9 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     if(max_wts > txn_start_time) {
       return -2;
     }
-    assert(pos < MVCC_VERSION_NUM);
-    assert(maxpos < MVCC_VERSION_NUM);
-    item.seq = (uint64_t)pos;
+    assert(pos < MVCC_VERSION_NUM && pos >= 0);
+    assert(maxpos < MVCC_VERSION_NUM && maxpos >= 0);
+    item.seq = (uint64_t)pos + (uint64_t)maxpos * MVCC_VERSION_NUM;
     item.data_ptr = local_buf + sizeof(MVCCHeader) + maxpos * item.len;
     return 0;
   }
@@ -608,7 +608,49 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
 }
 
 bool MVCC::try_update_rdma(yield_func_t &yield) {
-  return true;
+  
+  bool need_yield = false;
+  for(auto& item : write_set_) {
+    if(item.pid != node_id_) {
+      START(commit);
+      assert(item.seq < MVCC_VERSION_NUM * MVCC_VERSION_NUM);
+      int pos = (int)(item.seq % MVCC_VERSION_NUM);
+      int maxpos = (int)(item.seq / MVCC_VERSION_NUM);
+      char* local_buf = item.data_ptr - sizeof(MVCCHeader) - maxpos * item.len;
+      MVCCHeader* header = (MVCCHeader*)local_buf;
+      assert(header->lock == txn_start_time);
+      header->wts[pos] = txn_start_time;
+      char* raw_data = local_buf + sizeof(MVCCHeader);
+      memcpy(raw_data + pos * item.len, item.data_ptr, item.len);
+      Qp *qp = get_qp(item.pid);
+      assert(qp != NULL);
+      write_req_->set_write_meta(item.off + 2 * sizeof(uint64_t), 
+        local_buf + 2 * sizeof(uint64_t), 
+        sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len);
+      write_req_->set_unlock_meta(item.off);
+      write_req_->post_reqs(scheduler_, qp);
+      need_yield = true;
+      if(unlikely(qp->rc_need_poll())) {
+        worker_->indirect_yield(yield);
+        need_yield = false;
+      }
+      END(commit);
+    }
+    else {
+      assert(item.seq < MVCC_VERSION_NUM);
+      auto node = local_lookup_op(item.tableid, item.key);
+      assert(node != NULL);
+      MVCCHeader* header = (MVCCHeader*)node->value;
+      ASSERT(header->lock == txn_start_time) << "release lock: "
+        << header->lock << "!=" << txn_start_time;
+      int pos = (int)item.seq;
+      // update wts
+      header->wts[pos] = txn_start_time;
+      char* raw_data = (char*)node->value + sizeof(MVCCHeader);
+      memcpy(raw_data + pos * item.len, item.data_ptr, item.len);
+      header->lock = 0;
+    }
+  }
 }
 
 void MVCC::register_default_rpc_handlers() {
