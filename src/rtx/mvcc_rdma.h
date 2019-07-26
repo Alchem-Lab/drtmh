@@ -236,7 +236,7 @@ private:
   inline __attribute__((always_inline))
   int check_read(MVCCHeader* header, uint64_t timestamp) {
     // earlier write is processing
-    if(header->lock < timestamp) return -1;
+    if(header->lock != 0 && header->lock < timestamp) return -1;
     int max_wts = 0;
     int pos = -1;
     for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
