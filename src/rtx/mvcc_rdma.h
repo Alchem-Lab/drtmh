@@ -34,9 +34,13 @@ protected:
   bool try_read_rpc(int index, yield_func_t &yield);
   bool try_update_rpc(yield_func_t &yield);
 
+  bool try_read_rdma(int index, yield_func_t &yield);
+  int try_lock_read_rdma(int index, yield_func_t &yield);
+
+
   void release_reads(yield_func_t &yield);
   void release_writes(yield_func_t &yield, bool all = true);
-
+  bool try_update_rdma(yield_func_t &yield);
 
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     char* data_ptr = (char*)malloc(len);
@@ -57,13 +61,19 @@ protected:
     read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid);
     int index = read_set_.size() - 1;
 
-#if ONE_SIDED_READ
-#else
-    // HARD CODED!!!
+// HARD CODED!!!
     if(tableid == 7) {
       read_set_[index].data_ptr = (char*)malloc(len);
       return index;
     }
+
+#if ONE_SIDED_READ
+    if(!try_read_rdma(index, yield)) {
+      release_reads(yield);
+      release_writes(yield);
+      return -1;
+    }
+#else
     if(!try_read_rpc(index, yield)) {
       release_reads(yield);
       release_writes(yield);
@@ -89,6 +99,21 @@ protected:
     write_set_.emplace_back(tableid,key,(MemNode*)NULL,(char *)NULL,0,len,pid);
     index = write_set_.size() - 1;
 #if ONE_SIDED_READ
+    int ret = try_lock_read_rdma(index, yield);
+    if(ret == -1) {
+      release_reads(yield);
+      release_writes(yield, false);
+      return -1;
+    }
+    else if(ret == -2) {
+      release_reads(yield);
+      release_writes(yield);
+      return -1; 
+    }
+    else if(ret != 0) {
+      assert(false);
+    }
+
 #else
     if(!try_lock_read_rpc(index, yield)) {
       // abort
@@ -177,6 +202,7 @@ public:
 
   virtual bool commit(yield_func_t &yield) {
 #if ONE_SIDED_READ
+    try_update_rdma(yield);
 #else
     try_update_rpc(yield);
 #endif
@@ -213,6 +239,10 @@ protected:
 
   uint64_t txn_start_time = 0;
   uint64_t txn_end_time = 0;
+
+  RDMACASLockReq* lock_req_;
+  RDMAFAUnlockReq* unlock_req_;
+  RDMAReadReq* read_req_;
 
 public:
 #include "occ_statistics.h"
@@ -266,6 +296,15 @@ private:
       item.data_ptr = (char*)malloc(item.len);
     memcpy(item.data_ptr, reply, item.len);
   }
+
+  // void unlock(ReadSetItem& item, yield_func_t &yield) {
+  //   Qp* qp = get_qp(item.pid);
+  //   unlock_req_->set_unlock_meta(item.off);
+  //   unlock_req_->post_reqs(scheduler_, qp);
+  //   if(unlikely(qp->rc_need_poll())) {
+  //     worker_->indirect_yield(yield);
+  //   }
+  // }
 // rpc handlers
 };
 }
