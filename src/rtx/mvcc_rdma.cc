@@ -402,6 +402,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       sizeof(MVCCHeader));
     off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
      local_buf, yield, sizeof(MVCCHeader), false); // metalen?
+    assert(off != 0);
     item.node = (MemNode*)off;
     item.data_ptr = local_buf;
 
@@ -651,6 +652,10 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
       header->lock = 0;
     }
   }
+  if(need_yield) {
+    worker_->indirect_yield(yield);
+  }
+  return true;
 }
 
 void MVCC::register_default_rpc_handlers() {
