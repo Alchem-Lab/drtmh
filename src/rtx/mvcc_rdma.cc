@@ -141,9 +141,11 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
         }
         uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
         int pos = -1;
+        int maxpos = -1;
         for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
           if(header->wts[i] > max_wts) {
             max_wts = header->wts[i];
+            maxpos = i;
           }
           if(header->wts[i] < min_wts) {
             min_wts = header->wts[i];
@@ -159,7 +161,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
         if((*it).data_ptr == NULL) 
           (*it).data_ptr = (char*)malloc((*it).len);
         char* raw_data = (char*)((*it).node->value) + sizeof(MVCCHeader);
-        memcpy((*it).data_ptr, raw_data + pos * (*it).len, (*it).len);
+        memcpy((*it).data_ptr, raw_data + maxpos * (*it).len, (*it).len);
       }
     }
   }
@@ -304,10 +306,12 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
         }
         uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
         int pos = -1;
+        int maxpos = -1;
         for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
           // LOG(3) << header->wts[i] << " $$$ " << min_wts;
           // fprintf(stderr, "%x\n", header->wts[i]);
           if(header->wts[i] > max_wts) {
+            maxpos = i;
             max_wts = header->wts[i];
           }
           if(header->wts[i] < min_wts) {
@@ -325,7 +329,7 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
         *(uint64_t*)reply = (uint64_t)pos;
         assert((uint64_t)pos < MVCC_VERSION_NUM);
         char* raw_data = (char*)(node->value) + sizeof(MVCCHeader);
-        memcpy(reply + sizeof(uint64_t), raw_data + pos * item->len, item->len);
+        memcpy(reply + sizeof(uint64_t), raw_data + maxpos * item->len, item->len);
         nodelen = sizeof(uint64_t) + item->len;
         goto END;
       }
