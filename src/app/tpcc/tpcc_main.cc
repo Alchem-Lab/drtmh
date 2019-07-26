@@ -230,6 +230,7 @@ void TpccMainRunner::init_store(MemDB* &store){
 
   store = new MemDB(store_buffer);
   int meta_size = META_SIZE;
+  int mvcc_meta_size = sizeof(rtx::MVCCHeader);
 
   // store as normal B-tree
   //store->AddSchema(WARE,TAB_BTREE,sizeof(uint64_t),sizeof(warehouse::value),meta_size);
@@ -237,11 +238,20 @@ void TpccMainRunner::init_store(MemDB* &store){
   //store->AddSchema(STOC,TAB_BTREE,sizeof(uint64_t),sizeof(stock::value),meta_size);
   assert(scale_factor > 0);
   // store as DrTM kv
+#if MVCC_TX
+  store->AddSchema(WARE,TAB_HASH,sizeof(uint64_t),MVCC_VERSION_NUM * sizeof(warehouse::value),mvcc_meta_size,scale_factor * 2);
+  store->AddSchema(DIST,TAB_HASH,sizeof(uint64_t),MVCC_VERSION_NUM * sizeof(district::value),mvcc_meta_size,
+                   scale_factor * NumDistrictsPerWarehouse() * 2);
+  store->AddSchema(STOC,TAB_HASH,sizeof(uint64_t),MVCC_VERSION_NUM * sizeof(stock::value),mvcc_meta_size,
+                   NumItems() * scale_factor);
+#else
   store->AddSchema(WARE,TAB_HASH,sizeof(uint64_t),sizeof(warehouse::value),meta_size,scale_factor * 2);
   store->AddSchema(DIST,TAB_HASH,sizeof(uint64_t),sizeof(district::value),meta_size,
                    scale_factor * NumDistrictsPerWarehouse() * 2);
   store->AddSchema(STOC,TAB_HASH,sizeof(uint64_t),sizeof(stock::value),meta_size,
                    NumItems() * scale_factor);
+#endif
+
 #if ONE_SIDED_READ == 1
   store->EnableRemoteAccess(WARE,cm);
   store->EnableRemoteAccess(DIST,cm);
@@ -266,7 +276,9 @@ void TpccMainRunner::init_store(MemDB* &store){
 void TpccMainRunner::init_backup_store(MemDB* &store){
   store = new MemDB();
   int meta_size = META_SIZE;
-
+#if MVCC_TX
+  assert(false);
+#endif
   // store as DrTM kv
   store->AddSchema(WARE,TAB_HASH,sizeof(uint64_t),sizeof(warehouse::value),meta_size,scale_factor * 2);
   store->AddSchema(DIST,TAB_HASH,sizeof(uint64_t),sizeof(district::value),meta_size,scale_factor * 2 * NumDistrictsPerWarehouse());

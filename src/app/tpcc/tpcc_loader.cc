@@ -69,8 +69,11 @@ void TpccWarehouseLoader::load() {
       const string w_city = RandomStr(random_generator_, RandomNumber(random_generator_, 10, 20));
       const string w_state = RandomStr(random_generator_, 3);
       const string w_zip = "123456789";
-
-      int w_size = store_->_schemas[WARE].total_len;
+#if MVCC_TX
+      int w_size = store_->_schemas[WARE].vlen * MVCC_VERSION_NUM + sizeof(rtx::MVCCHeader);
+#else
+      int w_size = store_->_schemas[WARE].total_len; 
+#endif
 
 #if ONE_SIDED_READ == 1
       char *wrapper = (char *)Rmalloc(w_size);
@@ -78,8 +81,15 @@ void TpccWarehouseLoader::load() {
       char *wrapper = (char *)malloc(w_size);
 #endif
 
+#if MVCC_TX
+      memset(wrapper, 0, w_size);
+      ((rtx::MVCCHeader*)wrapper)->wts[0] = 1;
+      warehouse::value *v = (warehouse::value *)(wrapper + sizeof(rtx::MVCCHeader));
+#else
       memset(wrapper, 0, META_LENGTH + sizeof(warehouse::value));
       warehouse::value *v = (warehouse::value *)(wrapper + META_LENGTH);
+#endif
+      
       v->w_ytd = 300000 * 100;
       v->w_tax = (float) RandomNumber(random_generator_, 0, 2000) / 10000.0;
       v->w_name.assign(w_name);
@@ -125,7 +135,12 @@ void TpccDistrictLoader::load() {
         uint64_t key = makeDistrictKey(w, d);
         const district::key k(makeDistrictKey(w, d));
 
+#if MVCC_TX
+        int d_size = store_->_schemas[DIST].vlen * MVCC_VERSION_NUM + sizeof(rtx::MVCCHeader);
+#else
         int d_size = store_->_schemas[DIST].total_len;
+#endif
+        
 
 #if ONE_SIDED_READ == 1
         char *wrapper = (char *)Rmalloc(d_size);
@@ -133,8 +148,14 @@ void TpccDistrictLoader::load() {
         char *wrapper = (char *)malloc(d_size);
 #endif
 
+#if MVCC_TX
+        memset(wrapper, 0, d_size);
+        ((rtx::MVCCHeader*)wrapper)->wts[0] = 1;
+        district::value *v = (district::value *)(wrapper + sizeof(rtx::MVCCHeader));
+#else
         memset(wrapper, 0, META_LENGTH + sizeof(district::value) + sizeof(uint64_t));
-        district::value *v = (district::value *)(wrapper + META_LENGTH);
+        district::value *v = (district::value *)(wrapper + META_LENGTH);   
+#endif
         v->d_ytd = 30000 * 100; //notice i did the scale up
         v->d_tax = (float) (RandomNumber(random_generator_, 0, 2000) / 10000.0);
         v->d_next_o_id = 3001;
@@ -427,8 +448,11 @@ void TpccStockLoader::load() {
         const size_t iend = std::min((b + 1) * batchsize + 1, NumItems());
         for (uint i = (b * batchsize + 1); i <= iend; i++) {
           uint64_t key = makeStockKey(w, i);
-
+#if MVCC_TX
+          int s_size = store_->_schemas[STOC].vlen * MVCC_VERSION_NUM + sizeof(rtx::MVCCHeader);
+#else
           int s_size = store_->_schemas[STOC].total_len;
+#endif
           s_size = Round<int>(s_size,sizeof(uint64_t));
 
           char *wrapper = NULL;
@@ -440,8 +464,14 @@ void TpccStockLoader::load() {
             wrapper = (char *)malloc(s_size);
           }
 
+#if MVCC_TX
+          memset(wrapper, 0, s_size);
+          ((rtx::MVCCHeader*)wrapper)->wts[0] = 1;
+          stock::value *v = (stock::value *)(wrapper + sizeof(rtx::MVCCHeader));
+#else
           memset(wrapper, 0, META_LENGTH + sizeof(stock::value));
-          stock::value *v = (stock::value *)(wrapper + META_LENGTH);
+          stock::value *v = (stock::value *)(wrapper + META_LENGTH);     
+#endif
 
           v->s_quantity = RandomNumber(random_generator_, 10, 100);
           v->s_ytd = 0;

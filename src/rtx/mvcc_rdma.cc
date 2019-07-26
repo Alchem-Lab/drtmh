@@ -125,14 +125,20 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
       (*it).node = local_lookup_op((*it).tableid, (*it).key);
     }
     MVCCHeader *header = (MVCCHeader*)((*it).node->value);
-    if(!check_write(header, txn_start_time)) return false;
+    if(!check_write(header, txn_start_time)) {
+      return false;
+    }
     volatile uint64_t l = header->lock;
     if(l > txn_start_time) return false;
     while (true) {
       volatile uint64_t* lockptr = &(header->lock);
       if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, txn_start_time))) {
+#ifdef MVCC_NOWAIT
+        return false;
+#else
         worker_->yield_next(yield);
         continue;
+#endif         
       }
       else { // get the lock
         if(header->rts > txn_start_time) {
@@ -162,6 +168,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
           (*it).data_ptr = (char*)malloc((*it).len);
         char* raw_data = (char*)((*it).node->value) + sizeof(MVCCHeader);
         memcpy((*it).data_ptr, raw_data + maxpos * (*it).len, (*it).len);
+        return true;
       }
     }
   }

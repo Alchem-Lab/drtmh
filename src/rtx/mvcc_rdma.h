@@ -59,6 +59,11 @@ protected:
 
 #if ONE_SIDED_READ
 #else
+    // HARD CODED!!!
+    if(tableid == 7) {
+      read_set_[index].data_ptr = (char*)malloc(len);
+      return index;
+    }
     if(!try_read_rpc(index, yield)) {
       release_reads(yield);
       release_writes(yield);
@@ -96,6 +101,7 @@ protected:
       process_received_data(reply_buf_, write_set_.back(), true);
     }
 #endif
+    ASSERT(write_set_[index].data_ptr != NULL) << index;
     return index;
   }
 
