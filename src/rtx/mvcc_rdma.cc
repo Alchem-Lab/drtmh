@@ -15,6 +15,29 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
     release_num -= 1;
   }
 #if ONE_SIDED_READ
+  bool need_yield = false;
+  for(int i = 0; i < release_num; ++i) {
+    auto& item = write_set_[i];
+    if(item.pid != node_id_) {
+      Qp *qp = get_qp(item.pid);
+      unlock_req_->set_unlock_meta(item.off);
+      unlock_req_->post_reqs(scheduler_, qp);
+      need_yield = true;
+      if(unlikely(qp->rc_need_poll())) {
+        worker_->indirect_yield(yield);
+        need_yield = false;
+      }
+    }
+    else {
+      auto node = local_lookup_op(item.tableid, item.key);
+      MVCCHeader* header = (MVCCHeader*)node->value;
+      assert(header->lock != 0);
+      header->lock = 0;
+    }
+  }
+  if(need_yield) {
+    worker_->indirect_yield(yield);
+  }
 #else
   start_batch_rpc_op(write_batch_helper_);
   bool need_send = false;
@@ -405,6 +428,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     assert(off != 0);
     item.node = (MemNode*)off;
     item.data_ptr = local_buf;
+    item.off = off;
 
     // step 2: lock remote
     Qp *qp = get_qp(item.pid);
@@ -416,11 +440,13 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       worker_->indirect_yield(yield);
       if(header->lock > txn_start_time) { // a newer write is processing
         END(lock);
+        abort_cnt[0]++;
         return -1;
       }
       else if(header->lock != 0) {
 #ifdef MVCC_NOWAIT
         END(lock);
+        abort_cnt[1]++;
         return -1;
 #else
         worker_->yield_next(yield);
@@ -440,6 +466,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     volatile uint64_t l = *((uint64_t*)local_buf);
     ASSERT(l == txn_start_time) << l << ' ' << txn_start_time;
     if(header->rts > txn_start_time) {
+      abort_cnt[2]++;
       return -2;
     }
     uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
@@ -455,6 +482,8 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       }
     }
     if(max_wts > txn_start_time) {
+      // LOG(3) << max_wts << ' ' << txn_start_time;
+      abort_cnt[3]++;
       return -2;
     }
     assert(pos < MVCC_VERSION_NUM && pos >= 0);
@@ -469,14 +498,19 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     }
     MVCCHeader* header = (MVCCHeader*)(item.node->value);
     if(!check_write(header, txn_start_time)) {
+      abort_cnt[4]++;
       return -1;
     }
     while(true) {
       volatile uint64_t* lock_ptr = &(header->lock);
       volatile uint64_t l = *lock_ptr;
-      if(l > txn_start_time) return -1;
+      if(l > txn_start_time) {
+        abort_cnt[5]++;
+        return -1;
+      }
       if(unlikely(!__sync_bool_compare_and_swap(lock_ptr, l, txn_start_time))) {
 #ifdef MVCC_NOWAIT
+        abort_cnt[6]++;
         return -1;
 #else
         worker_->yield_next(yield);
@@ -490,6 +524,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     assert(header->lock == txn_start_time);
     if(header->rts > txn_start_time) {
       header->lock = 0;
+      abort_cnt[7]++;
       return -1;
     }
     uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
@@ -507,6 +542,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     }
     if(max_wts > txn_start_time) {
       header->lock = 0;
+      abort_cnt[8]++;
       return -1;
     }
     item.seq = (uint64_t)pos;
@@ -539,6 +575,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     worker_->indirect_yield(yield);
     int pos = -1;
     if((pos = check_read(header, txn_start_time)) == -1) {
+      abort_cnt[9]++;
       return false;
     }
     uint64_t before_reading_wts = header->wts[pos];
@@ -550,6 +587,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     worker_->indirect_yield(yield);
     int new_pos = check_read(header, txn_start_time);
     if(new_pos != pos || header->wts[new_pos] != before_reading_wts) {
+      abort_cnt[10]++;
       return false;
     }
 
@@ -575,7 +613,8 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     MVCCHeader* header = (MVCCHeader*)node->value;
     int pos = -1;
     if((pos = check_read(header, txn_start_time)) == -1){
-     return false;
+      abort_cnt[11]++;
+      return false;
     }
     uint64_t before_reading_wts = header->wts[pos];
 
@@ -586,6 +625,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
 
     int new_pos = check_read(header, txn_start_time);
     if(new_pos != pos || header->wts[new_pos] != before_reading_wts) {
+      abort_cnt[12]++;
       return false;
     }
     while(true) {

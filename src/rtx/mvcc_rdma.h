@@ -151,6 +151,8 @@ public:
         lock_req_ = new RDMACASLockReq(cid);
         unlock_req_ = new RDMAFAUnlockReq(cid, 0);
         write_req_ = new RDMAWriteReq(cid, 0);
+        memset(abort_cnt, 0, sizeof(int) * 20);
+        // init_time = (rwlock::get_now_nano() << 10);
       }
 
   inline __attribute__((always_inline))
@@ -197,7 +199,15 @@ public:
 	virtual void begin(yield_func_t &yield) {
     read_set_.clear();
     write_set_.clear();
-    txn_start_time = (rwlock::get_now_nano() << 10) + response_node_ * 80 + worker_id_ * 10 + cor_id_ + 1; // TODO: may be too large
+    // txn_start_time = (rwlock::get_now_nano() << 10) 
+    // + response_node_ * 80 + worker_id_ * 10 + cor_id_ + 1
+    // - init_time; // TODO: may be too large
+
+    txn_start_time = ((++cnt_timer) << 10) 
+    + response_node_ * 80 + worker_id_ * 10 + cor_id_ + 1;
+
+    // LOG(3) << worker_id_ << ' ' << cor_id_ << ' ' << txn_start_time;
+
     // LOG(3) << "@" << txn_start_time;
     // the txn_end_time is approximated using the LEASE_TIME
     // txn_end_time = txn_start_time + rwlock::LEASE_TIME;
@@ -241,13 +251,22 @@ protected:
   char reply_buf_[MAX_MSG_SIZE];
 
   uint64_t txn_start_time = 0;
+  uint64_t cnt_timer = 0;
+  uint64_t init_time = 0;
   uint64_t txn_end_time = 0;
 
   RDMACASLockReq* lock_req_ = NULL;
   RDMAFAUnlockReq* unlock_req_ = NULL;
   RDMAWriteReq* write_req_ = NULL;
 
+  int abort_cnt[20];
+
 public:
+  void show_abort() {
+    for(int i = 0; i < 20; ++i) {
+      LOG(3) << i << ": " << abort_cnt[i];
+    }
+  }
 #include "occ_statistics.h"
 
   void register_default_rpc_handlers();
