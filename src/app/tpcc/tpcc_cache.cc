@@ -25,7 +25,7 @@ void populate_ware(MemDB *db) {
   char *temp = (char *)Rmalloc(256);
   for(uint wid = 1; wid <= NumWarehouses();++wid) {
     int pid;
-    if( (pid = WarehouseToPartition(wid)) != current_partition) {
+    if( (pid = WarehouseToPartition(wid)) != -1) {
       // fetch it
       auto off = db->stores_[WARE]->RemoteTraverse(wid,cm->get_rc_qp(nthreads + nthreads + 1,pid,0),temp);
       assert(off != 0);
@@ -41,7 +41,7 @@ void populate_dist(MemDB *db) {
   char *temp = (char *)Rmalloc(256);
   for(uint wid = 1;wid <= NumWarehouses();++wid) {
     for(uint d = 1; d <= NumDistrictsPerWarehouse();++d) {
-      if( (pid = WarehouseToPartition(wid)) == current_partition) continue;
+      if( (pid = WarehouseToPartition(wid)) == -1) continue;
       uint64_t key = makeDistrictKey(wid,d);
       auto off = db->stores_[DIST]->RemoteTraverse(key,
                                                    cm->get_rc_qp(nthreads + nthreads + 1,pid,0),temp);
@@ -65,7 +65,7 @@ void populate_stock(MemDB *db) {
       for (uint i = (b * batchsize + 1); i <= iend; i++) {
 
         uint64_t key = makeStockKey(wid,i);
-        if((pid = WarehouseToPartition(wid)) == current_partition) continue;
+        if((pid = WarehouseToPartition(wid)) == -1) continue;
         auto off = db->stores_[STOC]->RemoteTraverse(key,
                                                      cm->get_rc_qp(nthreads + nthreads + 1,pid,0),temp);
         assert(off != 0);

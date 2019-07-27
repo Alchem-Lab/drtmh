@@ -384,8 +384,16 @@ void BenchWorker::exit_handler() {
 
     exit_report();
 #endif
-    auto hkztx = dynamic_cast<rtx::MVCC *>(new_txs_[1]);
-    hkztx->show_abort();
+#if MVCC_TX
+    int temp[20];
+    for(int i = 0; i < 20; ++i)
+        temp[i] = 0;
+    for(int i = 1; i < 11; ++i)
+    for(int j = 0; j < 20; ++j)
+        temp[j] += dynamic_cast<rtx::MVCC *>(new_txs_[i])->abort_cnt[j];
+    //auto hkztx = dynamic_cast<rtx::MVCC *>(new_txs_[1]);
+    //hkztx->show_abort();
+#endif
 #if RECORD_STALE
     util::RecordsBuffer<double> total_buffer;
     for(uint i = 0; i < server_routine + 1;++i) {

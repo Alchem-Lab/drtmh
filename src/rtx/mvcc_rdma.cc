@@ -31,7 +31,7 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
     else {
       auto node = local_lookup_op(item.tableid, item.key);
       MVCCHeader* header = (MVCCHeader*)node->value;
-      assert(header->lock != 0);
+      //assert(header->lock != 0);
       header->lock = 0;
     }
   }
@@ -423,8 +423,8 @@ void MVCC::update_rpc_handler(int id, int cid, char* msg, void* arg) {
 int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
   START(lock);
   auto& item = write_set_[index];
-  // if(item.pid != -1) {
-  if(item.pid != node_id_) {
+  if(item.pid != -1) {
+  //if(item.pid != node_id_) {
     // step 1: get off
     uint64_t off = 0;
     char* local_buf = (char*)Rmalloc(item.len * MVCC_VERSION_NUM + 
@@ -683,8 +683,8 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
       write_req_->set_write_meta(item.off + 2 * sizeof(uint64_t), 
         local_buf + 2 * sizeof(uint64_t), 
         sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len);
-      LOG(3) << "writing to " << item.off + 2 * sizeof(uint64_t) 
-        << " len is " << sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len;
+      //LOG(3) << "writing to " << item.off + 2 * sizeof(uint64_t) 
+      //  << " len is " << sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len;
       write_req_->set_unlock_meta(item.off);
       write_req_->post_reqs(scheduler_, qp);
       need_yield = true;

@@ -259,9 +259,9 @@ protected:
   RDMAFAUnlockReq* unlock_req_ = NULL;
   RDMAWriteReq* write_req_ = NULL;
 
-  int abort_cnt[20];
 
 public:
+  int abort_cnt[20];
   void show_abort() {
     for(int i = 0; i < 20; ++i) {
       LOG(3) << i << ": " << abort_cnt[i];
