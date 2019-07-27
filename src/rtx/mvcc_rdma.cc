@@ -483,6 +483,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     }
     if(max_wts > txn_start_time) {
       // LOG(3) << max_wts << ' ' << txn_start_time;
+      cnt_timer = max_wts >> 10;
       abort_cnt[3]++;
       return -2;
     }
