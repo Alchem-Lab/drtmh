@@ -31,7 +31,7 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
     else {
       auto node = local_lookup_op(item.tableid, item.key);
       MVCCHeader* header = (MVCCHeader*)node->value;
-      //assert(header->lock != 0);
+      assert(header->lock != 0);
       header->lock = 0;
     }
   }
@@ -89,7 +89,10 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
     }
     MVCCHeader* header = (MVCCHeader*)((*it).node->value);
     int pos = -1;
-    if((pos = check_read(header, txn_start_time)) == -1) return false; // cannot read
+    if((pos = check_read(header, txn_start_time)) == -1) {
+      abort_cnt[13]++;
+      return false; // cannot read
+    }
     while(true) {
       volatile uint64_t rts = header->rts;
       volatile uint64_t* rts_ptr = &(header->rts);
@@ -113,6 +116,7 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
     memcpy((*it).data_ptr, raw_data + pos * (*it).len, (*it).len);
     int new_pos = check_read(header, txn_start_time);
     if(new_pos != pos || header->wts[new_pos] != before_reading_wts) {
+      abort_cnt[14]++;
       return false;
     }
   }
@@ -149,17 +153,20 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
     }
     MVCCHeader *header = (MVCCHeader*)((*it).node->value);
     if(!check_write(header, txn_start_time)) {
+      abort_cnt[15]++;
       return false;
     }
     volatile uint64_t l = header->lock;
     if(l > txn_start_time) {
       cnt_timer = l >> 10;
+      abort_cnt[16]++;
       return false;
     } 
     while (true) {
       volatile uint64_t* lockptr = &(header->lock);
       if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, txn_start_time))) {
 #ifdef MVCC_NOWAIT
+        abort_cnt[17]++;
         return false;
 #else
         worker_->yield_next(yield);
@@ -170,6 +177,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
         if(header->rts > txn_start_time) {
           cnt_timer = header->rts >> 10;
           *lockptr = 0;
+          abort_cnt[18]++;
           return false;
         }
         uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
@@ -188,6 +196,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
         if(max_wts > txn_start_time) {
           *lockptr = 0;
           cnt_timer = max_wts >> 10;
+          abort_cnt[19]++;
           return false;
         }
         (*it).seq = (uint64_t)pos;

@@ -391,6 +391,8 @@ void BenchWorker::exit_handler() {
     for(int i = 1; i < 11; ++i)
     for(int j = 0; j < 20; ++j)
         temp[j] += dynamic_cast<rtx::MVCC *>(new_txs_[i])->abort_cnt[j];
+    for(int j = 0; j < 20; ++j) 
+      LOG(3) << j <<": " << temp[j];
     //auto hkztx = dynamic_cast<rtx::MVCC *>(new_txs_[1]);
     //hkztx->show_abort();
 #endif
