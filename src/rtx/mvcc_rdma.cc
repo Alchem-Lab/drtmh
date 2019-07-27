@@ -152,7 +152,10 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
       return false;
     }
     volatile uint64_t l = header->lock;
-    if(l > txn_start_time) return false;
+    if(l > txn_start_time) {
+      cnt_timer = l >> 10;
+      return false;
+    } 
     while (true) {
       volatile uint64_t* lockptr = &(header->lock);
       if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, txn_start_time))) {
@@ -165,6 +168,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
       }
       else { // get the lock
         if(header->rts > txn_start_time) {
+          cnt_timer = header->rts >> 10;
           *lockptr = 0;
           return false;
         }
@@ -183,6 +187,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
         }
         if(max_wts > txn_start_time) {
           *lockptr = 0;
+          cnt_timer = max_wts >> 10;
           return false;
         }
         (*it).seq = (uint64_t)pos;
@@ -418,6 +423,7 @@ void MVCC::update_rpc_handler(int id, int cid, char* msg, void* arg) {
 int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
   START(lock);
   auto& item = write_set_[index];
+  // if(item.pid != -1) {
   if(item.pid != node_id_) {
     // step 1: get off
     uint64_t off = 0;
@@ -425,7 +431,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       sizeof(MVCCHeader));
     off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
      local_buf, yield, sizeof(MVCCHeader), false); // metalen?
-    assert(off != 0);
+    ASSERT(off != 0) << (int)item.tableid << ' ' << item.key;
     item.node = (MemNode*)off;
     item.data_ptr = local_buf;
     item.off = off;
@@ -440,6 +446,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       worker_->indirect_yield(yield);
       if(header->lock > txn_start_time) { // a newer write is processing
         END(lock);
+        cnt_timer = header->lock >> 10;
         abort_cnt[0]++;
         return -1;
       }
@@ -465,7 +472,9 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     worker_->indirect_yield(yield);
     volatile uint64_t l = *((uint64_t*)local_buf);
     ASSERT(l == txn_start_time) << l << ' ' << txn_start_time;
+    // LOG(3) << "remote " << index << ' ' << item.key << ' ' << txn_start_time;
     if(header->rts > txn_start_time) {
+      cnt_timer = header->rts >> 10;
       abort_cnt[2]++;
       return -2;
     }
@@ -507,9 +516,10 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       volatile uint64_t l = *lock_ptr;
       if(l > txn_start_time) {
         abort_cnt[5]++;
+        cnt_timer = l >> 10;
         return -1;
       }
-      if(unlikely(!__sync_bool_compare_and_swap(lock_ptr, l, txn_start_time))) {
+      if(unlikely(!__sync_bool_compare_and_swap(lock_ptr, 0, txn_start_time))) {
 #ifdef MVCC_NOWAIT
         abort_cnt[6]++;
         return -1;
@@ -523,8 +533,10 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       }
     }
     assert(header->lock == txn_start_time);
+    // LOG(3) << "local " << index << ' ' << item.key << ' ' << txn_start_time;
     if(header->rts > txn_start_time) {
       header->lock = 0;
+      cnt_timer = header->rts >> 10;
       abort_cnt[7]++;
       return -1;
     }
@@ -543,6 +555,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     }
     if(max_wts > txn_start_time) {
       header->lock = 0;
+      cnt_timer = max_wts >> 10;
       abort_cnt[8]++;
       return -1;
     }
@@ -666,9 +679,12 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
       memcpy(raw_data + pos * item.len, item.data_ptr, item.len);
       Qp *qp = get_qp(item.pid);
       assert(qp != NULL);
+      assert(item.off != 0);
       write_req_->set_write_meta(item.off + 2 * sizeof(uint64_t), 
         local_buf + 2 * sizeof(uint64_t), 
         sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len);
+      LOG(3) << "writing to " << item.off + 2 * sizeof(uint64_t) 
+        << " len is " << sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len;
       write_req_->set_unlock_meta(item.off);
       write_req_->post_reqs(scheduler_, qp);
       need_yield = true;
@@ -679,7 +695,8 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
       END(commit);
     }
     else {
-      assert(item.seq < MVCC_VERSION_NUM);
+      assert(item.seq < MVCC_VERSION_NUM * MVCC_VERSION_NUM);
+      item.seq %= MVCC_VERSION_NUM;
       auto node = local_lookup_op(item.tableid, item.key);
       assert(node != NULL);
       MVCCHeader* header = (MVCCHeader*)node->value;

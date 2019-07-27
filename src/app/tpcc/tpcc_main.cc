@@ -414,8 +414,8 @@ void TpccMainRunner::populate_cache() {
 
   gettimeofday(&start,NULL);
 
-  //populate_ware(store_);
-  //populate_dist(store_);
+  populate_ware(store_);
+  populate_dist(store_);
   populate_stock(store_);
 
   gettimeofday(&end,NULL);

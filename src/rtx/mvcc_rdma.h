@@ -152,7 +152,7 @@ public:
         unlock_req_ = new RDMAFAUnlockReq(cid, 0);
         write_req_ = new RDMAWriteReq(cid, 0);
         memset(abort_cnt, 0, sizeof(int) * 20);
-        //init_time = (rwlock::get_now_nano() << 10);
+        // init_time = (rwlock::get_now_nano() << 10);
       }
 
   inline __attribute__((always_inline))
@@ -199,9 +199,9 @@ public:
 	virtual void begin(yield_func_t &yield) {
     read_set_.clear();
     write_set_.clear();
-    //txn_start_time = (rwlock::get_now_nano() << 10) 
-    //+ response_node_ * 80 + worker_id_ * 10 + cor_id_ + 1
-    //- init_time; 
+    // txn_start_time = (rwlock::get_now_nano() << 10) 
+    // + response_node_ * 80 + worker_id_ * 10 + cor_id_ + 1
+    // - init_time; // TODO: may be too large
 
     txn_start_time = ((++cnt_timer) << 10) 
     + response_node_ * 80 + worker_id_ * 10 + cor_id_ + 1;
