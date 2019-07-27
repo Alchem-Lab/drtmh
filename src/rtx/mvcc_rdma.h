@@ -261,9 +261,9 @@ protected:
 
 
 public:
-  int abort_cnt[20];
+  int abort_cnt[40];
   void show_abort() {
-    for(int i = 0; i < 20; ++i) {
+    for(int i = 0; i < 40; ++i) {
       LOG(3) << i << ": " << abort_cnt[i];
     }
   }
@@ -277,25 +277,27 @@ private:
   void update_rpc_handler(int id,int cid,char *msg,void *arg);
   
   inline __attribute__((always_inline))
-  bool check_write(MVCCHeader* header, uint64_t timestamp) {
+  uint64_t check_write(MVCCHeader* header, uint64_t timestamp) {
     volatile uint64_t rts = header->rts;
     if(rts > timestamp) {
-      return false;
+      LOG(3) << rts << " " << timestamp;
+      return rts;
     }
     for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
       volatile uint64_t wts = header->wts[i];
       if(wts > timestamp){
-        return false;
+        // LOG(3) << wts << " " << timestamp;
+        return wts;
       }
     }
-    return true;
+    return 0;
   }
 
   inline __attribute__((always_inline))
   int check_read(MVCCHeader* header, uint64_t timestamp) {
     // earlier write is processing
     if(header->lock != 0 && header->lock < timestamp) return -1;
-    int max_wts = 0;
+    uint64_t max_wts = 0;
     int pos = -1;
     for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
       if(header->wts[i] < timestamp && header->wts[i] > max_wts) {

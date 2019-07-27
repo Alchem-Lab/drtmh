@@ -145,6 +145,10 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
     else if (resp_lock_status == LOCK_FAIL_MAGIC){
       return false;
     }
+    else if (resp_lock_status == LOCK_UPDATE_TS_MAGIC){
+      cnt_timer = *(uint64_t*)((char*)reply_buf_ + sizeof(uint8_t));
+      return false;
+    }
     assert(false);
   } 
   else {
@@ -152,7 +156,9 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
       (*it).node = local_lookup_op((*it).tableid, (*it).key);
     }
     MVCCHeader *header = (MVCCHeader*)((*it).node->value);
-    if(!check_write(header, txn_start_time)) {
+    uint64_t ret = 0;
+    if((ret = check_write(header, txn_start_time)) != 0) {
+      cnt_timer = ret >> 10;
       abort_cnt[15]++;
       return false;
     }
@@ -271,6 +277,7 @@ void MVCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
     int pos = -1;
     if((pos = check_read(header, item->txn_starting_timestamp)) == -1) {
       res = LOCK_FAIL_MAGIC;
+      abort_cnt[25]++;
       goto END;
     }
     while(true) {
@@ -292,6 +299,7 @@ void MVCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
     int new_pos = check_read(header, item->txn_starting_timestamp);
     if(new_pos != pos || header->wts[new_pos] != before_reading_wts) {
       res = LOCK_FAIL_MAGIC;
+      abort_cnt[26]++;
       goto END;
     }
     nodelen = sizeof(uint64_t) + item->len;
@@ -311,6 +319,7 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
   int request_item_parsed = 0;
   MemNode *node = NULL;
   size_t nodelen = 0;
+  uint64_t* update_ptr = (uint64_t*)(reply_msg + sizeof(uint8_t));
   RTX_ITER_ITEM(msg,sizeof(RTXMVCCWriteRequestItem)) {
     auto item = (RTXMVCCWriteRequestItem *)ttptr;
     request_item_parsed++;
@@ -322,13 +331,21 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
     assert(node != NULL && node->value != NULL);
     MVCCHeader* header = (MVCCHeader*)(node->value);
     assert(header != NULL);
-    if(!check_write(header, item->txn_starting_timestamp)) {
-      res = LOCK_FAIL_MAGIC;
+    uint64_t ret = 0;
+    if((ret = check_write(header, item->txn_starting_timestamp)) != 0) {
+      res = LOCK_UPDATE_TS_MAGIC;
+      *update_ptr = ret >> 10;
+      nodelen = sizeof(uint64_t);
+      abort_cnt[20]++;
+      // LOG(3) << ret << " " << item->txn_starting_timestamp;
       goto END;
     }
     volatile uint64_t l = header->lock;
     if(l > item->txn_starting_timestamp) {
-      res = LOCK_FAIL_MAGIC;
+      res = LOCK_UPDATE_TS_MAGIC;
+      *update_ptr = l >> 10;
+      nodelen = sizeof(uint64_t);
+      abort_cnt[21]++;
       goto END;
     }
     while(true) {
@@ -336,6 +353,7 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
       if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, item->txn_starting_timestamp))) {
 #ifdef MVCC_NOWAIT
         res = LOCK_FAIL_MAGIC;
+        abort_cnt[22]++;
         goto END;
 #else
         assert(false);
@@ -344,8 +362,11 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
       else {
         volatile uint64_t rts = header->rts;
         if(rts > item->txn_starting_timestamp) {
-          res = LOCK_FAIL_MAGIC;
+          res = LOCK_UPDATE_TS_MAGIC;
           header->lock = 0; // release lock
+          *update_ptr = rts >> 10;
+          nodelen = sizeof(uint64_t);
+          abort_cnt[23]++;
           goto END;
         }
         uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
@@ -364,8 +385,11 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
           }
         }
         if(max_wts > item->txn_starting_timestamp) {
-          res = LOCK_FAIL_MAGIC;
+          res = LOCK_UPDATE_TS_MAGIC;
           header->lock = 0;
+          *update_ptr = max_wts >> 10;
+          nodelen = sizeof(uint64_t);
+          abort_cnt[24]++;
           goto END;
         }
         assert(pos != -1);
@@ -516,7 +540,9 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       item.node = local_lookup_op(item.tableid, item.key);
     }
     MVCCHeader* header = (MVCCHeader*)(item.node->value);
-    if(!check_write(header, txn_start_time)) {
+    uint64_t ret = 0;
+    if((ret = check_write(header, txn_start_time)) != 0) {
+      cnt_timer = ret >> 10;
       abort_cnt[4]++;
       return -1;
     }

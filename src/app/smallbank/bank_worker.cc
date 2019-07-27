@@ -468,7 +468,7 @@ void BankWorker::thread_local_init() {
     new_txs_[i] = new rtx::MVCC(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #elif defined(WAITDIE_TX)
-    new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+    new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #elif defined(FARM)
     txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
