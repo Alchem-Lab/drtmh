@@ -670,7 +670,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       h.received_size = h.batch_size;
       req1.set_write_meta_for<1>(remote_off, (char*)&h, sizeof(calvin_header));
       
-      // LOG(3) << "sending batch size " << h.batch_size << " to offset " << remote_off << "for mac " << mac;
+      LOG(3) << "sending batch size " << h.batch_size << " to offset " << remote_off << "for mac " << mac;
       req1.post_reqs(rdma_sched_, qp);
 
       // avoid send queue from overflow
@@ -780,6 +780,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     while (nocc::util::get_now() - wait_start < 100000)
       yield_next(yield);
 #endif
+
+    LOG(3) << "sync epoch";
 
 #if ONE_SIDED_READ == 0
     epoch_status_[cor_id_][cm_->get_nodeid()] = CALVIN_EPOCH_DONE;
