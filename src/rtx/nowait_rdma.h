@@ -346,6 +346,11 @@ public:
   // get the read lock of the record and actually read
   inline __attribute__((always_inline))
   virtual int read(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
+    if(tableid == 7) {
+      int idx = read_set_.size();
+      read_set_.emplace_back(tableid,key,(MemNode*)NULL,(char*)NULL,0,len,0);
+      return idx;
+    }
     int index;
     // step 1: find offset of the key in either local/remote memory
     if(pid == node_id_)
@@ -453,6 +458,7 @@ public:
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
+    if(set[idx].tableid == 7) return (char*)malloc(set[idx].len);
 
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
@@ -559,11 +565,11 @@ public:
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    if(pid == node_id_)
-      return local_insert(tableid,key,(char *)val,sizeof(V),yield);
-    else {
-      return remote_insert(pid,tableid,key,sizeof(V),yield);
-    }
+    // if(pid == node_id_)
+    //   return local_insert(tableid,key,(char *)val,sizeof(V),yield);
+    // else {
+    //   return remote_insert(pid,tableid,key,sizeof(V),yield);
+    // }
     return -1;
   }
 

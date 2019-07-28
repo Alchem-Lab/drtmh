@@ -84,7 +84,7 @@ void TpccWorker::thread_local_init() {
     if(txs_[i]  == NULL) {
 #if EM_FASST == 0
 #if ONE_SIDED_READ
-      new_txs_[i] = new rtx::OCCR(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+      new_txs_[i] = new rtx::OCCR(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #else
       new_txs_[i] = new rtx::OCC(this,store_,rpc_,current_partition,i,current_partition);
@@ -97,7 +97,7 @@ void TpccWorker::thread_local_init() {
 #elif defined(NOWAIT_TX)
     if(txs_[i]  == NULL) {
 #if ONE_SIDED_READ
-      new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+      new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #else
       assert(false);
@@ -106,7 +106,7 @@ void TpccWorker::thread_local_init() {
 #elif defined(WAITDIE_TX)
     if(txs_[i]  == NULL) {    
 #if ONE_SIDED_READ
-      new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+      new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #else
       assert(false);
@@ -125,10 +125,10 @@ void TpccWorker::thread_local_init() {
 #elif defined(SUNDIAL_TX)
     if(txs_[i]  == NULL) {    
 #if ONE_SIDED_READ
-      new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+      new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #else
-      new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+      new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #endif
     }
