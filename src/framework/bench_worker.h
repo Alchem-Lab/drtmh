@@ -87,12 +87,12 @@ struct calvin_request {
 
 struct calvin_header {
   uint8_t node_id;
-  uint8_t epoch_status;
+  volatile uint8_t epoch_status;
   uint64_t epoch_id;
-  uint64_t batch_size; // the batch size
+  volatile uint64_t batch_size; // the batch size
   union {
     uint64_t chunk_size; // the number of calvin_requests in this rpc call
-    uint64_t received_size;
+    volatile uint64_t received_size;
   };
 };
 
