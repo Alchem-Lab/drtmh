@@ -224,6 +224,11 @@ public:
 
   inline __attribute__((always_inline))
   virtual int read(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
+    if(tableid == 7) {
+      int idx = read_set_.size();
+      read_set_.emplace_back(tableid,key,(MemNode*)NULL,(char*)NULL,0,len,0);
+      return idx;
+    }
     return remote_read(pid, tableid, key, len, yield);
   }
 
@@ -241,6 +246,8 @@ public:
 
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
+    if(read_set_[idx].tableid == 7) return (char*)malloc(read_set_[idx].len);
+
     auto& item = read_set_[idx];
     //if(false) {
     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
@@ -256,14 +263,14 @@ public:
     template <typename V>
   inline __attribute__((always_inline))
   V *get_readset(int idx,yield_func_t &yield) {
-    return NULL;
+    return (V*)load_read(idx, sizeof(V), yield);
     // return get_set_helper<V>(read_set_, idx, yield);
   }
 
   template <typename V>
   inline __attribute__((always_inline))
   V *get_writeset(int idx,yield_func_t &yield) {
-    return NULL;
+    return (V*)load_write(idx, sizeof(V), yield);
     // return get_set_helper<V>(write_set_, idx, yield);
   }
 
@@ -293,7 +300,6 @@ public:
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    assert(false);
     return -1;
   }
 

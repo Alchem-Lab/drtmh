@@ -322,6 +322,7 @@ void OCCR::write_back_w_FA_rdma(yield_func_t &yield) {
 bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
 
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
+    if((*it).tableid == 7) continue;
     if((*it).pid != node_id_) {
 
 #if INLINE_OVERWRITE

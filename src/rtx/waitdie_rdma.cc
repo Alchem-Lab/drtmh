@@ -431,6 +431,7 @@ void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
   uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
 
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
+    if((*it).tableid == 7) continue;
     if((*it).pid != node_id_) {
 #if INLINE_OVERWRITE
       MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));

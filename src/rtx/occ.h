@@ -68,6 +68,11 @@ class OCC : public TXOpBase {
 
   inline __attribute__((always_inline))
   virtual int read(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
+    if(tableid == 7) {
+      int idx = read_set_.size();
+      read_set_.emplace_back(tableid,key,(MemNode*)NULL,(char*)NULL,0,len,0);
+      return idx;
+    }
     if(pid == node_id_)
       return local_read(tableid,key,len,yield);
     else {
@@ -127,6 +132,7 @@ class OCC : public TXOpBase {
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = read_set_;  
+    if(set[idx].tableid == 7) return (char*)malloc(set[idx].len);
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
@@ -176,6 +182,7 @@ class OCC : public TXOpBase {
     assert(idx < read_set_.size());
     ASSERT(sizeof(V) == read_set_[idx].len) <<
         "excepted size " << (int)(read_set_[idx].len)  << " for table " << (int)(read_set_[idx].tableid) << "; idx " << idx;
+    if(read_set_[idx].tableid == 7) return (V*)malloc(read_set_[idx].len);
 
     if(read_set_[idx].data_ptr == NULL
        && read_set_[idx].pid != node_id_) {
@@ -210,11 +217,11 @@ class OCC : public TXOpBase {
 
   template <int tableid,typename V>
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    if(pid == node_id_)
-      return local_insert(tableid,key,(char *)val,sizeof(V),yield);
-    else {
-      return remote_insert(pid,tableid,key,sizeof(V),yield);
-    }
+    // if(pid == node_id_)
+    //   return local_insert(tableid,key,(char *)val,sizeof(V),yield);
+    // else {
+    //   return remote_insert(pid,tableid,key,sizeof(V),yield);
+    // }
     return -1;    
   }
 

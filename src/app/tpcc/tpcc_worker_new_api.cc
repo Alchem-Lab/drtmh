@@ -147,8 +147,9 @@ txn_result_t TpccWorker::txn_new_order_new_api(yield_func_t &yield) {
     const uint ol_i_id = local_item_ids[ol_number - 1];
     const uint ol_quantity = RandomNumber(random_generator[cor_id_], 1, 10);
 
-    auto idx = rtx_->read<ITEM,item::value>(current_partition,ol_i_id,yield);
-    item::value *i_value = rtx_->get_readset<item::value>(idx,yield);
+    // auto idx = rtx_->read<ITEM,item::value>(current_partition,ol_i_id,yield);
+    // item::value *i_value = rtx_->get_readset<item::value>(idx,yield);
+    item::value* i_value = new item::value;
 
     uint64_t s_key = local_stocks[ol_number  - 1];
 
@@ -189,8 +190,9 @@ txn_result_t TpccWorker::txn_new_order_new_api(yield_func_t &yield) {
     const uint ol_i_id = remote_item_ids[i];
     const uint ol_quantity = RandomNumber(random_generator[cor_id_], 1, 10);
 
-    auto idx = rtx_->read<ITEM,item::value>(current_partition,ol_i_id,yield);
-    item::value *i_value = rtx_->get_readset<item::value>(idx,yield);
+    // auto idx = rtx_->read<ITEM,item::value>(current_partition,ol_i_id,yield);
+    // item::value *i_value = rtx_->get_readset<item::value>(idx,yield);
+    item::value *i_value = new item::value;
 
     uint64_t s_key = remote_stocks[i];
 
