@@ -104,7 +104,11 @@ void TpccWarehouseLoader::load() {
       warehouse_total_sz += sz;
       n_warehouses++;
 
-      store_->Put(WARE, i, (uint64_t *)wrapper);
+      auto node = store_->Put(WARE, i, (uint64_t *)wrapper);
+      node->off = (uint64_t)wrapper - (uint64_t)(cm->conn_buf_);
+      assert(node->off % sizeof(uint64_t) == 0);
+      // !! important
+
 
       warehouses.push_back(*v);
 
@@ -170,7 +174,8 @@ void TpccDistrictLoader::load() {
         district_total_sz += sz;
         n_districts++;
 
-        store_->Put(DIST, key, (uint64_t *)wrapper);
+        auto node = store_->Put(DIST, key, (uint64_t *)wrapper);
+        node->off = (uint64_t)wrapper - (uint64_t)(cm->conn_buf_);
 
 #if INLINE_OVERWRITE
         //assert(sizeof(district::value) < INLINE_OVERWRITE_MAX_PAYLOAD);

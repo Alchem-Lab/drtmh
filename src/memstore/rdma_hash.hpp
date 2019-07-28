@@ -75,6 +75,7 @@ class RHash : public Memstore, public drtm::ClusterHash<MemNode,DRTM_CLUSTER_NUM
     MemNode *node = (MemNode *)val;
     //*ptr = node->off; // cache the real data offset
     cache.put(key,node->off);
+    // assert(res == node->off);
     return res;
 #endif
   }
