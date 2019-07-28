@@ -293,7 +293,6 @@ void BenchWorker::run() {
 void __attribute__((optimize("O1"))) // this flag is very tricky, it should be set this way
 BenchWorker::worker_routine(yield_func_t &yield) {
 #ifdef CALVIN_TX
-  return;
   return worker_routine_for_calvin(yield);
 #else
 
