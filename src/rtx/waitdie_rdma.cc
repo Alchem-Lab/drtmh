@@ -697,16 +697,21 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
-    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
+    if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
+      P[15] += 1;
       return true;
-    else if (resp_lock_status == LOCK_FAIL_MAGIC)
+    }
+    else if (resp_lock_status == LOCK_FAIL_MAGIC) {
+      P[16] += 1;
       return false;
+    }
     assert(false);
 
   } else {
       while (true) {
         volatile uint64_t l = it->node->lock;
         if(l & 0x1 == W_LOCKED) {
+          P[23] += 1;
           if (txn_start_time < START_TIME(l)){
             //need some random backoff?
             worker_->yield_next(yield);
@@ -714,10 +719,12 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
             }
           else {
             END(lock);
+            P[17] += 1;
             return false;
           }
         } else {
           if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
+            P[24] += 1;
             // clear expired lease (optimization)
             volatile uint64_t *lockptr = &(it->node->lock);
             if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
@@ -727,10 +734,12 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
               }
             else {
               END(lock);
+              P[18] += 1;
               return true;
             }
           } else { //read locked: not conflict
             END(lock);
+            P[19] += 1;
             return true;
           }
         }
@@ -761,15 +770,20 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
-    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
+    if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
+      P[10] += 1;
       return true;
-    else if (resp_lock_status == LOCK_FAIL_MAGIC)
+    }
+    else if (resp_lock_status == LOCK_FAIL_MAGIC) {
+      P[11] += 1;
       return false;
+    }
     assert(false);
   } else {
       while(true) {
         volatile uint64_t l = it->node->lock;
         if(l & 0x1 == W_LOCKED) {
+          P[22] += 1;
           if (txn_start_time < START_TIME(l)){
             //need some random backoff?
             worker_->yield_next(yield);
@@ -777,28 +791,34 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
             }
           else {
             END(lock);
+            P[12] += 1;
             return false;
           }
         } else {
           if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
+            P[20] += 1;
             // clear expired lease (optimization)
             volatile uint64_t *lockptr = &(it->node->lock);
             if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
                          W_LOCKED_WORD(txn_start_time, response_node_)))){
+              // fprintf(stdout, "%lu %lu\n", *lockptr, l);
               worker_->yield_next(yield);
               continue;
               }
             else {
+              P[13] += 1;
               END(lock);
               return true;
             }
           } else { //read locked
+            P[21] += 1;
             if (txn_start_time < START_TIME(l)){
               //need some random backoff?
               worker_->yield_next(yield);
               continue;
               }
             else {
+              P[14] += 1;
               END(lock);
               return false;
             }

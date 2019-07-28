@@ -23,31 +23,6 @@ namespace nocc {
 
 namespace rtx {
 
-#define MAX_VAL_LENGTH 128
-struct read_val_t {
-  uint32_t req_seq;
-  int read_or_write;
-  int index_in_set;
-  uint32_t len;
-  char value[MAX_VAL_LENGTH];
-  read_val_t(int req_seq, int rw, int index, uint32_t len, char* val) :
-    req_seq(req_seq),
-    read_or_write(rw),
-    index_in_set(index),
-    len(len) {
-      assert(len < MAX_VAL_LENGTH);
-      memcpy(value, val, len);
-    }
-  read_val_t(const read_val_t& copy) {
-    req_seq = copy.req_seq;
-    read_or_write = copy.read_or_write;
-    index_in_set = copy.index_in_set;
-    len = copy.len;
-    memcpy(value, copy.value, len);
-  }
-  read_val_t() {}
-};
-
 #if ENABLE_TXN_API
 class CALVIN : public TxnAlg {
 #else
@@ -93,12 +68,13 @@ protected:
   }
 
   int local_insert(int tableid,uint64_t key,char *val,int len,yield_func_t &yield) {
-    char *data_ptr = (char *)malloc(len);
-    uint64_t seq;
-    auto node = local_insert_op(tableid,key,seq);
-    memcpy(data_ptr,val,len);
-    write_set_.emplace_back(tableid,key,node,data_ptr,seq,len,node_id_);
-    return write_set_.size() - 1;
+    // char *data_ptr = (char *)malloc(len);
+    // uint64_t seq;
+    // auto node = local_insert_op(tableid,key,seq);
+    // memcpy(data_ptr,val,len);
+    // write_set_.emplace_back(tableid,key,node,data_ptr,seq,len,node_id_);
+    // return write_set_.size() - 1;
+    return -1;
   }
 
 #if ONE_SIDED_READ
@@ -172,13 +148,8 @@ protected:
 
   inline __attribute__((always_inline))
   int add_batch_insert(int tableid,uint64_t key,int pid,int len) {
-    assert(false);
-    // add a batch read request
-    int idx = read_set_.size();
-    // add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-    //                              /* init RTXReadItem */ RTX_REQ_INSERT,pid,key,tableid,len,idx);
-    read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
-    return idx;
+    // remote insert for calvin is not needed: all insertions happen locally.
+    return -1;
   }
 
   inline __attribute__((always_inline))
@@ -214,9 +185,6 @@ protected:
     }
     return true;
   }
-
-  /** helper functions to batch rpc operations above
-    */
 
 #if 0
   void prepare_write_contents() {
@@ -313,11 +281,6 @@ public:
                                  nid, tid, cid, response_node, 
                                  cm, sched, ms);
 #endif
-
-    if(worker_id_ == 0 && cor_id_ == 0) {
-      LOG(3) << "Use one-sided for read.";
-    }
-
     register_default_rpc_handlers();
     memset(reply_buf_,0,MAX_MSG_SIZE);
     lock_req_ = new RDMACASLockReq(cid);
@@ -469,82 +432,21 @@ public:
     return (V*)load_write(idx, sizeof(V), yield);
   }
 
-  void serialize_read_set(char*& buf) {
-    *(uint64_t*)buf = read_set_.size();
-    buf += sizeof(uint64_t);
-    memset(buf, 0, sizeof(ReadSetItem)*MAX_SET_ITEMS);
-    assert(read_set_.size() <= MAX_SET_ITEMS);
-    int i = 0;
-    for (; i < read_set_.size(); i++) {
-      *(ReadSetItem*)buf = read_set_[i];
-      buf += sizeof(ReadSetItem);
+  void display_sets() {
+    fprintf(stdout, "in reads set: \n");
+    for (int i = 0; i < read_set_.size(); i++) {
+      fprintf(stdout, "pid = %d", read_set_[i].pid);
+      fprintf(stdout, " tableid = %d", read_set_[i].tableid);
+      fprintf(stdout, " len = %d", read_set_[i].len);
+      fprintf(stdout, " key = %d\n", read_set_[i].key);      
     }
-    buf += sizeof(ReadSetItem)*(MAX_SET_ITEMS-i);
-  }
-
-  void serialize_write_set(char*& buf) {
-    *(uint64_t*)buf = write_set_.size();
-    buf += sizeof(uint64_t);
-    memset(buf, 0, sizeof(ReadSetItem)*MAX_SET_ITEMS);
-    assert(write_set_.size() <= MAX_SET_ITEMS);
-    int i = 0;
-    for (; i < write_set_.size(); i++) {
-      *(ReadSetItem*)buf = write_set_[i];
-      // fprintf(stdout, "serializing write %d\n", i);
-      // for (int j = 0; j < sizeof(ReadSetItem); j++) {
-      //   fprintf(stdout, "%x ", buf[j]);
-      // }
-      // fprintf(stdout, "\n");
-      // fprintf(stdout, "pid = %d", ((ReadSetItem*)buf)->pid);
-      // fprintf(stdout, "tableid = %d", ((ReadSetItem*)buf)->tableid);
-      // fprintf(stdout, "len = %d", ((ReadSetItem*)buf)->len);
-      // fprintf(stdout, "key = %d", ((ReadSetItem*)buf)->key);
-
-      buf += sizeof(ReadSetItem);
+    fprintf(stdout, "in write set: \n");
+    for (int i = 0; i < write_set_.size(); i++) {
+      fprintf(stdout, "pid = %d", write_set_[i].pid);
+      fprintf(stdout, " tableid = %d", write_set_[i].tableid);
+      fprintf(stdout, " len = %d", write_set_[i].len);
+      fprintf(stdout, " key = %d\n", write_set_[i].key);      
     }
-    buf += sizeof(ReadSetItem)*(MAX_SET_ITEMS-i);
-  }
-
-  void deserialize_read_set(uint64_t n, ReadSetItem* items) {
-    read_set_.clear();
-    assert(n < MAX_SET_ITEMS);
-    for (int i = 0; i < n; i++) {
-      read_set_.push_back(items[i]);
-      // fprintf(stdout, "deserializing write %d\n", i);
-      // for (int j = 0; j < sizeof(ReadSetItem); j++) {
-      //   fprintf(stdout, "%x ", ((char*)(items+i))[j]);
-      // }
-      // fprintf(stdout, "\n");
-      // fprintf(stdout, "pid = %d", items[i].pid);
-      // fprintf(stdout, "tableid = %d", items[i].tableid);
-      // fprintf(stdout, "len = %d", items[i].len);
-      // fprintf(stdout, "key = %d", items[i].key);
-    }
-  }
-
-  void deserialize_write_set(uint64_t n, ReadSetItem* items) {
-    write_set_.clear();
-    assert(n < MAX_SET_ITEMS);
-    for (int i = 0; i < n; i++) {
-      write_set_.push_back(items[i]);
-      // fprintf(stdout, "deserializing write %d\n", i);
-      // for (int j = 0; j < sizeof(ReadSetItem); j++) {
-      //   fprintf(stdout, "%x ", ((char*)(items+i))[j]);
-      // }
-      // fprintf(stdout, "\n");
-      // fprintf(stdout, "pid = %d", items[i].pid);
-      // fprintf(stdout, "tableid = %d", items[i].tableid);
-      // fprintf(stdout, "len = %d", items[i].len);
-      // fprintf(stdout, "key = %d", items[i].key);
-    }
-  }
-
-  void clear_read_set() {
-    read_set_.clear();
-  }
-
-  void clear_write_set() {
-    write_set_.clear();
   }
 
   bool sync_reads(int req_idx, yield_func_t &yield);

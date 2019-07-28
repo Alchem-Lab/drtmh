@@ -96,23 +96,18 @@ void TpccWorker::thread_local_init() {
     }
 #elif defined(NOWAIT_TX)
     if(txs_[i]  == NULL) {
-#if ONE_SIDED_READ
       new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
                                    cm,rdma_sched_,total_partition);
-#else
-      new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
-                                   cm,rdma_sched_,total_partition);
-#endif
     }
 #elif defined(WAITDIE_TX)
     if(txs_[i]  == NULL) {    
-#if ONE_SIDED_READ
       new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
                                    cm,rdma_sched_,total_partition);
-#else
-      new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+    }
+#elif defined(CALVIN_TX)
+    if (txs_[i] == NULL) {
+      new_txs_[i] = new rtx::CALVIN(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
                                    cm,rdma_sched_,total_partition);
-#endif
     }
 #elif defined(SI_TX)
     txs_[i] = new DBSI(store_,worker_id_,rpc_,i);
@@ -1226,13 +1221,23 @@ workload_desc_vec_t TpccWorker::get_workload() const {
 workload_desc_vec_t TpccWorker::_get_workload() {
 
   workload_desc_vec_t w;
-
-#ifndef CALVIN_TX
   unsigned m = 0;
   for (size_t i = 0; i < ARRAY_NELEMS(g_txn_workload_mix); i++)
     m += g_txn_workload_mix[i];
   ALWAYS_ASSERT(m == 100);
 
+#ifdef CALVIN_TX
+  if (g_txn_workload_mix[0])
+    w.push_back(workload_desc("NewOrder", double(g_txn_workload_mix[0])/100.0, TxnNewOrder, TxnNewOrderGenRWSets));
+  if (g_txn_workload_mix[1])
+    w.push_back(workload_desc("Payment", double(g_txn_workload_mix[1])/100.0, TxnPayment, TxnPaymentGenRWSets));
+  if (g_txn_workload_mix[2])
+    w.push_back(workload_desc("Delivery", double(g_txn_workload_mix[2])/100.0, TxnDelivery, TxnDeliveryGenRWSets));
+  if (g_txn_workload_mix[3])
+    w.push_back(workload_desc("OrderStatus", double(g_txn_workload_mix[3])/100.0, TxnOrderStatus, TxnOrderStatusGenRWSets));
+  if (g_txn_workload_mix[4])
+    w.push_back(workload_desc("StockLevel", double(g_txn_workload_mix[4])/100.0, TxnStockLevel, TxnStockLevelGenRWSets));  
+#else
   if (g_txn_workload_mix[0])
     w.push_back(workload_desc("NewOrder", double(g_txn_workload_mix[0])/100.0, TxnNewOrder));
   if (g_txn_workload_mix[1])
@@ -1244,7 +1249,6 @@ workload_desc_vec_t TpccWorker::_get_workload() {
   if (g_txn_workload_mix[4])
     w.push_back(workload_desc("StockLevel", double(g_txn_workload_mix[4])/100.0, TxnStockLevel));
 #endif
-  
   return w;
 }
 

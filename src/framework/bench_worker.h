@@ -60,11 +60,16 @@ struct calvin_request {
   calvin_request(int req_idx, timestamp_t timestamp) : 
           req_idx(req_idx), timestamp(timestamp) {}
 
+  // calvin_request(calvin_request* copy) :
+  //         req_idx(copy->req_idx), timestamp(copy->timestamp), n_reads(copy->n_reads), n_writes(copy->n_writes) {
+  //         memcpy((char*)read_set, (char*)copy->read_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
+  //         memcpy((char*)write_set, (char*)copy->write_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
+  // }
   calvin_request(calvin_request* copy) :
-          req_idx(copy->req_idx), timestamp(copy->timestamp), n_reads(copy->n_reads), n_writes(copy->n_writes) {
-          memcpy((char*)read_set, (char*)copy->read_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
-          memcpy((char*)write_set, (char*)copy->write_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
+          req_idx(copy->req_idx), timestamp(copy->timestamp) {
+          memcpy(req_info, copy->req_info, REQ_INFO_SIZE);
   }
+
   union {
     int req_idx;
     int req_seq;
@@ -72,10 +77,12 @@ struct calvin_request {
   
   timestamp_t timestamp;
 
-  uint64_t n_reads;
-  rtx::CALVIN::ReadSetItem read_set[MAX_SET_ITEMS];
-  uint64_t n_writes;
-  rtx::CALVIN::ReadSetItem write_set[MAX_SET_ITEMS];
+  const static uint REQ_INFO_SIZE = 256;
+  char req_info[REQ_INFO_SIZE];
+  // uint64_t n_reads;
+  // rtx::CALVIN::ReadSetItem read_set[MAX_SET_ITEMS];
+  // uint64_t n_writes;
+  // rtx::CALVIN::ReadSetItem write_set[MAX_SET_ITEMS];
 };
 
 struct calvin_header {
@@ -100,6 +107,31 @@ public:
 #define CALVIN_EPOCH_READY 0
 #define CALVIN_EPOCH_DONE  1
 #endif
+
+#define MAX_VAL_LENGTH 128
+struct read_val_t {
+  uint32_t req_seq;
+  int read_or_write;
+  int index_in_set;
+  uint32_t len;
+  char value[MAX_VAL_LENGTH];
+  read_val_t(int req_seq, int rw, int index, uint32_t len, char* val) :
+    req_seq(req_seq),
+    read_or_write(rw),
+    index_in_set(index),
+    len(len) {
+      assert(len < MAX_VAL_LENGTH);
+      memcpy(value, val, len);
+    }
+  read_val_t(const read_val_t& copy) {
+    req_seq = copy.req_seq;
+    read_or_write = copy.read_or_write;
+    index_in_set = copy.index_in_set;
+    len = copy.len;
+    memcpy(value, copy.value, len);
+  }
+  read_val_t() {}
+};
 
 extern     RdmaCtrl *cm;
 
@@ -282,7 +314,6 @@ class BenchWorker : public RWorker {
   std::vector<calvin_request*>* deterministic_requests;
   bool* epoch_done_schedule;
   std::set<int>* mach_received;
-  std::map<uint, rtx::read_val_t>* forwarded_values;
 
   // the following data structures should be allocated using Rmalloc
   // when using one-sided ops.
@@ -296,6 +327,9 @@ class BenchWorker : public RWorker {
 #endif // ONE_SIDED_READ
 #endif
 
+  //forwarded values are used by the CALVIN CLASS
+  std::map<uint, read_val_t>* forwarded_values;
+  
   LAT_VARS(yield);
 
   /* For statistics counts */

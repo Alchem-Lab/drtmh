@@ -8,6 +8,10 @@
 #include <iostream>
 
 #include "db/txs/dbsi.h"
+#include "db/txs/ts_manager.hpp"
+#ifdef CALVIN_TX
+#include "db/txs/epoch_manager.hpp"
+#endif
 
 #include "framework/bench_runner.h"
 
@@ -34,6 +38,11 @@ extern size_t distributed_ratio;
 namespace nocc {
 
 extern RdmaCtrl *cm;       // global RDMA handler
+
+#ifdef CALVIN_TX
+extern db::EpochManager* epoch_manager;
+#endif
+
 namespace oltp {
 
 extern char *store_buffer; // the buffer used to store DrTM-kv
@@ -355,6 +364,17 @@ std::vector<RWorker *> TpccMainRunner::make_workers() {
   ret.push_back(ts_manager);
 #endif
 
+#if defined(NOWAIT_TX) || defined(WAITDIE_TX)
+  // add ts worker
+  ts_manager = new TSManager(nthreads + nclients + 1,cm,0,0);
+  ret.push_back(ts_manager);
+#endif
+#if defined(CALVIN_TX)
+  // add epoch manager
+  epoch_manager = new EpochManager(nthreads + nclients + 1,cm,0,0);
+  ret.push_back(epoch_manager);
+#endif
+  
 #if CS == 1
   for(uint i = 0;i < nclients;++i)
     ret.push_back(new TpccClient(nthreads + i,r.next(),n_ware_per_worker * nthreads * total_partition));

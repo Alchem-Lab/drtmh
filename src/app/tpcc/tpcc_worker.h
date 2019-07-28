@@ -240,6 +240,7 @@ class TpccWorker : public TpccMixin, public BenchWorker {
 
   static void TxnDeliveryGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
 #if ENABLE_TXN_API
+    // assert(false);
     static_cast<TpccWorker *>(w)->txn_delivery_api_gen_rwsets(buf, yield);
 #else
     assert(false);

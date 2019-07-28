@@ -131,6 +131,10 @@ class TXOpBase {
  public:
   MemDB *db_       = NULL;
 
+  // some debug info
+  const static int DEBUG_CNT = 30;
+  int P[1024] = {0};
+
  protected:
   RWorker *worker_ = NULL;
   RRpc  *rpc_      = NULL;

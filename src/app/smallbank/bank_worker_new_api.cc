@@ -24,15 +24,20 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   rtx_->begin(yield);
 
 #ifdef CALVIN_TX
-  rtx_->deserialize_read_set(req->n_reads, req->read_set);
-  rtx_->deserialize_write_set(req->n_writes, req->write_set);
-  if (!rtx_->request_locks(yield)) {
-    return txn_result_t(false,73);
-  }
+  // rtx_->deserialize_read_set(req->n_reads, req->read_set);
+  // rtx_->deserialize_write_set(req->n_writes, req->write_set);
+  const char* buf = req->req_info;
+  struct sp_req_info_t {
+    uint64_t id0;
+    uint64_t id1;
+  };
+  uint64_t id0 = ((sp_req_info_t*)buf)->id0;
+  uint64_t id1 = ((sp_req_info_t*)buf)->id1;
 #else
   uint64_t id0,id1;
   GetTwoAccount(random_generator[cor_id_],&id0,&id1);  
   // uint64_t id0 = 100, id1 = 101;
+#endif
 
   int index = -1;
   // first account
@@ -43,6 +48,11 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   pid = AcctToPid(id1);
   index = rtx_->write(pid,CHECK,id1,sizeof(checking::value),yield);
   if (index < 0) return txn_result_t(false,73);
+
+#ifdef CALVIN_TX
+    if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false,73);
+  }
 #endif
 
   float amount = 5.0;
@@ -98,27 +108,25 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
 void BankWorker::txn_sp_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
   int index = -1;
 
-  rtx_->clear_read_set();
-  rtx_->clear_write_set();
+  // rtx_->clear_read_set();
+  // rtx_->clear_write_set();
 
   // uint64_t id0,id1;
   // GetTwoAccount(random_generator[cor_id_],&id0,&id1);  
   uint64_t id0 = 100, id1 = 101;
 
-  // first account
-  int pid = AcctToPid(id0);
-  index = rtx_->write(pid,CHECK,id0,sizeof(checking::value),yield);
-  assert (index >= 0);
-  // second account
-  pid = AcctToPid(id1);
-  index = rtx_->write(pid,CHECK,id1,sizeof(checking::value),yield);
-  assert (index >= 0);
-
   //serialize read set and write set
-  rtx_->serialize_read_set(buf);
-  rtx_->serialize_write_set(buf);
+  // rtx_->serialize_read_set(buf);
+  // rtx_->serialize_write_set(buf);
+  struct sp_req_info_t {
+    uint64_t id0;
+    uint64_t id1;
+  };
+  ((sp_req_info_t*)buf)->id0 = id0;
+  ((sp_req_info_t*)buf)->id1 = id1;
   return;
 }
+
 #endif
 
 #ifdef CALVIN_TX
@@ -129,20 +137,29 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
   rtx_->begin(yield);
 
 #ifdef CALVIN_TX
-  rtx_->deserialize_read_set(req->n_reads, req->read_set);
-  rtx_->deserialize_write_set(req->n_writes, req->write_set);
-  if (!rtx_->request_locks(yield)) {
-    return txn_result_t(false, 73);
-  }
+  // rtx_->deserialize_read_set(req->n_reads, req->read_set);
+  // rtx_->deserialize_write_set(req->n_writes, req->write_set);
+  const char* buf = req->req_info;
+  struct wc_req_info_t {
+    uint64_t id;
+  };
+  uint64_t id = ((wc_req_info_t*)buf)->id;
 #else
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
+#endif
+
   int pid = AcctToPid(id);
   int index = -1;
   index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
   if (index < 0) return txn_result_t(false,73);
   index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
   if (index < 0) return txn_result_t(false,73);
+
+#ifdef CALVIN_TX
+  if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false, 73);
+  }
 #endif
 
   float amount = 5.0; //from original code
@@ -174,20 +191,19 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
 void BankWorker::txn_wc_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
   int index = -1;
 
-  rtx_->clear_read_set();
-  rtx_->clear_write_set();
+  // rtx_->clear_read_set();
+  // rtx_->clear_write_set();
 
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
-  int pid = AcctToPid(id);
-  index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
-  assert(index >= 0);
-  index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
-  assert(index >= 0);
-
+  struct wc_req_info_t {
+    uint64_t id;
+  };
+  ((wc_req_info_t*)buf)->id = id;
   //serialize read set and write set
-  rtx_->serialize_read_set(buf);
-  rtx_->serialize_write_set(buf);
+  // rtx_->serialize_read_set(buf);
+  // rtx_->serialize_write_set(buf);
+
   return;
 }
 #endif
@@ -200,18 +216,27 @@ txn_result_t BankWorker::txn_dc_new_api(yield_func_t &yield) {
   rtx_->begin(yield);
 
 #ifdef CALVIN_TX
-  rtx_->deserialize_read_set(req->n_reads, req->read_set);
-  rtx_->deserialize_write_set(req->n_writes, req->write_set);
-  if (!rtx_->request_locks(yield)) {
-    return txn_result_t(false,73);
-  }
+  // rtx_->deserialize_read_set(req->n_reads, req->read_set);
+  // rtx_->deserialize_write_set(req->n_writes, req->write_set);
+  const char* buf = req->req_info;
+  struct dc_req_info_t {
+    uint64_t id;
+  };
+  uint64_t id = ((dc_req_info_t*)buf)->id;
 #else
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
+#endif
+
   int pid = AcctToPid(id);
   int index = -1;
   index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
   if (index < 0) return txn_result_t(false,73);
+
+#ifdef CALVIN_TX
+  if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false, 73);
+  }
 #endif
 
   float amount = 1.3;
@@ -237,18 +262,20 @@ txn_result_t BankWorker::txn_dc_new_api(yield_func_t &yield) {
 void BankWorker::txn_dc_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
   int index = -1;
 
-  rtx_->clear_read_set();
-  rtx_->clear_write_set();
+  // rtx_->clear_read_set();
+  // rtx_->clear_write_set();
 
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
-  int pid = AcctToPid(id);
-  index = rtx_->write(pid,CHECK,id,sizeof(checking::value),yield);
-  assert(index >= 0);
+
+  struct dc_req_info_t {
+    uint64_t id;
+  };
+  ((dc_req_info_t*)buf)->id = id;
 
   //serialize read set and write set
-  rtx_->serialize_read_set(buf);
-  rtx_->serialize_write_set(buf);
+  // rtx_->serialize_read_set(buf);
+  // rtx_->serialize_write_set(buf);
   return;
 }
 #endif
@@ -261,18 +288,27 @@ txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
   rtx_->begin(yield);
 
 #ifdef CALVIN_TX
-  rtx_->deserialize_read_set(req->n_reads, req->read_set);
-  rtx_->deserialize_write_set(req->n_writes, req->write_set);
-  if(!rtx_->request_locks(yield)) {
-    return txn_result_t(false,73);  
-  }
+  // rtx_->deserialize_read_set(req->n_reads, req->read_set);
+  // rtx_->deserialize_write_set(req->n_writes, req->write_set);
+  const char* buf = req->req_info;
+  struct ts_req_info_t {
+    uint64_t id;
+  };
+  uint64_t id = ((ts_req_info_t*)buf)->id;
 #else
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
+#endif
+
   int pid = AcctToPid(id);
   int index = -1;
   index = rtx_->write(pid,SAV,id,sizeof(savings::value),yield);
   if (index < 0) return txn_result_t(false,73);
+
+#ifdef CALVIN_TX
+  if(!rtx_->request_locks(yield)) {
+    return txn_result_t(false,73);  
+  }
 #endif
 
   float amount   = 20.20; //from original code
@@ -297,18 +333,19 @@ txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
 void BankWorker::txn_ts_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
   int index = -1;
   
-  rtx_->clear_read_set();
-  rtx_->clear_write_set();
+  // rtx_->clear_read_set();
+  // rtx_->clear_write_set();
 
   uint64_t id;
   GetAccount(random_generator[cor_id_],&id);
-  int pid = AcctToPid(id);
-  index = rtx_->write(pid,SAV,id,sizeof(savings::value),yield);
-  assert(index >= 0);
+  struct ts_req_info_t {
+    uint64_t id;
+  };
+  ((ts_req_info_t*)buf)->id = id;
 
   //serialize read set and write set
-  rtx_->serialize_read_set(buf);
-  rtx_->serialize_write_set(buf);
+  // rtx_->serialize_read_set(buf);
+  // rtx_->serialize_write_set(buf);
   return;
 }
 #endif
@@ -321,21 +358,30 @@ txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
   rtx_->begin(yield);
 
 #ifdef CALVIN_TX
-  rtx_->deserialize_read_set(req->n_reads, req->read_set);
-  rtx_->deserialize_write_set(req->n_writes, req->write_set);  
-  if (!rtx_->request_locks(yield)) {
-    return txn_result_t(false,73);
-  }
+  // rtx_->deserialize_read_set(req->n_reads, req->read_set);
+  // rtx_->deserialize_write_set(req->n_writes, req->write_set);
+
+  const char* buf = req->req_info;
+  struct balance_req_info_t {
+    uint64_t id;
+  };
+  uint64_t id = ((balance_req_info_t*)buf)->id;
 #else
   uint64_t id;
   GetAccount(random_generator[cor_id_],&(id));
-  int pid = AcctToPid(id);
+#endif
 
+  int pid = AcctToPid(id);
   int index = -1;
   index = rtx_->read(pid,CHECK,id,sizeof(checking::value),yield);
   if (index < 0) return txn_result_t(false,73);
   index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
   if (index < 0) return txn_result_t(false,73);
+
+#ifdef CALVIN_TX
+  if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false,73);
+  }
 #endif
 
   auto cv = (checking::value*)rtx_->load_read(0,sizeof(checking::value),yield);
@@ -361,21 +407,19 @@ txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
 #ifdef CALVIN_TX
 void BankWorker::txn_balance_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
   int index = -1;
-  rtx_->clear_read_set();
-  rtx_->clear_write_set();
+  // rtx_->clear_read_set();
+  // rtx_->clear_write_set();
 
   uint64_t id;
   GetAccount(random_generator[cor_id_],&(id));
-  int pid = AcctToPid(id);
-
-  index = rtx_->read(pid,CHECK,id,sizeof(checking::value),yield);
-  assert(index >= 0);
-  index = rtx_->read(pid,SAV,id,sizeof(savings::value),yield);
-  assert(index >= 0);
+  struct balance_req_info_t {
+    uint64_t id;
+  };
+  ((balance_req_info_t*)buf)->id = id;
 
   //serialize read set and write set
-  rtx_->serialize_read_set(buf);
-  rtx_->serialize_write_set(buf);
+  // rtx_->serialize_read_set(buf);
+  // rtx_->serialize_write_set(buf);
   return;
 }
 #endif
@@ -388,17 +432,22 @@ txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
   rtx_->begin(yield);
 
 #ifdef CALVIN_TX
-  rtx_->deserialize_read_set(req->n_reads, req->read_set);
-  rtx_->deserialize_write_set(req->n_writes, req->write_set);    
-  if (!rtx_->request_locks(yield)) {
-    return txn_result_t(false,73);
-  }
+  // rtx_->deserialize_read_set(req->n_reads, req->read_set);
+  // rtx_->deserialize_write_set(req->n_writes, req->write_set);
+  const char* buf = req->req_info;
+  struct amal_req_info_t {
+    uint64_t id0;
+    uint64_t id1;
+  };
+  uint64_t id0 = ((amal_req_info_t*)buf)->id0;
+  uint64_t id1 = ((amal_req_info_t*)buf)->id1;
 #else
   uint64_t id0,id1;
   GetTwoAccount(random_generator[cor_id_],&id0,&id1);
+#endif
 
   int pid0 = AcctToPid(id0);
-  int pid1 = AcctToPid(id1),idx1;
+  int pid1 = AcctToPid(id1);
   int index = -1;
   index = rtx_->write(pid0,SAV,id0,sizeof(savings::value),yield);
   if (index < 0) return txn_result_t(false,73);
@@ -406,6 +455,11 @@ txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
   if (index < 0) return txn_result_t(false,73);
   index = rtx_->write(pid1,CHECK,id1,sizeof(checking::value),yield);
   if (index < 0) return txn_result_t(false,73);
+
+#ifdef CALVIN_TX
+  if (!rtx_->request_locks(yield)) {
+    return txn_result_t(false,73);
+  }
 #endif
 
   auto s0 = (savings::value*)rtx_->load_write(0,sizeof(savings::value),yield);
@@ -436,24 +490,31 @@ txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
 #ifdef CALVIN_TX
 void BankWorker::txn_amal_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
   int index = -1;
-  rtx_->clear_read_set();
-  rtx_->clear_write_set();
+  // rtx_->clear_read_set();
+  // rtx_->clear_write_set();
   
   uint64_t id0,id1;
   GetTwoAccount(random_generator[cor_id_],&id0,&id1);
 
-  int pid0 = AcctToPid(id0);
-  int pid1 = AcctToPid(id1),idx1;
-  index = rtx_->write(pid0,SAV,id0,sizeof(savings::value),yield);
-  assert(index >= 0);
-  index = rtx_->write(pid0,CHECK,id0,sizeof(checking::value),yield);
-  assert(index >= 0);
-  index = rtx_->write(pid1,CHECK,id1,sizeof(checking::value),yield);
-  assert(index >= 0);
+  struct amal_req_info_t {
+    uint64_t id0;
+    uint64_t id1;
+  };
+  ((amal_req_info_t*)buf)->id0 = id0;
+  ((amal_req_info_t*)buf)->id1 = id1;
+
+  // int pid0 = AcctToPid(id0);
+  // int pid1 = AcctToPid(id1);
+  // index = rtx_->write(pid0,SAV,id0,sizeof(savings::value),yield);
+  // assert(index >= 0);
+  // index = rtx_->write(pid0,CHECK,id0,sizeof(checking::value),yield);
+  // assert(index >= 0);
+  // index = rtx_->write(pid1,CHECK,id1,sizeof(checking::value),yield);
+  // assert(index >= 0);
 
   //serialize read set and write set
-  rtx_->serialize_read_set(buf);
-  rtx_->serialize_write_set(buf);
+  // rtx_->serialize_read_set(buf);
+  // rtx_->serialize_write_set(buf);
   return;
 }
 #endif

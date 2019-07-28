@@ -89,6 +89,8 @@ bool TXOpBase::local_try_release_op(int tableid,uint64_t key,uint64_t lock_conte
 
 inline __attribute__((always_inline))
 bool TXOpBase::local_validate_op(MemNode *node,uint64_t seq) {
+  if (seq != node->seq) P[8] += 1;
+  if (node->lock != 0) P[9] += 1;
   return (seq == node->seq) && (node->lock == 0);
 }
 

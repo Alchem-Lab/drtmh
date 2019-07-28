@@ -156,7 +156,7 @@ void BenchWorker::init_calvin() {
   epoch_done_schedule = new bool[1 + server_routine];
   memset(epoch_done_schedule, 0, sizeof(bool)*(1 + server_routine));
   mach_received = new std::set<int>[1 + server_routine];
-  forwarded_values = new std::map<uint, rtx::read_val_t>[1 + server_routine];
+  forwarded_values = new std::map<uint, read_val_t>[1 + server_routine];
 
 #if ONE_SIDED_READ == 0  
   epoch_status_ = new uint8_t*[1 + server_routine];
@@ -293,6 +293,7 @@ void BenchWorker::run() {
 void __attribute__((optimize("O1"))) // this flag is very tricky, it should be set this way
 BenchWorker::worker_routine(yield_func_t &yield) {
 #ifdef CALVIN_TX
+  return;
   return worker_routine_for_calvin(yield);
 #else
 
@@ -540,7 +541,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
           req_buf_end += sizeof(calvin_request);
           batch_size_++;
           // if (batch_size_ >= 16000) break;
-          // if (batch_size_ >= 3) break;
+          // if (batch_size_ >= 1) break;
           // if (batch_size_ >= 16000) break;
         } else break;
     }
@@ -555,15 +556,14 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     //                 ((calvin_header*)req_buf)->epoch_id,
     //                 nocc::util::get_now());
 
-    // generating read/write sets for each request
+    // generating request info for each request
     char* ptr = req_buf + sizeof(calvin_header);
     for (uint64_t i = 0; i < batch_size_; i++) {
       assert(ptr != NULL);
-      // if (((calvin_request*)ptr)->req_idx != 0)
-        // fprintf(stdout, "No 0 index!\n");
       assert (workload[((calvin_request*)ptr)->req_idx].gen_sets_fn != nullptr);
-      assert ((char*)&((calvin_request*)ptr)->n_reads - req_buf >= sizeof(calvin_header));
-      workload[((calvin_request*)ptr)->req_idx].gen_sets_fn(this,(char*)&((calvin_request*)ptr)->n_reads,yield);
+      assert (((calvin_request*)ptr)->req_info - req_buf >= sizeof(calvin_header));
+      // fprintf(stdout, "generating req info for request %d\n", ((calvin_request*)ptr)->req_idx);
+      workload[((calvin_request*)ptr)->req_idx].gen_sets_fn(this,((calvin_request*)ptr)->req_info,yield);
       ptr += sizeof(calvin_request);
     }
 
@@ -869,6 +869,25 @@ void BenchWorker::exit_handler() {
 
     exit_report();
 #endif
+
+#if DEBUG_DETAIL
+    fprintf(stdout, "\n");
+    for(uint i = 0; i < server_routine + 1;++i) {
+      if (i == 1) {
+#if defined(OCC_TX) || defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(CALVIN_TX)
+        auto tx = dynamic_cast<rtx::TXOpBase*>(new_txs_[i]);
+#else
+        assert(false);
+#endif
+        fprintf(stdout, "cor_id_ = %d:\n", i);
+        for (uint j = 0; j < rtx::TXOpBase::DEBUG_CNT; j++) {
+          fprintf(stdout, "cnt:%-10d%-10d\n", j, tx->P[j]);
+        }
+        fprintf(stdout, "\n");
+      }
+    }
+#endif
+
 #if RECORD_STALE
     util::RecordsBuffer<double> total_buffer;
     for(uint i = 0; i < server_routine + 1;++i) {

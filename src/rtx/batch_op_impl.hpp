@@ -47,6 +47,7 @@ struct BatchOpCtrlBlock {
       if(!pa) {
         rpc->prepare_multi_req(reply_buf_,mac_set_.size(),cid);
       }
+
       rpc->broadcast_to(req_buf_,rpc_id,
                         batch_msg_size(),
                         cid,RRpc::REQ,mac_set_);

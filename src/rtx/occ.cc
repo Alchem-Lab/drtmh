@@ -52,16 +52,19 @@ bool OCC::commit(yield_func_t &yield) {
 
   bool ret = true;
   if(abort_) {
+    P[0] += 1;
     goto ABORT;
   }
 
   // first, lock remote records
   ret = lock_writes(yield);
   if(unlikely(!ret)) {
+    P[1] += 1;
     goto ABORT;
   }
 
   if(unlikely(!validate_reads(yield))) {
+    P[2] += 1;
     goto ABORT;
   }
 
@@ -366,16 +369,13 @@ bool OCC::lock_writes(yield_func_t &yield) {
     if((*it).pid != node_id_) { // remote case
       add_batch_entry<RtxLockItem>(write_batch_helper_, (*it).pid,
                                    /*init RTXLockItem */ (*it).pid,(*it).tableid,(*it).key,(*it).seq);
+      P[4] += 1;
     }
     else {
       if(unlikely(!local_try_lock_op(it->node,
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
 #if !NO_ABORT
-        return false;
-#endif
-      }
-      if(unlikely(!local_validate_op(it->node,it->seq))) {
-#if !NO_ABORT
+        P[5] += 1;
         return false;
 #endif
       }
@@ -390,10 +390,13 @@ bool OCC::lock_writes(yield_func_t &yield) {
   for(uint i = 0;i < write_batch_helper_.mac_set_.size();++i) {
     if(*(get_batch_res<uint8_t>(write_batch_helper_,i)) == LOCK_FAIL_MAGIC) { // lock failed
 #if !NO_ABORT
+      P[6] += 1;
       return false;
 #endif
     }
   }
+
+  P[7] += 1;
   return true;
 }
 

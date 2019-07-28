@@ -103,6 +103,9 @@
 #define PROFILE_RW_SET 0     // whether profile TX's read/write set
 #define PROFILE_SERVER_NUM 0 // whether profile number of server accessed per TX
 
+// debug related
+#define DEBUG_DETAIL 0
+
 /*****some sanity setting *********/
 #if RDMA_CACHE
 static_assert(ONE_SIDED_READ,"RTX's RDMA location cache must work with an RDMA friendly store.");

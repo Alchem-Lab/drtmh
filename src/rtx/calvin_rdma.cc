@@ -766,12 +766,14 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   std::set<int> passive_participants;
   std::set<int> active_participants;
   for (int i = 0; i < write_set_.size(); ++i) {
-    // LOG(3) << write_set_[i].pid;
+    // fprintf(stdout, "wpid = %d\n", write_set_[i].pid);
+    // LOG(3) << "wset pid:" << write_set_[i].pid;
     active_participants.insert(write_set_[i].pid);
   }
   for (int i = 0; i < read_set_.size(); ++i) {
+    // fprintf(stdout, "rpid = %d\n", read_set_[i].pid);  
+    // LOG(3) << "rset pid:" << read_set_[i].pid;
     if (active_participants.find(read_set_[i].pid) == active_participants.end()) {
-        // LOG(3) << read_set_[i].pid;
         passive_participants.insert(read_set_[i].pid);
       }
   }
@@ -797,6 +799,7 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   // for (auto itr = passive_participants.begin(); itr != passive_participants.end(); itr++) {
   //   fprintf(stdout, "%d ", *itr);
   // }
+
   // fprintf(stdout, "\n");
 
   // broadcast the active participants ONLY.
@@ -806,24 +809,29 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
       add_mac(read_batch_helper_, *itr);
   }
 
+
   if (!read_batch_helper_.mac_set_.empty()) {
     for (int i = 0; i < read_set_.size(); ++i) {
       if (read_set_[i].pid == response_node_) {
-        assert(write_set_[i].data_ptr != NULL);
+        // fprintf(stdout, "forward read idx %d\n", i);
+        assert(read_set_[i].data_ptr != NULL);
         add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
                                      read_set_[i].pid,
-                                   /* init read_val_t */ 
-                                     req_seq, 0, i, read_set_[i].len, read_set_[i].data_ptr);
+                                     /* init read_val_t */ 
+                                     req_seq, 0, i, read_set_[i].len, 
+                                     read_set_[i].data_ptr);
       }
     }
 
     for (int i = 0; i < write_set_.size(); ++i) {
       if (write_set_[i].pid == response_node_) {
+        // fprintf(stdout, "forward write idx %d\n", i);
         assert(write_set_[i].data_ptr != NULL);
         add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
                                      write_set_[i].pid,
-                                   /* init read_val_t */ 
-                                     req_seq, 1, i, write_set_[i].len, write_set_[i].data_ptr);
+                                     /* init read_val_t */ 
+                                     req_seq, 1, i, write_set_[i].len, 
+                                     write_set_[i].data_ptr);
       }
     }
 
@@ -923,6 +931,7 @@ using namespace nocc::rtx::rwlock;
           volatile uint64_t *lockptr = &(it->node->lock);
           if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
                        R_LEASE(txn_end_time)))) {
+            worker_->yield_next(yield);       
             continue;
           } else {
             break; // lock the next local read
@@ -962,10 +971,11 @@ using namespace nocc::rtx::rwlock;
           volatile uint64_t *lockptr = &(it->node->lock);
           if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
                        LOCKED(response_node_)))) {
+            worker_->yield_next(yield);
             continue;
           } else {
             break; // lock the next local read
-          }       
+          }
         } else { //read locked
           release_reads(yield);
           release_writes(yield);
@@ -1029,7 +1039,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
 
   std::map<uint, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cid];
   
-  // fprintf(stdout, "in calvin forward rpc.\n");
+  // fprintf(stdout, "in calvin forward rpc handler.\n");
   int num_returned(0);
   RTX_ITER_ITEM(msg,sizeof(read_val_t)) {
 
@@ -1055,6 +1065,8 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
       uint key = item->req_seq << 5;
       key |= ((item->index_in_set << 1));
       fv[key] = *item;
+
+      // fprintf(stdout, "key %u installed for read idx %d.\n", key, item->index_in_set);
     } else if (item->read_or_write == 1) { // WRITE
       // ReadSetItem& set_item = (*(static_cast<BenchWorker*>(worker_))->write_set_ptr[cid])[item->index_in_set];
       assert(id != response_node_);
@@ -1070,6 +1082,8 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
       uint key = item->req_seq << 5;
       key |= ((item->index_in_set << 1) + 1);
       fv[key] = *item;
+
+      // fprintf(stdout, "key %u installed for write idx %d.\n", key, item->index_in_set);
     } else
       assert(false);
 

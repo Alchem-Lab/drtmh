@@ -11,8 +11,8 @@
 #define R_LEASE(end_time) ((end_time) << (1+8))
 #define END_TIME(state) ((state) >> (1+8))
 // the following macros are used by namespace rwlock_4_waitdie
-#define START_TIME(state) ((state) >> (1+8))
-#define LEASE_DURATION(state) ((state) & 0x1ff) >> 1
+#define START_TIME(state) ((get_now() & (~0x1ff)) | (state) >> (1+8))
+#define LEASE_DURATION(state) (((state) & 0x1ff) >> 1)
 
 namespace nocc {
 
