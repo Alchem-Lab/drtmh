@@ -46,23 +46,23 @@ protected:
   bool renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id);
 
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    char* data_ptr = (char*)malloc(len);
-    for(auto&item : write_set_) {
-      if(item.key == key && item.tableid == tableid) {
-        memcpy(data_ptr, item.data_ptr, len); // not efficient
-        read_set_.emplace_back(tableid, key, item.node, data_ptr, 0, len, pid, -1, -1);
-        return read_set_.size() - 1;
-      }
-    }
-    for(auto&item : read_set_) {
-      if(item.key == key && item.tableid == tableid) {
-        memcpy(data_ptr, item.data_ptr, len); // not efficient
-        read_set_.emplace_back(tableid, key, item.node, data_ptr, 0, len, pid, -1, -1);
-        return read_set_.size() - 1;
-      }
-    }
+    // char* data_ptr = (char*)malloc(len);
+    // for(auto&item : write_set_) {
+    //   if(item.key == key && item.tableid == tableid) {
+    //     memcpy(data_ptr, item.data_ptr, len); // not efficient
+    //     read_set_.emplace_back(tableid, key, item.node, data_ptr, 0, len, pid, -1, -1);
+    //     return read_set_.size() - 1;
+    //   }
+    // }
+    // for(auto&item : read_set_) {
+    //   if(item.key == key && item.tableid == tableid) {
+    //     memcpy(data_ptr, item.data_ptr, len); // not efficient
+    //     read_set_.emplace_back(tableid, key, item.node, data_ptr, 0, len, pid, -1, -1);
+    //     return read_set_.size() - 1;
+    //   }
+    // }
 
-    read_set_.emplace_back(tableid, key, (MemNode*)NULL, data_ptr, 0, len, pid, -1, -1);
+    read_set_.emplace_back(tableid, key, (MemNode*)NULL, (char*)NULL, 0, len, pid, -1, -1);
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
@@ -114,14 +114,14 @@ protected:
   int remote_write(int pid, int tableid, uint64_t key, int len, yield_func_t &yield) {
 
     int index = 0;
-    for(auto& item : write_set_) {
-      if(item.key == key && item.tableid == tableid) {
-        // fprintf(stderr, "[SUNDIAL INFO] remote write already in write set (no data in write set now)\n");
-        LOG(7) <<"[SUNDIAL WARNING] remote write already in write set (no data in write set now)";
-        return index;
-      }
-      ++index;
-    }
+    // for(auto& item : write_set_) {
+    //   if(item.key == key && item.tableid == tableid) {
+    //     // fprintf(stderr, "[SUNDIAL INFO] remote write already in write set (no data in write set now)\n");
+    //     LOG(7) <<"[SUNDIAL WARNING] remote write already in write set (no data in write set now)";
+    //     return index;
+    //   }
+    //   ++index;
+    // }
     write_set_.emplace_back(tableid,key,(MemNode*)NULL,(char *)NULL,0,len,pid, -1, -1);
     index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
