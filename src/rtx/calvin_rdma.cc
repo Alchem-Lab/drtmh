@@ -823,6 +823,39 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
       }
     }
 
+    // for (int i = 0; i < write_set_.size(); ++i) {
+    //   if (write_set_[i].pid == response_node_) {
+    //     fprintf(stdout, "forward write idx %d\n", i);
+    //     assert(write_set_[i].data_ptr != NULL);
+    //     add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
+    //                                  write_set_[i].pid,
+    //                                  /* init read_val_t */ 
+    //                                  req_seq, 1, i, write_set_[i].len, 
+    //                                  write_set_[i].data_ptr);
+    //   }
+    // }
+  
+    // fprintf(stdout, "forward read start to machine: \n");
+    // for (auto m : read_batch_helper_.mac_set_)
+    //   fprintf(stdout, "%d ", m);
+    // fprintf(stdout, "\n");
+    auto replies = send_batch_read(RTX_CALVIN_FORWARD_RPC_ID);
+    assert(replies > 0);
+    worker_->indirect_yield(yield);
+    // fprintf(stdout, "forward read done.\n");
+  } else {
+    // fprintf(stdout, "No need to forward.\n");
+  }
+
+
+  start_batch_read();
+
+  for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
+    if (*itr != response_node_)
+      add_mac(read_batch_helper_, *itr);
+  }
+
+  if (!read_batch_helper_.mac_set_.empty()) {
     for (int i = 0; i < write_set_.size(); ++i) {
       if (write_set_[i].pid == response_node_) {
         // fprintf(stdout, "forward write idx %d\n", i);
@@ -834,31 +867,38 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
                                      write_set_[i].data_ptr);
       }
     }
-
+  
+    // fprintf(stdout, "forward write start to machine: \n");
+    // for (auto m : read_batch_helper_.mac_set_)
+    //   fprintf(stdout, "%d ", m);
+    // fprintf(stdout, "\n");
     auto replies = send_batch_read(RTX_CALVIN_FORWARD_RPC_ID);
     assert(replies > 0);
     worker_->indirect_yield(yield);
-    // fprintf(stdout, "forward done.\n");
+    // fprintf(stdout, "forward write done.\n");
   } else {
     // fprintf(stdout, "No need to forward.\n");
   }
+
 
   if (!am_I_active_participant)
     return false;
   
   // phase 4: check if all read_set and write_set has been collected.
   //          if not, wait.
-  std::map<uint, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cor_id_];
+  // fprintf(stdout, "collecting missing reads and writes...\n");
+  std::map<uint64_t, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cor_id_];
   while (true) {
     bool has_collected_all = true;
     for (auto i = 0; i < read_set_.size(); ++i) {
       if (read_set_[i].data_ptr == NULL) {
-        uint key = req_seq << 5;
+        uint64_t key = req_seq << 6;
         key |= (i<<1);
         auto it = fv.find(key);
         if (it != fv.end()) {
           read_set_[i].data_ptr = (char*)malloc(it->second.len);
           memcpy(read_set_[i].data_ptr, it->second.value, it->second.len);
+          // fprintf(stdout, "key %d read idx %d found.\n", key, i);
         } else {
           has_collected_all = false;
           break;
@@ -867,12 +907,13 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
     }
     for (auto i = 0; i < write_set_.size(); ++i) {
       if (write_set_[i].data_ptr == NULL) {
-        uint key = req_seq << 5;
+        uint64_t key = req_seq << 6;
         key |= ((i<<1) + 1);
         auto it = fv.find(key);
         if (it != fv.end()) {
           write_set_[i].data_ptr = (char*)malloc(it->second.len);
           memcpy(write_set_[i].data_ptr, it->second.value, it->second.len);
+          // fprintf(stdout, "key %d write idx %d found.\n", key, i);
         } else {
           has_collected_all = false;
           break;
@@ -1037,9 +1078,12 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   char *reply = reply_msg + sizeof(ReplyHeader);
 
-  std::map<uint, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cid];
+  std::map<uint64_t, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cid];
   
   // fprintf(stdout, "in calvin forward rpc handler.\n");
+  
+  assert(id != response_node_);
+
   int num_returned(0);
   RTX_ITER_ITEM(msg,sizeof(read_val_t)) {
 
@@ -1051,7 +1095,6 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
     
     if (item->read_or_write == 0)  { // READ
       // ReadSetItem& set_item = (*(static_cast<BenchWorker*>(worker_))->read_set_ptr[cid])[item->index_in_set];
-      assert(id != response_node_);
       // assert(set_item.pid != response_node_);
       // // assert(data_ptr == NULL);
       // if (set_item.data_ptr == NULL)
@@ -1062,14 +1105,13 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
       // set_item.data_ptr = (char*)malloc(item->len);
       // memcpy(set_item.data_ptr, item->value, item->len);
 
-      uint key = item->req_seq << 5;
+      uint64_t key = item->req_seq << 6;
       key |= ((item->index_in_set << 1));
       fv[key] = *item;
 
       // fprintf(stdout, "key %u installed for read idx %d.\n", key, item->index_in_set);
     } else if (item->read_or_write == 1) { // WRITE
       // ReadSetItem& set_item = (*(static_cast<BenchWorker*>(worker_))->write_set_ptr[cid])[item->index_in_set];
-      assert(id != response_node_);
       // assert(set_item.pid != response_node_);
       // assert(data_ptr == NULL);
       // if (set_item.data_ptr == NULL)
@@ -1079,7 +1121,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
 
       // set_item.data_ptr = (char*)malloc(item->len);
       // memcpy(set_item.data_ptr, item->value, item->len);
-      uint key = item->req_seq << 5;
+      uint64_t key = item->req_seq << 6;
       key |= ((item->index_in_set << 1) + 1);
       fv[key] = *item;
 
@@ -1087,11 +1129,13 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
     } else
       assert(false);
 
-    num_returned += 1;
+    // num_returned += 1;
   } // end for
 
+  num_returned = 1;
   ((ReplyHeader *)reply_msg)->num = num_returned;
   assert(num_returned > 0);
+  // fprintf(stdout, "forward handler reply.\n");
   rpc_->send_reply(reply_msg,reply - reply_msg,id,cid);
   // send reply
 }

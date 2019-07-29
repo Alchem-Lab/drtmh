@@ -156,7 +156,7 @@ void BenchWorker::init_calvin() {
   epoch_done_schedule = new bool[1 + server_routine];
   memset(epoch_done_schedule, 0, sizeof(bool)*(1 + server_routine));
   mach_received = new std::set<int>[1 + server_routine];
-  forwarded_values = new std::map<uint, read_val_t>[1 + server_routine];
+  forwarded_values = new std::map<uint64_t, read_val_t>[1 + server_routine];
 
 #if ONE_SIDED_READ == 0  
   epoch_status_ = new uint8_t*[1 + server_routine];
