@@ -9,10 +9,10 @@
 
 // the following macros are used by namespace rwlock
 #define R_LEASE(end_time) ((end_time) << (1+8))
-#define END_TIME(state) ((state) >> (1+8))
+#define END_TIME(state) ((state) >> (1+8) | (get_now() & (~0x7fffffffffffff)) )
 // the following macros are used by namespace rwlock_4_waitdie
-#define START_TIME(state) ((state) >> (1+8))
-#define LEASE_DURATION(state) ((state) & 0x1ff) >> 1
+#define START_TIME(state) ((state) >> (1+8) | (get_now() & (~0x7fffffffffffff)) )
+#define LEASE_DURATION(state) (((state) & 0x1ff) >> 1)
 
 // used by sundial 
 #define WTS(y) (uint32_t)(((y)&0x7fffffff00000000) >> 32)
@@ -116,12 +116,12 @@ uint64_t get_now() {
 
 inline __attribute__((always_inline))
 uint64_t R_LOCKED_WORD(uint64_t txn_start_time, uint64_t duration) {
-  return (txn_start_time << (8+1)) | ((duration & 0xff) << 1);
+  return ((txn_start_time << (8+1)) | ((duration & 0xff) << 1));
 }
 
 inline __attribute__((always_inline))
 uint64_t W_LOCKED_WORD(uint64_t txn_start_time, uint64_t owner_id) {
-  return (txn_start_time << (8+1)) | ((owner_id & 0xff) << 1) | W_LOCKED;
+  return ((txn_start_time << (8+1)) | ((owner_id & 0xff) << 1) | W_LOCKED);
 }
 
 inline __attribute__((always_inline))

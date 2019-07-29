@@ -384,13 +384,13 @@ void BenchWorker::exit_handler() {
 
     exit_report();
 #endif
-#if MVCC_TX
+#if MVCC_TX || NOWAIT_TX
     int temp[40];
     for(int i = 0; i < 40; ++i)
         temp[i] = 0;
-    for(int i = 1; i < 2; ++i)
+    for(int i = 1; i < 11; ++i)
     for(int j = 0; j < 40; ++j)
-        temp[j] += dynamic_cast<rtx::MVCC *>(new_txs_[i])->abort_cnt[j];
+        temp[j] += dynamic_cast<rtx::TXOpBase *>(new_txs_[i])->abort_cnt[j];
     for(int j = 0; j < 40; ++j) 
       LOG(3) << j <<": " << temp[j];
     //auto hkztx = dynamic_cast<rtx::MVCC *>(new_txs_[1]);

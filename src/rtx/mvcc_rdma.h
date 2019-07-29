@@ -151,7 +151,7 @@ public:
         lock_req_ = new RDMACASLockReq(cid);
         unlock_req_ = new RDMAFAUnlockReq(cid, 0);
         write_req_ = new RDMAWriteReq(cid, 0);
-        memset(abort_cnt, 0, sizeof(int) * 20);
+        memset(abort_cnt, 0, sizeof(int) * 40);
         for(int i = 0; i < 100; ++i) {
           Rmempool[i] = (char*)Rmalloc(2048);
           memptr = 0;
@@ -270,8 +270,7 @@ protected:
   int memptr = 0;
 #endif
 
-public:
-  int abort_cnt[40];
+public:  
   int abort_reason = -1;
   void show_abort() {
     for(int i = 0; i < 40; ++i) {

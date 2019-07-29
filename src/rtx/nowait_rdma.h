@@ -338,6 +338,7 @@ public:
     read_req_ = new RDMAReadReq(cid);
     read_set_.clear();
     write_set_.clear();
+    memset(abort_cnt, 0, sizeof(int) * 40);
   }
 
   void set_logger(Logger *log) { logger_ = log; }

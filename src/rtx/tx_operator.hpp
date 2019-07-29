@@ -130,6 +130,7 @@ class TXOpBase {
 
  public:
   MemDB *db_       = NULL;
+  int abort_cnt[40];
 
  protected:
   RWorker *worker_ = NULL;

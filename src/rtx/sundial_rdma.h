@@ -19,7 +19,7 @@
 #include "rwlock.hpp"
 // #define SUNDIAL_DEBUG
 // #define SUNDIAL_NO_LOCK
-//#define SUNDIAL_NOWAIT
+#define SUNDIAL_NOWAIT
 namespace nocc {
 
 namespace rtx {

@@ -37,6 +37,7 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       if (h->lock != 0) {
         #if !NO_ABORT
         END(lock);
+        abort_cnt[0]++;
         return false;
         #endif
       }
@@ -46,6 +47,7 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
         #if !NO_ABORT
         END(lock);
+        abort_cnt[1]++;
         return false;
         #endif
       } // check local lock
@@ -87,6 +89,7 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       if (h->lock != 0) {
         #if !NO_ABORT
         END(lock);
+        abort_cnt[2]++;
         return false;
         #endif
       }
@@ -96,6 +99,7 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
         #if !NO_ABORT
         END(lock);
+        abort_cnt[3]++;
         return false;
         #endif
       } // check local lock
@@ -133,6 +137,7 @@ bool NOWAIT::try_lock_read_w_FA_rdma(int index, yield_func_t &yield) {
       bool ret = dslr_lock_manager->acquireLock(yield, l);
       if (!ret) {
         END(lock);
+        abort_cnt[4]++;
         return false;
       }
 
@@ -147,12 +152,14 @@ bool NOWAIT::try_lock_read_w_FA_rdma(int index, yield_func_t &yield) {
       if(!dslr_lock_manager->isLocked(std::make_pair(qp, off))) { // check locks
       #if !NO_ABORT
           END(lock);
+          abort_cnt[5]++;
           return false;
       #endif
       }
       if(h->seq != (*it).seq) {     // check seqs
       #if !NO_ABORT
           END(lock);
+          abort_cnt[6]++;
           return false;
       #endif
       }
@@ -164,12 +171,14 @@ bool NOWAIT::try_lock_read_w_FA_rdma(int index, yield_func_t &yield) {
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
 #if !NO_ABORT
         END(lock);
+      abort_cnt[7]++;
         return false;
 #endif
       } // check local lock
       if(unlikely(!local_validate_op(it->node,it->seq))) {
 #if !NO_ABORT
         END(lock);
+        abort_cnt[8]++;
         return false;
 #endif
       } // check seq
@@ -207,6 +216,7 @@ bool NOWAIT::try_lock_write_w_FA_rdma(int index, yield_func_t &yield) {
       bool ret = dslr_lock_manager->acquireLock(yield, l);
       if (!ret) {
         END(lock);
+        abort_cnt[9]++;
         return false;
       }
 
@@ -221,12 +231,14 @@ bool NOWAIT::try_lock_write_w_FA_rdma(int index, yield_func_t &yield) {
       if(!dslr_lock_manager->isLocked(std::make_pair(qp, off))) { // check locks
       #if !NO_ABORT
           END(lock);
+          abort_cnt[9]++;
           return false;
       #endif
       }
       if(h->seq != (*it).seq) {     // check seqs
       #if !NO_ABORT
           END(lock);
+          abort_cnt[10]++;
           return false;
       #endif
       }
@@ -238,12 +250,14 @@ bool NOWAIT::try_lock_write_w_FA_rdma(int index, yield_func_t &yield) {
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
 #if !NO_ABORT
         END(lock);
+        abort_cnt[11]++;
         return false;
 #endif
       } // check local lock
       if(unlikely(!local_validate_op(it->node,it->seq))) {
 #if !NO_ABORT
         END(lock);
+        abort_cnt[12]++;
         return false;
 #endif
       } // check seq
@@ -289,6 +303,7 @@ using namespace nocc::rtx::rwlock;
         }
         else if ((old_state & 1) == W_LOCKED) { // write-locked
           END(lock);
+          abort_cnt[13]++;
           return false; 
         }
         else {
@@ -306,6 +321,7 @@ using namespace nocc::rtx::rwlock;
         volatile uint64_t l = it->node->lock;
         if(l & 0x1 == W_LOCKED) {
           END(lock);
+          abort_cnt[14]++;
           return false;
         } else {
           if (EXPIRED(END_TIME(l))) {
@@ -362,6 +378,7 @@ using namespace nocc::rtx::rwlock;
           return true;
         } else if ((old_state & 1) == W_LOCKED) { // write-locked
           END(lock);
+          abort_cnt[15]++;
           return false;
         } else {
           if (EXPIRED(END_TIME(old_state))) {
@@ -369,6 +386,7 @@ using namespace nocc::rtx::rwlock;
             continue;
           } else { // success: unexpired read leased
             END(lock);
+            abort_cnt[16]++;
             return false;
           }
         }
@@ -378,6 +396,7 @@ using namespace nocc::rtx::rwlock;
         volatile uint64_t l = it->node->lock;
         if(l & 0x1 == W_LOCKED) {
           END(lock);
+          abort_cnt[17]++;
           return false;
         } else {
           if (EXPIRED(END_TIME(l))) {
@@ -391,6 +410,7 @@ using namespace nocc::rtx::rwlock;
             }       
           } else { //read locked
             END(lock);
+            abort_cnt[18]++;
             return false;
           }
         }
@@ -679,6 +699,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, uint64_t end_time, yield_func
         volatile uint64_t l = it->node->lock;
         if(l & 0x1 == W_LOCKED) {
           END(lock);
+          abort_cnt[19]++;
           return false;
         } else {
           if (EXPIRED(END_TIME(l))) {
@@ -732,6 +753,7 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
         volatile uint64_t l = it->node->lock;
         if(l & 0x1 == W_LOCKED) {
           END(lock);
+          abort_cnt[20]++;
           return false;
         } else {
           if (EXPIRED(END_TIME(l))) {
@@ -745,6 +767,7 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
             }       
           } else { //read locked
             END(lock);
+            abort_cnt[21]++;
             return false;
           }
         }
