@@ -40,6 +40,8 @@ extern uint64_t per_thread_calvin_request_buffer_sz;
 namespace oltp {
 extern char* calvin_request_buffer;
 }
+
+#define MAX_CALVIN_REQ_CNTS (200*1000)
 #endif
 
 extern uint64_t total_ring_sz;
@@ -167,7 +169,7 @@ void BenchWorker::init_calvin() {
   }
 
   req_buffers = new std::vector<char*>[1 + server_routine];
-  int buf_len = sizeof(calvin_header) + 100*1000*sizeof(calvin_request);
+  int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
   for (int i = 0; i < server_routine+1; i++) {
     for (int j = 0; j < cm_->get_num_nodes(); j++)
       req_buffers[i].push_back((char*)malloc(buf_len));
@@ -178,7 +180,7 @@ void BenchWorker::init_calvin() {
     send_buffers[i] = rpc_->get_static_buf(MAX_MSG_SIZE);
 #else
   req_buffers = new std::vector<char*>[1 + server_routine];
-  int buf_len = sizeof(calvin_header) + 100*1000*sizeof(calvin_request);
+  int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
   char* base_ptr_ = oltp::calvin_request_buffer + 
                     per_thread_calvin_request_buffer_sz * worker_id_;
   char *start_ptr = (char *)(cm_->conn_buf_);
@@ -533,7 +535,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
         // buffer for 10 milliseconds for one epoch
         if (request_timestamp - start < 10000) {
         // if (request_timestamp - start < 10000) {
-          if (req_buf_end - req_buf >= sizeof(calvin_header) + 100*1000*sizeof(calvin_request))
+          if (req_buf_end - req_buf >= sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request))
             assert(false);
           *(calvin_request*)req_buf_end = calvin_request(tx_idx, 
                                                          request_timestamp);
