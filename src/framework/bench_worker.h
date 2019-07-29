@@ -328,7 +328,7 @@ class BenchWorker : public RWorker {
 #endif
 
   //forwarded values are used by the CALVIN CLASS
-  std::map<uint, read_val_t>* forwarded_values;
+  std::map<uint64_t, read_val_t>* forwarded_values;
   
   LAT_VARS(yield);
 

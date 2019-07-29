@@ -56,7 +56,119 @@ txn_result_t TpccWorker::txn_new_order_new_api(calvin_request *req, yield_func_t
   //                   );
   // }
 
-  rtx_->begin(yield);
+  //for testing: override the request info for testing purpose
+  //the following test cases used to cause problems when read/writes are forwarded in the same batch.
+//   ((new_order_req_info_t*)buf)->warehouse_id = 3;
+//   ((new_order_req_info_t*)buf)->districtID = 1;
+//   ((new_order_req_info_t*)buf)->customerID = 269;
+//   ((new_order_req_info_t*)buf)->numItems = 15;
+// int iid[MAX_ITEM] = {89831,
+// 22247,
+// 38631,
+// 1087,
+// 69287,
+// 24286,
+// 23263,
+// 60130,
+// 76383,
+// 72413,
+// 31325,
+// 69027,
+// 32167,
+// 64037,
+// 93877};
+// uint wid[MAX_ITEM] = {
+// 4,
+// 1,
+// 4,
+// 1,
+// 1,
+// 2,
+// 1,
+// 2,
+// 1,
+// 2,
+// 1,
+// 2,
+// 1,
+// 2,
+// 1};
+// uint oq[MAX_ITEM] = {
+// 9,
+// 10,
+// 2,
+// 5,
+// 5,
+// 10,
+// 6,
+// 4,
+// 1,
+// 6,
+// 2,
+// 6,
+// 4,
+// 9,
+// 2};
+
+
+//another test case that is good:
+//   ((new_order_req_info_t*)buf)->warehouse_id = 3;
+//   ((new_order_req_info_t*)buf)->districtID = 10;
+//   ((new_order_req_info_t*)buf)->customerID = 2306;
+//   ((new_order_req_info_t*)buf)->numItems = 14;
+// int iid[MAX_ITEM] = {89831,
+// 30181,
+// 11631,
+// 79300,
+// 12295,
+// 567, 
+// 3644,
+// 89702,
+// 15847,
+// 46771,
+// 87751,
+// 48871,
+// 24226,
+// 98023,
+// 48450};
+// uint wid[MAX_ITEM] = {
+// 5,
+// 2,
+// 1,
+// 6,
+// 2,
+// 4,
+// 1,
+// 1,
+// 5,
+// 6,
+// 2,
+// 6,
+// 2,
+// 2};
+// uint oq[MAX_ITEM] = {
+// 3,
+// 9,
+// 3,
+// 1,
+// 4,
+// 10,
+// 10,
+// 4,
+// 1,
+// 3,
+// 8,
+// 7,
+// 1,
+// 3};
+
+// for (int i = 0; i < ((new_order_req_info_t*)buf)->numItems; i++) {
+//     ((new_order_req_info_t*)buf)->item_id[i] = iid[i];
+//     ((new_order_req_info_t*)buf)->supplier_warehouse_id[i] = wid[i];;
+//     ((new_order_req_info_t*)buf)->ol_quantity[i] = oq[i];
+// }
+
+rtx_->begin(yield);
 
   const uint warehouse_id = ((new_order_req_info_t*)buf)->warehouse_id;
   const uint districtID = ((new_order_req_info_t*)buf)->districtID;
@@ -146,8 +258,10 @@ txn_result_t TpccWorker::txn_new_order_new_api(calvin_request *req, yield_func_t
     return txn_result_t(false,73);
   }
 
+  // fprintf(stdout, "After local load_reads and local load_writes for %d:\n", req->req_seq);
   district::value *d_value = rtx_->get_writeset<district::value>(d_value_idx,yield);
-
+  // fprintf(stdout, "d_value addr %p\n", d_value);
+  
   for (uint ol_number = 1; ol_number <= num_local_stocks; ol_number++) {
     item::value *i_value = rtx_->get_readset<item::value>(read_idx_local[ol_number-1],yield);
     // fprintf(stdout, "i_value addr %p\n", i_value);
@@ -174,6 +288,7 @@ txn_result_t TpccWorker::txn_new_order_new_api(calvin_request *req, yield_func_t
   if(!rtx_->sync_reads(req->req_seq, yield))
     return txn_result_t(true, 73);
 
+  // fprintf(stdout, "%d read write synced.\n", req->req_seq);
   d_value = rtx_->get_writeset<district::value>(d_value_idx,yield);
   assert(d_value != NULL);
 
@@ -198,7 +313,7 @@ txn_result_t TpccWorker::txn_new_order_new_api(calvin_request *req, yield_func_t
 
   // execution phase
   ////////////////////////////////////////////////////
-
+  // fprintf(stdout, "%d starts execution.\n", req->req_seq);
   const auto my_next_o_id = d_value->d_next_o_id;
   d_value->d_next_o_id ++;
 
@@ -289,6 +404,7 @@ txn_result_t TpccWorker::txn_new_order_new_api(calvin_request *req, yield_func_t
   }
   END(read);
 
+  // fprintf(stdout, "%d starts to commit.\n", req->req_seq);
   bool res = rtx_->commit(yield);
   return txn_result_t(res,1);
 }
