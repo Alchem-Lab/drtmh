@@ -119,7 +119,7 @@ protected:
     auto seq = node->seq;
     data_ptr = data_ptr + sizeof(MemNode);
 #else
-    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
+    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader), false);
     RdmaValHeader *header = (RdmaValHeader *)data_ptr;
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
