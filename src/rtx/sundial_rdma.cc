@@ -291,6 +291,7 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
       if(h->lock != 0) {
 #ifdef SUNDIAL_NOWAIT
         END(lock);
+        abort_cnt[0]++;
         return false;
         
 #else

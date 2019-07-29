@@ -383,6 +383,7 @@ using namespace nocc::rtx::rwlock;
         } else {
           if (EXPIRED(END_TIME(old_state))) {
             _state = old_state; // retry with corrected state
+            worker_->yield_next(yield);
             continue;
           } else { // success: unexpired read leased
             END(lock);
@@ -403,6 +404,7 @@ using namespace nocc::rtx::rwlock;
             volatile uint64_t *lockptr = &(it->node->lock);
             if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
                          LOCKED(response_node_)))) {
+              worker_->yield_next(yield);
               continue;
             } else {
               END(lock);
