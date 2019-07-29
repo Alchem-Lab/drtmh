@@ -72,7 +72,7 @@ uint64_t get_now_nano() {
 
 inline __attribute__((always_inline))
 uint64_t LOCKED(uint64_t owner_id) {
-  return ((owner_id & 0xff) << 1) | W_LOCKED;
+  return (((owner_id & 0xff) << 1) | W_LOCKED);
 }
 
 inline __attribute__((always_inline))
