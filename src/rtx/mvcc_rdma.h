@@ -152,6 +152,10 @@ public:
         unlock_req_ = new RDMAFAUnlockReq(cid, 0);
         write_req_ = new RDMAWriteReq(cid, 0);
         memset(abort_cnt, 0, sizeof(int) * 20);
+        for(int i = 0; i < 100; ++i) {
+          Rmempool[i] = (char*)Rmalloc(2048);
+          memptr = 0;
+        }
         // init_time = (rwlock::get_now_nano() << 10);
       }
 
@@ -197,6 +201,7 @@ public:
   }
 
 	virtual void begin(yield_func_t &yield) {
+    memptr = 0;
     read_set_.clear();
     write_set_.clear();
     abort_reason = -1;
@@ -260,6 +265,10 @@ protected:
   RDMAFAUnlockReq* unlock_req_ = NULL;
   RDMAWriteReq* write_req_ = NULL;
 
+#if ONE_SIDED_READ
+  char* Rmempool[100];
+  int memptr = 0;
+#endif
 
 public:
   int abort_cnt[40];

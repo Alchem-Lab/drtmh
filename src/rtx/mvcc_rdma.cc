@@ -477,8 +477,9 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
   // if(item.pid != node_id_) {
     // step 1: get off
     uint64_t off = 0;
-    char* local_buf = (char*)Rmalloc(item.len * MVCC_VERSION_NUM + 
-      sizeof(MVCCHeader));
+    // char* local_buf = (char*)Rmalloc(item.len * MVCC_VERSION_NUM + 
+    //   sizeof(MVCCHeader));
+    char* local_buf = Rmempool[memptr++];
     off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
      local_buf, yield, sizeof(MVCCHeader), false); // metalen?
     ASSERT(off != 0) << (int)item.tableid << ' ' << item.key;
@@ -662,7 +663,8 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
   auto& item = read_set_[index];
   if(item.pid != node_id_) {
     uint64_t off = 0;
-    char* recv_ptr = (char*)Rmalloc(item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader));
+    // char* recv_ptr = (char*)Rmalloc(item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader));
+    char* recv_ptr = Rmempool[memptr++];
     off = rdma_read_val(item.pid, item.tableid, item.key, item.len, 
       recv_ptr, yield, sizeof(MVCCHeader), false);
 
@@ -764,31 +766,30 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
       int maxpos = (int)(item.seq / MVCC_VERSION_NUM);
       char* local_buf = item.data_ptr - sizeof(MVCCHeader) - maxpos * item.len;
       MVCCHeader* header = (MVCCHeader*)local_buf;
-      assert(header->lock == txn_start_time);
+      ASSERT(header->lock == txn_start_time) << header->lock << ' ' << txn_start_time;
       header->wts[pos] = txn_start_time;
       char* raw_data = local_buf + sizeof(MVCCHeader);
       memcpy(raw_data + pos * item.len, item.data_ptr, item.len);
       Qp *qp = get_qp(item.pid);
       assert(qp != NULL);
       assert(item.off != 0);
+      // LOG(3) << item.off + 2 * sizeof(uint64_t) << ' '
+      //   << sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len 
+      //   <<  " table" << int(item.tableid) << ' ' << pos << ' ' << (int)item.len
+      //   << ' ' << item.key << ' ' << (uint64_t)(local_buf + MVCC_VERSION_NUM * sizeof(uint64_t));
+      
       write_req_->set_write_meta(item.off + 2 * sizeof(uint64_t), 
         local_buf + 2 * sizeof(uint64_t), 
-        sizeof(MVCCHeader) - 2 * sizeof(uint64_t));
-        // sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len);
-        
-
-      // LOG(3) << "writing to " << item.off + 2 * sizeof(uint64_t) 
-        // << " len is " << sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + (pos + 1) * item.len;
-        // << " len is " << sizeof(MVCCHeader) - 2 * sizeof(uint64_t);
+        sizeof(MVCCHeader) - 2 * sizeof(uint64_t) + MVCC_VERSION_NUM * item.len);      
        
        
       write_req_->set_unlock_meta(item.off);
       write_req_->post_reqs(scheduler_, qp);
       need_yield = true;
-      if(unlikely(qp->rc_need_poll())) {
+      // if(unlikely(qp->rc_need_poll())) {
         worker_->indirect_yield(yield);
         need_yield = false;
-      }
+      // }
       // LOG(3) << "update remote release " << item.key;
       END(commit);
     }
