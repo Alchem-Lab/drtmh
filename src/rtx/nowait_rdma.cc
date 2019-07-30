@@ -378,10 +378,10 @@ using namespace nocc::rtx::rwlock;
           // read actual data
           // Qp *qp = get_qp((*it).pid);
           // auto off = (*it).off;
-          scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf,
-            (*it).len + sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
+          scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
+            (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
           worker_->indirect_yield(yield);
-          assert(LOCKED(response_node_) == h->lock);
+          // assert(LOCKED(response_node_) == h->lock);
           return true;
         } else if ((old_state & 1) == W_LOCKED) { // write-locked
           END(lock);
