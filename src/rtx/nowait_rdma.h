@@ -364,13 +364,13 @@ public:
 #if ONE_SIDED_READ
     // step 2: get the read lock. If fail, return false
     if(!try_lock_read_w_rwlock_rdma(index, txn_end_time, yield)) {
-      release_reads_w_rwlock_rdma(yield);
+      // release_reads_w_rwlock_rdma(yield);
       release_writes_w_rwlock_rdma(yield);
       return -1;
     }
 #else
     if (!try_lock_read_w_rwlock_rpc(index, txn_end_time, yield)) {
-      release_reads(yield);
+      // release_reads(yield);
       release_writes(yield);
       return -1;
     }
@@ -399,13 +399,13 @@ public:
 #if ONE_SIDED_READ
     // step 2: get the read lock. If fail, return false
     if(!try_lock_read_w_rwlock_rdma(index, txn_end_time, yield)) {
-      release_reads_w_rwlock_rdma(yield);
+      // release_reads_w_rwlock_rdma(yield);
       release_writes_w_rwlock_rdma(yield);
       return -1;
     }
 #else
     if (!try_lock_read_w_rwlock_rpc(index, txn_end_time, yield)) {
-      release_reads(yield);
+      // release_reads(yield);
       release_writes(yield);
       return -1;
     }
@@ -431,13 +431,13 @@ public:
 #if ONE_SIDED_READ
     // step 3: get the write lock. If fail, return false
     if(!try_lock_write_w_rwlock_rdma(index, yield)) {
-      release_reads_w_rwlock_rdma(yield);
+      // release_reads_w_rwlock_rdma(yield);
       release_writes_w_rwlock_rdma(yield);
       return -1;
     }
 #else
     if(!try_lock_write_w_rwlock_rpc(index, yield)) {
-      release_reads(yield);
+      // release_reads(yield);
       release_writes(yield);
       return -1;
     }
@@ -596,7 +596,7 @@ public:
   virtual bool commit(yield_func_t &yield) {
 
     if(!check_lease()) {
-      release_reads_w_rwlock_rdma(yield);
+      // release_reads_w_rwlock_rdma(yield);
       release_writes_w_rwlock_rdma(yield);
       abort_cnt[22]++;
       return false;
@@ -616,10 +616,10 @@ public:
 
 #if 1
 #if USE_DSLR
-    release_reads_w_FA_rdma(yield);
+    // release_reads_w_FA_rdma(yield);
     write_back_w_FA_rdma(yield);    
 #else
-    release_reads_w_rdma(yield);
+    // release_reads_w_rdma(yield);
     write_back_w_rdma(yield);
 #endif
 #else
@@ -641,6 +641,11 @@ public:
   gc_writeset();
   return dummy_commit();
 #endif
+  if(!check_lease()) {
+    abort_cnt[27]++;
+    release_writes(yield);
+    return false;
+  }
 
   // prepare_write_contents();
   // log_remote(yield); // log remote using *logger_*
@@ -696,7 +701,7 @@ public:
     using namespace nocc::rtx::rwlock;
     uint64_t now = END_TIME(R_LEASE(get_now_ntp()));
     if(now > min_lease) {
-      // LOG(3) << now << ' ' << min_lease;
+      // LOG(3) << min_lease << ' ' << now;
       return false;
     }
     return true;

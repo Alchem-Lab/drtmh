@@ -265,10 +265,9 @@ protected:
   RDMAFAUnlockReq* unlock_req_ = NULL;
   RDMAWriteReq* write_req_ = NULL;
 
-#if ONE_SIDED_READ
+
   char* Rmempool[100];
   int memptr = 0;
-#endif
 
 public:  
   int abort_reason = -1;

@@ -395,6 +395,7 @@ using namespace nocc::rtx::rwlock;
           return true;
         } else if ((old_state & 1) == W_LOCKED) { // write-locked
           END(lock);
+          // LOG(3) << old_state;
           abort_cnt[15]++;
           return false;
         } else {
@@ -692,13 +693,13 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, uint64_t end_time, yield_func
   std::vector<ReadSetItem> &set = read_set_;
   auto it = set.begin() + index;
   if((*it).pid != node_id_) {
-
+    uint64_t lease_end_time = R_LEASE(get_now_ntp() + LEASE_TIME_RPC);
     rpc_op<RTXLockRequestItem>(cor_id_, RTX_LOCK_RPC_ID, (*it).pid, 
                                rpc_op_send_buf_,reply_buf_, 
                                /*init RTXLockRequestItem*/  
                                RTX_REQ_LOCK_READ,
                                (*it).pid,(*it).tableid,(*it).key,(*it).seq, 
-                               txn_start_time
+                               lease_end_time
     );
 
     worker_->indirect_yield(yield);
@@ -706,11 +707,19 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, uint64_t end_time, yield_func
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
-    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
+    if(resp_lock_status == LOCK_SUCCESS_MAGIC){
+      min_lease = std::min(min_lease, END_TIME(lease_end_time));
       return true;
+    }
     else if (resp_lock_status == LOCK_FAIL_MAGIC)
       return false;
-    assert(false);
+    else if(resp_lock_status == LOCK_UPDATE_TS_MAGIC) {
+      uint64_t lease_end_time = END_TIME((*(uint64_t*)((char*)reply_buf_ + sizeof(uint8_t))));
+      min_lease = std::min(min_lease, lease_end_time);
+      return true;
+    }
+    else
+      assert(false);
 
   } else {
 
@@ -958,6 +967,7 @@ void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
 
   uint8_t res = LOCK_SUCCESS_MAGIC; // success
+  size_t nodelen = 0;
 
   int request_item_parsed = 0;
 
@@ -978,20 +988,34 @@ void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
     switch(item->type) {
       case RTX_REQ_LOCK_READ: {
           while (true) {
-            uint64_t l = node->lock;
+            volatile uint64_t l = node->lock;
             if(l & 0x1 == W_LOCKED) {
                 res = LOCK_FAIL_MAGIC;
+                abort_cnt[25]++;
                 goto END;
             } else {
               if (EXPIRED(END_TIME(l))) {
                 // clear expired lease (optimization)
                 volatile uint64_t *lockptr = &(node->lock);
                 if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                             R_LEASE(item->txn_starting_timestamp + LEASE_TIME))))
+                             item->txn_starting_timestamp))) {
                   continue;
-                else
+                }
+                else{
+                  // if(item->pid == response_node_){
+                  //   // LOG(3) << "local read stamp " << item->txn_starting_timestamp;  
+                  // }
+                  // else
+                  // {
+                  //   // LOG(3) << "remote read stamp " << item->txn_starting_timestamp;   
+                  // }
+                  
                   goto NEXT_ITEM;  // successfully read locked this item
+                }
               } else { // read locked: not conflict
+                nodelen = sizeof(uint64_t);
+                res = LOCK_UPDATE_TS_MAGIC;
+                *(uint64_t*)(reply_msg + sizeof(uint8_t)) = l;
                 goto NEXT_ITEM;    // successfully read locked this item
               }
             }
@@ -1000,9 +1024,10 @@ void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
         break;
       case RTX_REQ_LOCK_WRITE: {
         while(true) {
-          uint64_t l = node->lock;
+          volatile uint64_t l = node->lock;
           if(l & 0x1 == W_LOCKED) {
               res = LOCK_FAIL_MAGIC;
+              abort_cnt[23]++;
               goto END;
           } else {
             if (EXPIRED(END_TIME(l))) {
@@ -1014,6 +1039,8 @@ void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
               else
                 goto NEXT_ITEM;
             } else { //read locked: conflict
+                // LOG(3) << "write " << END_TIME(l) << ' ' << get_now_ntp();
+                abort_cnt[24]++;
                 res = LOCK_FAIL_MAGIC;
                 goto END;
             }
@@ -1032,7 +1059,7 @@ NEXT_ITEM:
 END:
   assert(res != LOCK_WAIT_MAGIC);
   *((uint8_t *)reply_msg) = res;
-  rpc_->send_reply(reply_msg,sizeof(uint8_t),id,cid);
+  rpc_->send_reply(reply_msg,sizeof(uint8_t) + nodelen,id,cid);
 }
 
 void NOWAIT::release_rpc_handler(int id,int cid,char *msg,void *arg) {

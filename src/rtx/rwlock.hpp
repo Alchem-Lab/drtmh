@@ -43,6 +43,7 @@ const uint64_t INIT = 0x0;
 const uint64_t W_LOCKED = 0x1;
 const uint64_t DELTA = 50; // 50 micro-seconds
 const uint64_t LEASE_TIME = 300000; // 0.4 milli-seconds
+const uint64_t LEASE_TIME_RPC = 1500;
 
 // get current wall-time to the precision of microseconds
 inline __attribute__((always_inline))
@@ -60,24 +61,25 @@ uint64_t get_now() {
 
 inline __attribute__((always_inline))
 uint64_t get_now_ntp() {
-  ntptimeval tv;
-  int ret;
-  if ((ret = ntp_gettime(&tv)) == 0) {
-    return (tv.time.tv_sec * 1000000 + tv.time.tv_usec);
-  } 
-  else {
-    switch(ret) {
-    case EFAULT:
-      fprintf(stderr,"efault\n");
-      break;
-    case EOVERFLOW:
-      fprintf(stderr,"eoverflow\n");
-      break;
-    default:
-      fprintf(stderr,"gettime ret: %d\n",ret);
-    }
-    assert(false);
-  }
+  // ntptimeval tv;
+  // int ret;
+  // if ((ret = ntp_gettime(&tv)) == 0) {
+  //   return (tv.time.tv_sec * 1000000 + tv.time.tv_usec);
+  // } 
+  // else {
+  //   switch(ret) {
+  //   case EFAULT:
+  //     fprintf(stderr,"efault\n");
+  //     break;
+  //   case EOVERFLOW:
+  //     fprintf(stderr,"eoverflow\n");
+  //     break;
+  //   default:
+  //     fprintf(stderr,"gettime ret: %d\n",ret);
+  //   }
+  //   assert(false);
+  // }
+  return get_now();
 }
 
 inline __attribute__((always_inline))
