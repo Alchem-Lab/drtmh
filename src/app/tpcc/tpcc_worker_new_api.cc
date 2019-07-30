@@ -38,7 +38,7 @@ txn_result_t TpccWorker::txn_new_order_new_api(calvin_request *req, yield_func_t
     uint ol_quantity[MAX_ITEM];
   };
 
-  static_assert(sizeof(new_order_req_info_t) < calvin_request::REQ_INFO_SIZE, "request info for new order is too large to fit into a calvin request!");
+  static_assert(sizeof(new_order_req_info_t) < CALVIN_REQ_INFO_SIZE, "request info for new order is too large to fit into a calvin request!");
 
   const char* buf = req->req_info;
 
@@ -656,7 +656,7 @@ void TpccWorker::txn_new_order_new_api_gen_rwsets(char* buf, yield_func_t &yield
     uint ol_quantity[MAX_ITEM];
   };
 
-  static_assert(sizeof(new_order_req_info_t) < calvin_request::REQ_INFO_SIZE, "request info for new order is too large to fit into a calvin request!");
+  static_assert(sizeof(new_order_req_info_t) < CALVIN_REQ_INFO_SIZE, "request info for new order is too large to fit into a calvin request!");
   
   static_assert(MAX_ITEM >= 5, "MAX_ITEM less than 5 causes wired (maybe buffer override) problems!");
 

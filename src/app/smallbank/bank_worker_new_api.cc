@@ -111,9 +111,9 @@ void BankWorker::txn_sp_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
   // rtx_->clear_read_set();
   // rtx_->clear_write_set();
 
-  // uint64_t id0,id1;
-  // GetTwoAccount(random_generator[cor_id_],&id0,&id1);  
-  uint64_t id0 = 100, id1 = 101;
+  uint64_t id0,id1;
+  GetTwoAccount(random_generator[cor_id_],&id0,&id1);  
+  // uint64_t id0 = 100, id1 = 101;
 
   //serialize read set and write set
   // rtx_->serialize_read_set(buf);

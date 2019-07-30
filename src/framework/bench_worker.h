@@ -55,6 +55,8 @@ extern __thread rtx::WAITDIE  **new_txs_;
 #elif defined(CALVIN_TX)
 extern __thread rtx::CALVIN  **new_txs_;
 
+#define CALVIN_REQ_INFO_SIZE 256
+
 typedef uint64_t timestamp_t;
 struct calvin_request {
   calvin_request(int req_idx, timestamp_t timestamp) : 
@@ -67,7 +69,7 @@ struct calvin_request {
   // }
   calvin_request(calvin_request* copy) :
           req_idx(copy->req_idx), timestamp(copy->timestamp) {
-          memcpy(req_info, copy->req_info, REQ_INFO_SIZE);
+          memcpy(req_info, copy->req_info, CALVIN_REQ_INFO_SIZE);
   }
 
   union {
@@ -77,8 +79,7 @@ struct calvin_request {
   
   timestamp_t timestamp;
 
-  const static uint REQ_INFO_SIZE = 256;
-  char req_info[REQ_INFO_SIZE];
+  char req_info[CALVIN_REQ_INFO_SIZE];
   // uint64_t n_reads;
   // rtx::CALVIN::ReadSetItem read_set[MAX_SET_ITEMS];
   // uint64_t n_writes;

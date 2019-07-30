@@ -95,7 +95,8 @@ protected:
   }
 
   int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    assert(false); // not implemented
+    // remote insert for calvin is not needed: all insertions happen locally.
+    return -1;
   }
 
 #else

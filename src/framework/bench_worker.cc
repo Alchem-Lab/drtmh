@@ -561,6 +561,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     char* ptr = req_buf + sizeof(calvin_header);
     for (uint64_t i = 0; i < batch_size_; i++) {
       assert(ptr != NULL);
+      ASSERT(((calvin_request*)ptr)->req_idx < workload.size()) << "in gen sets:  workload " << ((calvin_request*)ptr)->req_idx << " does not exist.";
       assert (workload[((calvin_request*)ptr)->req_idx].gen_sets_fn != nullptr);
       assert (((calvin_request*)ptr)->req_info - req_buf >= sizeof(calvin_header));
       // fprintf(stdout, "generating req info for request %d\n", ((calvin_request*)ptr)->req_idx);
@@ -722,6 +723,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       calvin_header* h = (calvin_header*)req_buffers[cor_id_][i];
       char* ptr = req_buffers[cor_id_][i] + sizeof(calvin_header);
       for (int j = 0; j < h->batch_size; j++) {
+        ASSERT(((calvin_request*)ptr)->req_idx < workload.size()) << ((calvin_request*)ptr)->req_idx;
         deterministic_requests[cor_id_].push_back((calvin_request*)ptr);
         ptr += sizeof(calvin_request);
       }
@@ -749,6 +751,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
         int tx_idx = req->req_idx;
         req->req_seq = i;
 
+        ASSERT(tx_idx < workload.size()) << "in execution seq = " << i << ":  workload " << tx_idx << " does not exist.";
         (*txn_counts)[tx_idx] += 1;
     abort_retry:
         ntxn_executed_ += 1;
@@ -1113,8 +1116,8 @@ void BenchWorker::check_schedule_done(int cid) {
 
   if (all_received) {
     // for (int i = 0; i < cm_->get_num_nodes(); i++) {
-      // calvin_header* h = (calvin_header*)req_buffers[cid][i];
-      // LOG(3) << "in check: " << h->received_size << " out of " << h->batch_size << " received.";
+    //   calvin_header* h = (calvin_header*)req_buffers[cid][i];
+    //   LOG(3) << cid  << " << in check: " << h->received_size << " out of " << h->batch_size << " received.";
     // }
     assert(epoch_done_schedule[cid] == false);
     epoch_done_schedule[cid] = true;
