@@ -576,6 +576,7 @@ public:
 
   // start a TX
   virtual void begin(yield_func_t &yield) {
+    min_lease = 0xffffffffffffffff;
     read_set_.clear();
     write_set_.clear();
     #if ONE_SIDED_READ == 0
@@ -594,6 +595,12 @@ public:
   // commit a TX
   virtual bool commit(yield_func_t &yield) {
 
+    if(!check_lease()) {
+      release_reads_w_rwlock_rdma(yield);
+      release_writes_w_rwlock_rdma(yield);
+      abort_cnt[22]++;
+      return false;
+    }
 #if TX_ONLY_EXE
     gc_readset();
     gc_writeset();    
@@ -658,6 +665,8 @@ protected:
   const int cor_id_;
   const int response_node_;
 
+  uint64_t min_lease = 0xffffffffffffffff;
+
   Logger *logger_ = NULL;
 
   char* rpc_op_send_buf_;
@@ -682,6 +691,17 @@ public:
   void lock_rpc_handler(int id,int cid,char *msg,void *arg);
   void release_rpc_handler(int id,int cid,char *msg,void *arg); 
   void commit_rpc_handler(int id,int cid,char *msg,void *arg);
+
+  bool check_lease() {
+    using namespace nocc::rtx::rwlock;
+    uint64_t now = END_TIME(R_LEASE(get_now_ntp()));
+    if(now > min_lease) {
+      // LOG(3) << now << ' ' << min_lease;
+      return false;
+    }
+    return true;
+  }
+
 };
 
 } // namespace rtx

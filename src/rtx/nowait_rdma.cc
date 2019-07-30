@@ -292,13 +292,18 @@ using namespace nocc::rtx::rwlock;
       #endif
 
       while (true) {
-        lock_req_->set_lock_meta(off,_state,R_LEASE(end_time),local_buf);
+        uint64_t my_lease_end = R_LEASE(get_now_ntp() + LEASE_TIME);
+        lock_req_->set_lock_meta(off,_state,my_lease_end,local_buf);
         lock_req_->post_reqs(scheduler_,qp);
         worker_->indirect_yield(yield);
 
         uint64_t old_state = *(uint64_t*)local_buf;
         if (old_state == _state) { // success 
           END(lock);
+          min_lease = std::min(min_lease, END_TIME(my_lease_end));
+          scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
+            (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
+          worker_->indirect_yield(yield);
           return true;
         }
         else if ((old_state & 1) == W_LOCKED) { // write-locked
@@ -309,9 +314,14 @@ using namespace nocc::rtx::rwlock;
         else {
           if (EXPIRED(END_TIME(old_state))) {
             _state = old_state; // retry with corrected state
+            worker_->yield_next(yield);
             continue;
           } else { // success: unexpired read leased
             END(lock);
+            min_lease = std::min(min_lease, END_TIME(old_state));
+            scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
+              (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
+            worker_->indirect_yield(yield);
             return true;
           }
         }

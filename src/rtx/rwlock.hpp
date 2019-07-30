@@ -3,15 +3,17 @@
 
 #define USE_RWLOCK 1
 #include <chrono>
+#include <sys/timex.h>
+
 // #include "core/rworker.h"
 // #include "db/txs/ts_manager.hpp"
 
 
 // the following macros are used by namespace rwlock
 #define R_LEASE(end_time) ((end_time) << (1+8))
-#define END_TIME(state) ((state) >> (1+8) | (get_now() & (~0x7fffffffffffff)) )
+#define END_TIME(state) ((state) >> (1+8) | (get_now_ntp() & (~0x7fffffffffffff)) )
 // the following macros are used by namespace rwlock_4_waitdie
-#define START_TIME(state) ((state) >> (1+8) | (get_now() & (~0x7fffffffffffff)) )
+#define START_TIME(state) ((state) >> (1+8) | (get_now_ntp() & (~0x7fffffffffffff)) )
 #define LEASE_DURATION(state) (((state) & 0x1ff) >> 1)
 
 // used by sundial 
@@ -29,7 +31,6 @@
 #define READLOCKADDONE 0x0000000100000000
 
 
-
 namespace nocc {
 
 namespace rtx {
@@ -41,7 +42,7 @@ namespace rwlock {
 const uint64_t INIT = 0x0;
 const uint64_t W_LOCKED = 0x1;
 const uint64_t DELTA = 50; // 50 micro-seconds
-const uint64_t LEASE_TIME = 400; // 0.4 milli-seconds
+const uint64_t LEASE_TIME = 300000; // 0.4 milli-seconds
 
 // get current wall-time to the precision of microseconds
 inline __attribute__((always_inline))
@@ -55,6 +56,28 @@ uint64_t get_now() {
     auto integral_duration = now.time_since_epoch().count();
 
     return (uint64_t)integral_duration;
+}
+
+inline __attribute__((always_inline))
+uint64_t get_now_ntp() {
+  ntptimeval tv;
+  int ret;
+  if ((ret = ntp_gettime(&tv)) == 0) {
+    return (tv.time.tv_sec * 1000000 + tv.time.tv_usec);
+  } 
+  else {
+    switch(ret) {
+    case EFAULT:
+      fprintf(stderr,"efault\n");
+      break;
+    case EOVERFLOW:
+      fprintf(stderr,"eoverflow\n");
+      break;
+    default:
+      fprintf(stderr,"gettime ret: %d\n",ret);
+    }
+    assert(false);
+  }
 }
 
 inline __attribute__((always_inline))
@@ -77,12 +100,12 @@ uint64_t LOCKED(uint64_t owner_id) {
 
 inline __attribute__((always_inline))
 bool EXPIRED(uint64_t end_time) {
-  return get_now() > (end_time) + DELTA;
+  return get_now_ntp() > (end_time) + DELTA;
 }
 
 inline __attribute__((always_inline))
 bool VALID(uint64_t end_time) {
-  return get_now() < (end_time) - DELTA;
+  return get_now_ntp() < (end_time) - DELTA;
 }
 
 } // namespace rw-lock
@@ -115,6 +138,28 @@ uint64_t get_now() {
 }
 
 inline __attribute__((always_inline))
+uint64_t get_now_ntp() {
+  ntptimeval tv;
+  int ret;
+  if ((ret = ntp_gettime(&tv)) == 0) {
+    return (tv.time.tv_sec * 1000000 + tv.time.tv_usec);
+  } 
+  else {
+    switch(ret) {
+    case EFAULT:
+      fprintf(stderr,"efault\n");
+      break;
+    case EOVERFLOW:
+      fprintf(stderr,"eoverflow\n");
+      break;
+    default:
+      fprintf(stderr,"gettime ret: %d\n",ret);
+    }
+    assert(false);
+  }
+}
+
+inline __attribute__((always_inline))
 uint64_t R_LOCKED_WORD(uint64_t txn_start_time, uint64_t duration) {
   return ((txn_start_time << (8+1)) | ((duration & 0xff) << 1));
 }
@@ -126,12 +171,12 @@ uint64_t W_LOCKED_WORD(uint64_t txn_start_time, uint64_t owner_id) {
 
 inline __attribute__((always_inline))
 bool EXPIRED(uint64_t txn_start_time, uint64_t duration) {
-  return get_now() > (txn_start_time + duration) + DELTA;
+  return get_now_ntp() > (txn_start_time + duration) + DELTA;
 }
 
 inline __attribute__((always_inline))
 bool VALID(uint64_t txn_start_time, uint64_t duration) {
-  return get_now() < (txn_start_time + duration) - DELTA;
+  return get_now_ntp() < (txn_start_time + duration) - DELTA;
 }
 
 } // namespace rwlock_4_waitdie
