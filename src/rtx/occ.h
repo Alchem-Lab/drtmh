@@ -145,7 +145,9 @@ class OCC : public TXOpBase {
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
-      parse_batch_result(replies);
+      if(!parse_batch_result(replies)) {
+        return NULL;
+      }
       assert(set[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
     }
@@ -168,7 +170,7 @@ class OCC : public TXOpBase {
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
-      parse_batch_result(replies);
+      if(!parse_batch_result(replies)) return NULL;
       assert(set[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
     }
@@ -192,7 +194,7 @@ class OCC : public TXOpBase {
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
-      parse_batch_result(replies);
+      if(!parse_batch_result(replies)) return NULL;
       assert(read_set_[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
     }

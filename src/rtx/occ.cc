@@ -188,12 +188,18 @@ bool OCC::parse_batch_result(int num) {
         read_set_[item->idx].data_ptr = (char *)malloc(read_set_[item->idx].len);
         memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),read_set_[item->idx].len);
         read_set_[item->idx].seq      = item->seq;
+        if(item->seq == CONFLICT_WRITE_FLAG) {
+          return false;
+        }
       } else {
         // fprintf(stdout, "rpc response: write_set idx = %d, payload = %d\n", item->idx, item->payload);
         item->idx >>= 1;
         write_set_[item->idx].data_ptr = (char *)malloc(write_set_[item->idx].len);
         memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),write_set_[item->idx].len);
         write_set_[item->idx].seq      = item->seq;
+        if(item->seq == CONFLICT_WRITE_FLAG) {
+          return false;
+        }
       }
       ptr += (sizeof(OCCResponse) + item->payload);
     }
@@ -520,6 +526,8 @@ void OCC::commit_rpc_handler(int id,int cid,char *msg,void *arg) {
 void OCC::commit_oneshot_handler(int id,int cid,char *msg,void *arg) {
 
   RtxWriteItem *item = (RtxWriteItem *)msg;
+  // auto node = local_lookup_op(item->tableid, item->key);
+  // node->seq += 2;
   inplace_write_op(item->tableid,item->key,msg + sizeof(RtxWriteItem),item->len);
 #if !PA
   char *reply = rpc_->get_reply_buf();

@@ -69,13 +69,18 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
 #endif
       if(node->lock != 0){ // check locks
 #if !NO_ABORT
+        // LOG(3) << "abort!";
         return false;
 #endif
       }
       if(node->seq != (*it).seq) {     // check seqs
 #if !NO_ABORT
+        // LOG(3) << node->seq << ' ' << (*it).seq;
         return false;
 #endif
+      }
+      else {
+        // LOG(3) << node->seq;
       }
     }
   }
@@ -253,7 +258,7 @@ void OCCR::write_back_w_rdma(yield_func_t &yield) {
       node->lock = 0;            // re-set lock
 
       // fprintf(stderr, "write back at off %x.\n", (*it).off + sizeof(RdmaValHeader));
-      req.set_write_meta((*it).off + sizeof(RdmaValHeader),(*it).data_ptr,(*it).len);
+      req.set_write_meta((*it).off + sizeof(RdmaValHeader) - sizeof(uint64_t),(*it).data_ptr - sizeof(uint64_t),(*it).len + sizeof(uint64_t));
       req.set_unlock_meta((*it).off);
       req.post_reqs(scheduler_,qp);
 
