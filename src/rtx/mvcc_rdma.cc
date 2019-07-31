@@ -487,10 +487,21 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     item.data_ptr = local_buf;
     item.off = off;
 
-    // step 2: lock remote
+    
     Qp *qp = get_qp(item.pid);
     assert(qp != NULL);
     MVCCHeader* header = (MVCCHeader*)local_buf;
+
+    scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
+      item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader), off, IBV_SEND_SIGNALED);
+    worker_->indirect_yield(yield);
+    int ret;
+    if((ret = check_write(header, txn_start_time)) != 0) {
+      cnt_timer = ret >> 10;
+      abort_cnt[38]++;
+      return -1;
+    }
+    // step 2: lock remote
     while(true) {
       lock_req_->set_lock_meta(off, 0, txn_start_time, local_buf);
       lock_req_->post_reqs(scheduler_, qp);
