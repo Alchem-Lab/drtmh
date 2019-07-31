@@ -289,7 +289,6 @@ private:
   uint64_t check_write(MVCCHeader* header, uint64_t timestamp) {
     volatile uint64_t rts = header->rts;
     if(rts > timestamp) {
-      LOG(3) << rts << " " << timestamp;
       return rts;
     }
     for(int i = 0; i < MVCC_VERSION_NUM; ++i) {

@@ -3,7 +3,7 @@ protected:
 // a simple ReadSetItem for buffering read/write records
 struct ReadSetItem {
   uint8_t  tableid;
-  uint8_t  len;
+  uint32_t  len;
   uint64_t key;
   union {
     MemNode *node;

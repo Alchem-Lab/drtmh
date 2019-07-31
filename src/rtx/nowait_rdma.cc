@@ -983,7 +983,8 @@ void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
       continue;
 
     MemNode *node = db_->stores_[item->tableid]->Get(item->key);
-    assert(node != NULL && node->value != NULL);
+    ASSERT(node != NULL && node->value != NULL) << (int)item->tableid << ' '
+      << item->key << ' ' << (uint64_t)node;
 
     switch(item->type) {
       case RTX_REQ_LOCK_READ: {

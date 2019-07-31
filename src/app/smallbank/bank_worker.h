@@ -117,6 +117,7 @@ class BankWorker : public BenchWorker {
   txn_result_t txn_amal(yield_func_t &yield);
   txn_result_t txn_amal_new(yield_func_t &yield);
 #endif
+  txn_result_t ycsb_func(yield_func_t &yield);
   
   void balance_piece(int id,int cid,char *input,yield_func_t &yield);
 
@@ -197,6 +198,11 @@ class BankWorker : public BenchWorker {
 #else
     txn_result_t r = static_cast<BankWorker *>(w)->txn_amal_new(yield);
 #endif
+    return r;
+  }
+
+  static txn_result_t YCSB_Transaction(BenchWorker *w,yield_func_t &yield) {
+    txn_result_t r = static_cast<BankWorker *>(w)->ycsb_func(yield);
     return r;
   }
 

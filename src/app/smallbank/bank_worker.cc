@@ -40,7 +40,7 @@ namespace bank {
 BreakdownTimer compute_timer;
 BreakdownTimer send_timer;
 
-extern unsigned g_txn_workload_mix[6];
+extern unsigned g_txn_workload_mix[7];
 
 /* input generation */
 void GetAccount(util::fast_random &r, uint64_t *acct_id) {
@@ -517,6 +517,9 @@ workload_desc_vec_t BankWorker::_get_workload() {
   }
   if(g_txn_workload_mix[5]) {
     w.push_back(workload_desc("Txn amal",double(g_txn_workload_mix[5])/100.0,TxnAmal));
+  }
+  if(g_txn_workload_mix[6]) {
+    w.push_back(workload_desc("YCSB",double(g_txn_workload_mix[6])/100.0,YCSB_Transaction));
   }
   return w;
 }

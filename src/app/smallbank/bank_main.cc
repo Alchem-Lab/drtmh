@@ -46,7 +46,7 @@ namespace bank {
 
 /* sp, dc, payment, ts, wc, aml */
 //unsigned g_txn_workload_mix[6] = {25,15,15,15,15,15};
-unsigned g_txn_workload_mix[6] = {0,0,100,0,0,0};
+unsigned g_txn_workload_mix[7] = {0,0,0,0,0,0,100};
 
 class BankClient : public BenchClient {
  public:
@@ -117,6 +117,7 @@ BankMainRunner::BankMainRunner(std::string &config_file) : BenchRunner(config_fi
     int ts = pt.get<int> ("bench.bank.ts");
     int wc = pt.get<int> ("bench.bank.wc");
     int aml = pt.get<int> ("bench.bank.aml");
+    int ycsb = pt.get<int> ("bench.bank.ycsb");
 
     g_txn_workload_mix[0] = sp;
     g_txn_workload_mix[1] = dc;
@@ -124,6 +125,8 @@ BankMainRunner::BankMainRunner(std::string &config_file) : BenchRunner(config_fi
     g_txn_workload_mix[3] = ts;
     g_txn_workload_mix[4] = wc;
     g_txn_workload_mix[5] = aml;
+    g_txn_workload_mix[6] = ycsb;
+    LOG(3) << "here" << ycsb;
 
   } catch (const ptree_error &e) {
     //pass
@@ -131,7 +134,7 @@ BankMainRunner::BankMainRunner(std::string &config_file) : BenchRunner(config_fi
 
   fprintf(stdout,"[Bank]: check workload %u, %u, %u, %u, %u, %u\n",
           g_txn_workload_mix[0],g_txn_workload_mix[1],g_txn_workload_mix[2],g_txn_workload_mix[3],
-          g_txn_workload_mix[4],g_txn_workload_mix[5]);
+          g_txn_workload_mix[4],g_txn_workload_mix[5],g_txn_workload_mix[6]);
 }
 
 void BankMainRunner::init_store(MemDB* &store){
@@ -156,10 +159,14 @@ void BankMainRunner::init_store(MemDB* &store){
                    NumAccounts() / total_partition * 1.5);
   store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value) * MVCC_VERSION_NUM,meta_size,
                    NumAccounts() / total_partition * 1.5);
+  store->AddSchema(YCSB, TAB_HASH, sizeof(uint64_t), sizeof(ycsb_record::value) * MVCC_VERSION_NUM, meta_size,
+                   NumAccounts() / total_partition * 1.5);
 #else
   store->AddSchema(SAV,  TAB_HASH,sizeof(uint64_t),sizeof(savings::value),meta_size,
                    NumAccounts() / total_partition * 1.5);
   store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value),meta_size,
+                   NumAccounts() / total_partition * 1.5);
+  store->AddSchema(YCSB, TAB_HASH, sizeof(uint64_t), sizeof(ycsb_record::value), meta_size,
                    NumAccounts() / total_partition * 1.5);
 #endif
 
@@ -168,6 +175,7 @@ void BankMainRunner::init_store(MemDB* &store){
   //store->EnableRemoteAccess(ACCT,cm);
   store->EnableRemoteAccess(SAV,cm);
   store->EnableRemoteAccess(CHECK,cm);
+  store->EnableRemoteAccess(YCSB,cm);
 #endif
 }
 
@@ -225,7 +233,7 @@ class BankLoader : public BenchLoader {
 
       uint64_t round_sz = CACHE_LINE_SZ << 1; // 128 = 2 * cacheline to avoid false sharing
 
-      char *wrapper_acct(NULL), *wrapper_saving(NULL), *wrapper_check(NULL);
+      char *wrapper_acct(NULL), *wrapper_saving(NULL), *wrapper_check(NULL), *wrapper_ycsb(NULL);
 #if MVCC_TX
       int save_size = meta_size + MVCC_VERSION_NUM * sizeof(savings::value);
 #else
@@ -241,14 +249,23 @@ class BankLoader : public BenchLoader {
       check_size = Round<int>(check_size, sizeof(uint64_t));
       ASSERT(check_size % sizeof(uint64_t) == 0) << "cache size " << check_size;
 
+#if MVCC_TX
+      int ycsb_size = meta_size + MVCC_VERSION_NUM * sizeof(ycsb_record::value);
+#else
+      int ycsb_size = meta_size + sizeof(ycsb_record::value); 
+#endif
+      ycsb_size = Round<int>(ycsb_size, sizeof(uint64_t));
+
 #if 1
 // #if ONE_SIDED_READ == 1
       if(is_primary_){
         wrapper_saving = (char *)Rmalloc(save_size);
         wrapper_check  = (char *)Rmalloc(check_size);
+        wrapper_ycsb = (char*)Rmalloc(ycsb_size);
       } else {
         wrapper_saving = new char[save_size];
         wrapper_check  = new char[check_size];
+        wrapper_ycsb = new char[ycsb_size];
       }
 #else
       wrapper_saving = new char[save_size];
@@ -258,6 +275,7 @@ class BankLoader : public BenchLoader {
       assert(wrapper_saving != NULL);
       assert(wrapper_check != NULL);
       assert(wrapper_acct != NULL);
+      assert(wrapper_ycsb != NULL);
 
       loaded_acct += 1;
 
@@ -269,6 +287,7 @@ class BankLoader : public BenchLoader {
       memset(wrapper_acct, 0, meta_size);
       memset(wrapper_saving, 0, meta_size);
       memset(wrapper_check,  0, meta_size);
+      memset(wrapper_ycsb, 0, meta_size);
 
       account::value *a = (account::value*)(wrapper_acct + meta_size);
       a->a_name.assign(std::string(acct_name) );
@@ -278,7 +297,9 @@ class BankLoader : public BenchLoader {
 
       savings::value *s = (savings::value *)(wrapper_saving + meta_size);
       s->s_balance = balance_s;
+#if MVCC_TX
       ((rtx::MVCCHeader *)wrapper_saving)->wts[0] = 1;
+#endif
 // here send the size of value instead of mvcc_version_num * sizeof(value), the value inside is of no use
       auto node = store_->Put(SAV,i,(uint64_t *)wrapper_saving,sizeof(savings::value));
       if (is_primary_) {
@@ -290,7 +311,9 @@ class BankLoader : public BenchLoader {
       checking::value *c = (checking::value *)(wrapper_check + meta_size);
       c->c_balance = balance_c;
       assert(c->c_balance > 0);
+#if MVCC_TX
       ((rtx::MVCCHeader *)wrapper_check)->wts[0] = 1; // first wts
+#endif
       node = store_->Put(CHECK,i,(uint64_t *)wrapper_check,sizeof(checking::value));
 
       if(i == 0)
@@ -300,6 +323,14 @@ class BankLoader : public BenchLoader {
       // if(is_primary_ && ONE_SIDED_READ) {
         node->off =  (uint64_t)wrapper_check - (uint64_t)(cm->conn_buf_);
         ASSERT(node->off % sizeof(uint64_t) == 0) << "check value size " << check_size;
+      }
+
+#if MVCC_TX
+      ((rtx::MVCCHeader*)wrapper_ycsb)->wts[0] = 1;
+#endif
+      node = store_->Put(YCSB, i, (uint64_t*)wrapper_ycsb, sizeof(ycsb_record::value));
+      if(is_primary_) {
+        node->off = (uint64_t)wrapper_ycsb - (uint64_t)(cm->conn_buf_);
       }
 
       assert(node->seq == 2);
@@ -427,6 +458,10 @@ void BankMainRunner::populate_cache() {
     assert(off != 0);
 
     off = db->stores_[SAV]->RemoteTraverse(i,
+                                           cm->get_rc_qp(nthreads + nthreads + 1,pid,0),temp);
+    assert(off != 0);
+
+    off = db->stores_[YCSB]->RemoteTraverse(i,
                                            cm->get_rc_qp(nthreads + nthreads + 1,pid,0),temp);
     assert(off != 0);
 

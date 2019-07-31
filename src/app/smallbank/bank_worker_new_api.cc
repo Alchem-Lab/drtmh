@@ -15,6 +15,52 @@ namespace bank {
 
 #if ENABLE_TXN_API
 
+
+txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
+  // LOG(3) << "ycsb" << sizeof(ycsb_record::value);
+  // ASSERT(sizeof(ycsb_record::value) == 1000) << sizeof(ycsb_record::value);
+  int index = -1;
+  const int func_size = 10;
+  bool is_write[func_size];
+  uint64_t ids[func_size];
+  int indexes[func_size];
+  std::set<uint64_t> accounts;
+  assert(rtx_ != NULL);
+  rtx_->begin(yield);
+  for(int i = 0; i < func_size; ++i) {
+    is_write[i] = (random_generator[cor_id_].next() % 2);
+    uint64_t id;
+    GetAccount(random_generator[cor_id_],&id);
+    while(accounts.find(id) != accounts.end()) {
+      GetAccount(random_generator[cor_id_], &id);
+    }
+    accounts.insert(id);
+    ids[i] = id;
+    int pid = AcctToPid(id);
+    if(is_write[i]) {
+      index = rtx_->write(pid, YCSB, id, sizeof(ycsb_record::value), yield);
+    }
+    else {
+      index = rtx_->read(pid, YCSB, id, sizeof(ycsb_record::value), yield);
+    }
+    if(index < 0) return txn_result_t(false, 73);
+    indexes[i] = index;
+  }
+  ycsb_record::value* val = NULL;
+  for(int i = 0; i < func_size; ++i) {
+    if(is_write[i]) {
+      val = (ycsb_record::value*)rtx_->load_write(indexes[i], sizeof(ycsb_record::value), yield);
+    }
+    else {
+      val = (ycsb_record::value*)rtx_->load_read(indexes[i], sizeof(ycsb_record::value), yield); 
+    }
+    if(val == NULL) return txn_result_t(false, 73);
+  }
+  auto ret = rtx_->commit(yield);
+  return txn_result_t(ret, 73);
+}
+
+
 txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   int index = -1;
   assert(rtx_ != NULL);

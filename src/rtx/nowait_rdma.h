@@ -485,7 +485,8 @@ public:
     
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
-        "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
+        "excepted size " << (int)(set[idx].len) << ' ' << (int)len  << " for table " 
+        << (int)(set[idx].tableid) << "; idx " << idx;
 
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
