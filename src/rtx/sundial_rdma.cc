@@ -113,6 +113,41 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
   rpc_->send_reply(reply_msg, 0, id, cid);
 }
 
+bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &yield) {
+  auto& item = read_set_[index];
+  Qp *qp = get_qp(item.pid);
+  assert(qp != NULL);
+  char* local_buf = (char*)Rmalloc(sizeof(RdmaValHeader));
+  RdmaValHeader* header = (RdmaValHeader*)local_buf;
+
+  scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
+    sizeof(RdmaValHeader), item.off, IBV_SEND_SIGNALED);
+  worker_->indirect_yield(yield);
+  uint64_t l = header->lock;
+  uint64_t tss = header->seq;
+  uint32_t node_wts = WTS(tss);
+  uint32_t node_rts = RTS(tss);
+  if(item.wts != node_wts || (commit_id > node_rts && WLOCKTS(l))) { // !!
+    abort_cnt[35]++;
+    return false;
+  }
+  else {
+    if(node_rts < commit_id) {
+      header->seq = tss & 0xffffffff00000000;
+      header->seq += commit_id;
+      RDMAWriteOnlyReq req(cor_id_, 0);
+      req.set_write_meta(item.off + sizeof(uint64_t), local_buf + sizeof(uint64_t),
+        sizeof(uint64_t));
+      req.post_reqs(scheduler_, qp);
+      // if(unlikely(qp->rc_need_poll())) {
+        worker_->indirect_yield(yield);
+      // }
+    }
+    return true;
+  }
+  return false;
+}
+
 bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id) {
   // atomic?
   // retry?

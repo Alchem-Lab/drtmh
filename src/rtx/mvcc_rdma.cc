@@ -493,7 +493,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     MVCCHeader* header = (MVCCHeader*)local_buf;
 
     scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
-      item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader), off, IBV_SEND_SIGNALED);
+      sizeof(MVCCHeader), off, IBV_SEND_SIGNALED);
     worker_->indirect_yield(yield);
     int ret;
     if((ret = check_write(header, txn_start_time)) != 0) {

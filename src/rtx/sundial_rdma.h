@@ -36,6 +36,7 @@ protected:
   bool try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
   bool try_update_rpc(yield_func_t &yield);
 
+  bool try_renew_lease_rdma(int index, uint32_t commit_id,yield_func_t &yield);
   bool try_lock_read_rdma(int index, yield_func_t &yield);
   bool try_update_rdma(yield_func_t &yield);
 
@@ -250,7 +251,11 @@ public:
 
     auto& item = read_set_[idx];
     //if(false) {
+#if ONE_SIDED_READ
+    if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
+#else
     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+#endif
       // abort
       release_reads(yield);
       release_writes(yield);
