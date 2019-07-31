@@ -52,16 +52,19 @@ bool OCC::commit(yield_func_t &yield) {
 
   bool ret = true;
   if(abort_) {
+    abort_cnt[22]++;
     goto ABORT;
   }
 
   // first, lock remote records
   ret = lock_writes(yield);
   if(unlikely(!ret)) {
+    abort_cnt[21]++;
     goto ABORT;
   }
 
   if(unlikely(!validate_reads(yield))) {
+    abort_cnt[20]++;
     goto ABORT;
   }
 
@@ -189,6 +192,7 @@ bool OCC::parse_batch_result(int num) {
         memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),read_set_[item->idx].len);
         read_set_[item->idx].seq      = item->seq;
         if(item->seq == CONFLICT_WRITE_FLAG) {
+          abort_cnt[13]++;
           return false;
         }
       } else {
@@ -198,6 +202,7 @@ bool OCC::parse_batch_result(int num) {
         memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),write_set_[item->idx].len);
         write_set_[item->idx].seq      = item->seq;
         if(item->seq == CONFLICT_WRITE_FLAG) {
+          abort_cnt[14]++;
           return false;
         }
       }
@@ -343,6 +348,7 @@ bool OCC::validate_reads(yield_func_t &yield) {
     } else {
       if(!local_validate_op(it->node,it->seq)) {
 #if !NO_ABORT
+        abort_cnt[15]++;
         return false;
 #endif
       }
@@ -355,6 +361,7 @@ bool OCC::validate_reads(yield_func_t &yield) {
   for(uint i = 0;i < read_batch_helper_.mac_set_.size();++i) {
     if(*(get_batch_res<uint8_t>(read_batch_helper_,i)) == LOCK_FAIL_MAGIC) { // lock failed
 #if !NO_ABORT
+      abort_cnt[16]++;
       return false;
 #endif
     }
@@ -375,11 +382,13 @@ bool OCC::lock_writes(yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
 #if !NO_ABORT
+        abort_cnt[17]++;
         return false;
 #endif
       }
       if(unlikely(!local_validate_op(it->node,it->seq))) {
 #if !NO_ABORT
+        abort_cnt[18]++;
         return false;
 #endif
       }
@@ -394,6 +403,7 @@ bool OCC::lock_writes(yield_func_t &yield) {
   for(uint i = 0;i < write_batch_helper_.mac_set_.size();++i) {
     if(*(get_batch_res<uint8_t>(write_batch_helper_,i)) == LOCK_FAIL_MAGIC) { // lock failed
 #if !NO_ABORT
+      abort_cnt[19]++;
       return false;
 #endif
     }

@@ -45,11 +45,13 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
 #if !NO_ABORT
+        abort_cnt[4]++;
         return false;
 #endif
       } // check local lock
       if(unlikely(!local_validate_op(it->node,it->seq))) {
 #if !NO_ABORT
+        abort_cnt[5]++;
         return false;
 #endif
       } // check seq
@@ -69,18 +71,20 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
 #endif
       if(node->lock != 0){ // check locks
 #if !NO_ABORT
-        // LOG(3) << "abort!";
+        LOG(3) << "abort!";
+        abort_cnt[6]++;
         return false;
 #endif
       }
       if(node->seq != (*it).seq) {     // check seqs
 #if !NO_ABORT
-        // LOG(3) << node->seq << ' ' << (*it).seq;
+        LOG(3) << node->seq << ' ' << (*it).seq;
+        abort_cnt[7]++;
         return false;
 #endif
       }
       else {
-        // LOG(3) << node->seq;
+        LOG(3) << node->seq;
       }
     }
   }
@@ -139,11 +143,13 @@ bool OCCR::lock_writes_w_FA_rdma(yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
 #if !NO_ABORT
+        abort_cnt[8]++;
         return false;
 #endif
       } // check local lock
       if(unlikely(!local_validate_op(it->node,it->seq))) {
 #if !NO_ABORT
+        abort_cnt[9]++;
         return false;
 #endif
       } // check seq
@@ -163,11 +169,13 @@ bool OCCR::lock_writes_w_FA_rdma(yield_func_t &yield) {
 #endif
       if(!dslr_lock_manager->isLocked(std::make_pair(get_qp((*it).pid), (*it).off))) { // check locks
 #if !NO_ABORT
+        abort_cnt[10]++;
         return false;
 #endif
       }
       if(node->seq != (*it).seq) {     // check seqs
 #if !NO_ABORT
+        abort_cnt[11]++;
         return false;
 #endif
       }
@@ -349,6 +357,7 @@ bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
     } else { // local case
       if(!local_validate_op(it->node,it->seq)) {
 #if !NO_ABORT
+        abort_cnt[12]++;
         return false;
 #endif
       }
@@ -366,6 +375,7 @@ bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
 #endif
       if(node->seq != (*it).seq || node->lock != 0) { // check lock and versions
 #if !NO_ABORT
+        abort_cnt[0]++;
         return false;
 #endif
       }
@@ -403,6 +413,7 @@ bool OCCR::validate_reads_w_FA_rdma(yield_func_t &yield) {
       assert(false);
       if(!local_validate_op(it->node,it->seq)) {
 #if !NO_ABORT
+        abort_cnt[1]++;
         return false;
 #endif
       }
@@ -420,6 +431,7 @@ bool OCCR::validate_reads_w_FA_rdma(yield_func_t &yield) {
 #endif
       if(node->seq != (*it).seq) { // check lock and versions
 #if !NO_ABORT
+        abort_cnt[2]++;
         return false;
 #endif
       }
@@ -427,6 +439,7 @@ bool OCCR::validate_reads_w_FA_rdma(yield_func_t &yield) {
       assert(qp != NULL);
       if(dslr_lock_manager->isLocked(std::make_pair(qp, (*it).off))) { // successfull locked
 #if !NO_ABORT
+        abort_cnt[3]++;
         return false;
 #endif
       }
