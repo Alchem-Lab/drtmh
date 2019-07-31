@@ -288,17 +288,18 @@ private:
   inline __attribute__((always_inline))
   uint64_t check_write(MVCCHeader* header, uint64_t timestamp) {
     volatile uint64_t rts = header->rts;
+    uint64_t maxret = 0;
     if(rts > timestamp) {
-      return rts;
+      maxret = rts;
     }
     for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
       volatile uint64_t wts = header->wts[i];
-      if(wts > timestamp){
+      if(wts > timestamp && wts > maxret){
         // LOG(3) << wts << " " << timestamp;
-        return wts;
+        maxret = wts;
       }
     }
-    return 0;
+    return maxret;
   }
 
   inline __attribute__((always_inline))
