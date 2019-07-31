@@ -8,6 +8,7 @@
 #define ACCT 0
 #define SAV  1
 #define CHECK 2
+#define YCSB 3
 
 #define MIN_BALANCE 10000
 #define MAX_BALANCE 50000
@@ -42,6 +43,24 @@
 //#endif
 //#define BANK_TX_HOT 0
 
+// YCSB
+#define YCSB_STR_LENGTH 64
+struct longstr
+{
+	char s[YCSB_STR_LENGTH];
+	bool operator==(const longstr& rhs) const{
+		return s[0] == rhs.s[0];
+	}
+	bool operator!=(const longstr& rhs) const{
+		return s[0] != rhs.s[0];
+	}
+	bool operator<(const longstr& rhs) const{
+		return s[0] < rhs.s[0];
+	}
+	bool operator>(const longstr& rhs) const{
+		return s[0] > rhs.s[0];
+	}
+};
 
 /*   table accounts   */
 
@@ -77,5 +96,13 @@ DO_STRUCT(savings,SAVINGS_KEY_FIELDS,SAVINGS_VALUE_FIELDS)
      DO_STRUCT(checking,CHECKING_KEY_FIELDS,CHECKING_VALUE_FIELDS)
 
 /* ------- */
+
+#define YCSB_KEY_FIELDS(x,y) \
+     x(uint64_t, ycsb_key)
+
+#define YCSB_VALUE_FIELDS(x,y) \
+     x(longstr, ycsb_val)
+DO_STRUCT(ycsb_record, YCSB_KEY_FIELDS, YCSB_VALUE_FIELDS)
+
 
 #endif
