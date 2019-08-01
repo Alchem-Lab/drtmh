@@ -249,7 +249,9 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
       return true;
     else if (resp_lock_status == LOCK_FAIL_MAGIC)
       return false;
-    assert(false);
+    else {
+      assert(false);
+    }
 
   } else {
       while (true) {
@@ -309,7 +311,9 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
       return true;
     else if (resp_lock_status == LOCK_FAIL_MAGIC)
       return false;
-    assert(false);
+    else {
+      assert(false);  
+    }
   } else {
       while(true) {
         volatile uint64_t l = it->node->lock;
@@ -351,78 +355,49 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
   // get the response
 }
 
-void WAITDIE::release_reads(yield_func_t &yield) {
+void WAITDIE::release_reads(yield_func_t &yield, bool release_all) {
   using namespace rwlock_4_waitdie;
-
+  int num = read_set_.size();
+  if(!release_all) {
+    num -= 1;
+  }
   start_batch_rpc_op(write_batch_helper_);
-  for(auto it = read_set_.begin();it != read_set_.end();++it) {
-    if((*it).pid != node_id_) { // remote case
-      add_batch_entry<RTXLockRequestItem>(write_batch_helper_, (*it).pid,
-                                   /*init RTXLockRequestItem */ RTX_REQ_LOCK_READ, (*it).pid,(*it).tableid,(*it).key,(*it).seq, txn_start_time);
+  for(int i = 0; i < num; ++i) {
+    if(read_set_[i].pid != node_id_) { // remote case
+      add_batch_entry<RTXLockRequestItem>(write_batch_helper_, read_set_[i].pid,
+                                   /*init RTXLockRequestItem */ 
+        RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,
+        read_set_[i].key,read_set_[i].seq, txn_start_time);
     }
     else {
-      auto res = local_try_release_op(it->node,R_LOCKED_WORD(txn_start_time, rwlock::LEASE_TIME));
+      auto res = local_try_release_op(read_set_[i].node,R_LEASE(txn_start_time));
     }
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   worker_->indirect_yield(yield);
 }
 
-void WAITDIE::release_writes(yield_func_t &yield) {
+void WAITDIE::release_writes(yield_func_t &yield, bool release_all) {
   using namespace rwlock_4_waitdie;
-
+  int num = write_set_.size();
+  if(!release_all) {
+    num -= 1;
+  }
   start_batch_rpc_op(write_batch_helper_);
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != node_id_) { // remote case
-      add_batch_entry<RTXLockRequestItem>(write_batch_helper_, (*it).pid,
-                                   /*init RTXLockRequestItem */ RTX_REQ_LOCK_WRITE, (*it).pid,(*it).tableid,(*it).key,(*it).seq, txn_start_time);
+  for(int i = 0; i < num; ++i) {
+    if(write_set_[i].pid != node_id_) { // remote case
+      add_batch_entry<RTXLockRequestItem>(write_batch_helper_, write_set_[i].pid,
+                                   /*init RTXLockRequestItem */ RTX_REQ_LOCK_WRITE,
+        write_set_[i].pid,write_set_[i].tableid,write_set_[i].key,write_set_[i].seq, txn_start_time);
     }
     else {
-      auto res = local_try_release_op(it->node,W_LOCKED_WORD(txn_start_time, response_node_));
+      auto res = local_try_release_op(write_set_[i].node,R_LEASE(txn_start_time) + 1);
     }
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   worker_->indirect_yield(yield);
 }
 
-
-#if 0
-void WAITDIE::write_back(yield_func_t &yield) {
-  // note here we are not using the functionality provided by write_batch_helper
-  // itself, i.e., send_batch_rpc_op(write_batch_helper_, ...)
-  // instead, we use a different mechanism.
-  char *cur_ptr = write_batch_helper_.req_buf_;
-  START(commit);
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != node_id_) {
-
-      RtxWriteItem *item = (RtxWriteItem *)cur_ptr;
-
-      item->pid = (*it).pid;
-      item->tableid = (*it).tableid;
-      item->key = (*it).key;
-      item->len = (*it).len;
-
-#if !PA
-      rpc_->prepare_multi_req(write_batch_helper_.reply_buf_,1,cor_id_);
-#endif
-      rpc_->append_pending_req(cur_ptr,RTX_COMMIT_RPC_ID,sizeof(RtxWriteItem) + it->len,cor_id_,RRpc::REQ,(*it).pid);
-
-      cur_ptr += sizeof(RtxWriteItem) + it->len;
-    } else {
-      auto node = inplace_write_op(it->node,it->data_ptr,it->len);
-      RdmaValHeader *header = (RdmaValHeader *)(node->value);
-      header->seq += 2;
-      asm volatile("" ::: "memory");
-      header->lock = 0;
-    }
-  }
-  rpc_->flush_pending();
-
-  worker_->indirect_yield(yield);
-  END(commit);
-}
-#else
 
 void WAITDIE::write_back(yield_func_t &yield) {
   start_batch_rpc_op(write_batch_helper_);
@@ -442,16 +417,10 @@ void WAITDIE::write_back(yield_func_t &yield) {
     }
   }
 
-  // for (char* ptr = write_batch_helper_.req_buf_; ptr != write_batch_helper_.req_buf_end_; ptr++) {
-    // fprintf(stdout, "%x ", *ptr);
-  // }
-  // fprintf(stdout, "\n");
-
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID);
   worker_->indirect_yield(yield);
 }
 
-#endif
 
 /* RPC handlers */
 void WAITDIE::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
@@ -467,31 +436,29 @@ void WAITDIE::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
       continue;
     }
 
-    OCCResponse *reply_item = (OCCResponse *)reply;
+    WaitDieResponse *reply_item = (WaitDieResponse *)reply;
 
     switch(item->type) {
       case RTX_REQ_READ: {
         // fetch the record
         uint64_t seq;
-        auto node = local_get_op(item->tableid,item->key,reply + sizeof(OCCResponse),item->len,seq,
+        auto node = local_get_op(item->tableid,item->key,reply + sizeof(WaitDieResponse),item->len,seq,
                                  db_->_schemas[item->tableid].meta_len);
-        reply_item->seq = seq;
         reply_item->idx = item->idx;
         reply_item->payload = item->len;
 
-        reply += (sizeof(OCCResponse) + item->len);
+        reply += (sizeof(WaitDieResponse) + item->len);
       }
         break;
       case RTX_REQ_READ_LOCK: {
         // fetch the record
         uint64_t seq;
-        auto node = local_get_op(item->tableid,item->key,reply + sizeof(OCCResponse),item->len,seq,
+        auto node = local_get_op(item->tableid,item->key,reply + sizeof(WaitDieResponse),item->len,seq,
                                  db_->_schemas[item->tableid].meta_len);
-        reply_item->seq = seq;
         reply_item->idx = item->idx;
         reply_item->payload = item->len;
 
-        reply += (sizeof(OCCResponse) + item->len);
+        reply += (sizeof(WaitDieResponse) + item->len);
       }
         break;
       default:
@@ -526,103 +493,54 @@ void WAITDIE::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
     if(item->pid != response_node_)
       continue;
 
-    MemNode *node = db_->stores_[item->tableid]->Get(item->key);
-    assert(node != NULL && node->value != NULL);
+    MemNode *node = local_lookup_op(item->tableid, item->key);
+    assert(node != NULL);
+    assert(node->value != NULL);
 
     switch(item->type) {
-      case RTX_REQ_LOCK_READ: {
-          while (true) {
-            uint64_t l = node->lock;
-            if(l & 0x1 == W_LOCKED) {
-              if (item->txn_starting_timestamp < START_TIME(l)) {
-                //need some random backoff?
-
-                lock_waiter_t waiter = {
-                  .type = RTX_REQ_LOCK_READ,
-                  .pid = id,
-                  .tid = worker_id_,
-                  .cid = cid,
-                  .txn_start_time = item->txn_starting_timestamp
-                };
-                global_lock_manager->add_to_waitlist(&node->lock, waiter);
-
-                res = LOCK_WAIT_MAGIC;
-                goto END;
-              } else {
-                res = LOCK_FAIL_MAGIC;
-                goto END;
-              }
-            } else {
-              if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
-                // clear expired lease (optimization)
-                volatile uint64_t *lockptr = &(node->lock);
-                if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                             R_LOCKED_WORD(item->txn_starting_timestamp, rwlock::LEASE_TIME))))
-                  continue;
-                else
-                  goto NEXT_ITEM;  // successfully read locked this item
-              } else { // read locked: not conflict
-                goto NEXT_ITEM;    // successfully read locked this item
-              }
-            }
-          }
-      }
-        break;
+      case RTX_REQ_LOCK_READ:
       case RTX_REQ_LOCK_WRITE: {
-        while(true) {
-          uint64_t l = node->lock;
-          if(l & 0x1 == W_LOCKED) {
-            if (item->txn_starting_timestamp < START_TIME(l)) {
-              //need some random backoff?
-
+        while (true) {
+          volatile uint64_t l = node->lock;
+          // if(l & 0x1 == W_LOCKED) {
+          if(l != 0) {
+            if (R_LEASE(item->txn_starting_timestamp) < l) {
+              // wait for the lock
               lock_waiter_t waiter = {
-                .type = RTX_REQ_LOCK_WRITE,
+                .type = item->type,
                 .pid = id,
                 .tid = worker_id_,
                 .cid = cid,
                 .txn_start_time = item->txn_starting_timestamp
               };
-              global_lock_manager->add_to_waitlist(&node->lock, waiter);
-
+              // LOG(3) << "add to wait";
+              global_lock_manager->add_to_waitlist(&(node->lock), waiter);
               res = LOCK_WAIT_MAGIC;
               goto END;
             } else {
               res = LOCK_FAIL_MAGIC;
+              // LOG(3) << l << ' ' << R_LEASE(item->txn_starting_timestamp) ;
+              // LOG(3)  << ' ' << item->key;
+              abort_cnt[4]++;
               goto END;
             }
-          } else {
-            if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
-              // clear expired lease (optimization)
-              volatile uint64_t *lockptr = &(node->lock);
-              if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                           W_LOCKED_WORD(item->txn_starting_timestamp, item->pid))))
-                continue;
-              else
-                goto NEXT_ITEM;
-            } else { //read locked: conflict
-              if (item->txn_starting_timestamp < START_TIME(l)) {
-                //need some random backoff?
-
-                lock_waiter_t waiter = {
-                  .type = RTX_REQ_LOCK_WRITE,
-                  .pid = id,
-                  .tid = worker_id_,
-                  .cid = cid,
-                  .txn_start_time = item->txn_starting_timestamp
-                };
-                global_lock_manager->add_to_waitlist(&node->lock, waiter);
-
-                res = LOCK_WAIT_MAGIC;
-                goto END;
-              } else {
-                res = LOCK_FAIL_MAGIC;
-                goto END;
-              }
+          }
+          else {
+            uint64_t add = 0;
+            if(item->type == RTX_REQ_LOCK_WRITE) add = 1;
+            volatile uint64_t *lockptr = &(node->lock);
+            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                  R_LEASE(item->txn_starting_timestamp) + add))) {
+              continue;
+            }
+            else {
+              // LOG(3) << "succ" << R_LEASE(item->txn_starting_timestamp) << ' ' << l << ' ' << item->key;
+              break;
             }
           }
         }
       }
-        break;
+      break;
       default:
         assert(false);
     }
@@ -650,12 +568,25 @@ void WAITDIE::release_rpc_handler(int id,int cid,char *msg,void *arg) {
     if(item->pid != response_node_)
       continue;
 
-    if (item->type == RTX_REQ_LOCK_READ)
-    auto res = local_try_release_op(item->tableid,item->key,
-                                    R_LOCKED_WORD(item->txn_starting_timestamp, rwlock::LEASE_TIME));
-    else if (item->type == RTX_REQ_LOCK_WRITE)
-    auto res = local_try_release_op(item->tableid,item->key,
-                                    W_LOCKED_WORD(item->txn_starting_timestamp, item->pid));
+    if (item->type == RTX_REQ_LOCK_READ) {
+      // auto res = local_try_release_op(item->tableid,item->key,
+      //                                 R_LEASE(item->txn_starting_timestamp));
+      auto node = local_lookup_op(item->tableid, item->key);
+      ASSERT(node->lock == R_LEASE(item->txn_starting_timestamp)) << node->lock << ' '
+        << R_LEASE(item->txn_starting_timestamp);
+      node->lock = 0;
+      // LOG(3) << "read release " << item->key << R_LEASE(item->txn_starting_timestamp);
+    }
+    else if (item->type == RTX_REQ_LOCK_WRITE) {
+      // auto res = local_try_release_op(item->tableid,item->key,
+      //                               R_LEASE(item->txn_starting_timestamp) + 1);  
+      auto node = local_lookup_op(item->tableid, item->key);
+      ASSERT(node->lock == R_LEASE(item->txn_starting_timestamp) + 1) << node->lock << ' '
+        << R_LEASE(item->txn_starting_timestamp) + 1;
+      node->lock = 0;
+      // LOG(3) << "write release " << item->key << R_LEASE(item->txn_starting_timestamp);
+    }
+    
   }
 
   char* reply_msg = rpc_->get_reply_buf();
@@ -671,6 +602,7 @@ void WAITDIE::commit_rpc_handler(int id,int cid,char *msg,void *arg) {
     if(item->pid != response_node_) {
       continue;
     }
+    // LOG(3) << "commit release " << item->key;
     auto node = inplace_write_op(item->tableid,item->key,  // find key
                                  (char *)item + sizeof(RtxWriteItem),item->len);
   } // end for

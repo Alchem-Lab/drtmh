@@ -208,21 +208,19 @@ protected:
       ReplyHeader *header = (ReplyHeader *)(ptr);
       ptr += sizeof(ReplyHeader);
       for(uint j = 0;j < header->num;++j) {
-        OCCResponse *item = (OCCResponse *)ptr;
+        WaitDieResponse *item = (WaitDieResponse *)ptr;
         if ((item->idx & 1) == 0) { // an idx in read-set
           // fprintf(stdout, "rpc response: read_set idx = %d, payload = %d\n", item->idx, item->payload);
           item->idx >>= 1;
           read_set_[item->idx].data_ptr = (char *)malloc(read_set_[item->idx].len);
-          memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),read_set_[item->idx].len);
-          read_set_[item->idx].seq      = item->seq;
+          memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(WaitDieResponse),read_set_[item->idx].len);
         } else {
           // fprintf(stdout, "rpc response: write_set idx = %d, payload = %d\n", item->idx, item->payload);
           item->idx >>= 1;
           write_set_[item->idx].data_ptr = (char *)malloc(write_set_[item->idx].len);
-          memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),write_set_[item->idx].len);
-          write_set_[item->idx].seq      = item->seq;
+          memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(WaitDieResponse),write_set_[item->idx].len);
         }
-        ptr += (sizeof(OCCResponse) + item->payload);
+        ptr += (sizeof(WaitDieResponse) + item->payload);
       }
     }
     return true;
@@ -285,25 +283,15 @@ protected:
 
   bool try_lock_read_w_rdma(int index, yield_func_t &yield);
   bool try_lock_write_w_rdma(int index, yield_func_t &yield);
-  bool try_lock_read_w_rwlock_rdma(int index, uint64_t txn_end_time, yield_func_t &yield);
-  bool try_lock_write_w_rwlock_rdma(int index, yield_func_t &yield);
-  bool try_lock_read_w_FA_rdma(int index, yield_func_t &yield);
-  bool try_lock_write_w_FA_rdma(int index, yield_func_t &yield);
   bool try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield);
   bool try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield);
 
   void release_reads_w_rdma(yield_func_t &yield);
   void release_writes_w_rdma(yield_func_t &yield);
-  void release_reads_w_rwlock_rdma(yield_func_t &yield);
-  void release_writes_w_rwlock_rdma(yield_func_t &yield);
-  void release_reads_w_FA_rdma(yield_func_t &yield);
-  void release_writes_w_FA_rdma(yield_func_t &yield);
-  void release_reads(yield_func_t &yield);
-  void release_writes(yield_func_t &yield);
+  void release_reads(yield_func_t &yield, bool all = true);
+  void release_writes(yield_func_t &yield, bool all = true);
 
   void write_back_w_rdma(yield_func_t &yield);
-  void write_back_w_rwlock_rdma(yield_func_t &yield);
-  void write_back_w_FA_rdma(yield_func_t &yield);
   void write_back(yield_func_t &yield);
 
 public:
@@ -367,7 +355,7 @@ public:
     }
 #else
     if (!try_lock_read_w_rwlock_rpc(index, yield)) {
-      release_reads(yield);
+      release_reads(yield, false);
       release_writes(yield);
       return -1;
     }
@@ -422,7 +410,7 @@ public:
 #else
     if(!try_lock_write_w_rwlock_rpc(index, yield)) {
       release_reads(yield);
-      release_writes(yield);
+      release_writes(yield,false);
       return -1;
     }
 #endif
@@ -460,7 +448,7 @@ public:
       start_batch_rpc_op(read_batch_helper_);
     }
 #endif
-
+    assert(set[idx].data_ptr != NULL);
     return (set[idx].data_ptr);
   }
 
@@ -475,11 +463,6 @@ public:
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
 
 #if ONE_SIDED_READ
-      // if(!try_lock_write_w_rdma(idx, yield)) {
-      //   release_reads_w_rdma(yield);
-      //   release_writes_w_rdma(yield);
-      //   return false;
-      // }
       return set[idx].data_ptr;
 #else
     if(set[idx].data_ptr == NULL
@@ -494,7 +477,7 @@ public:
       start_batch_rpc_op(read_batch_helper_);
     }
 #endif
-
+    assert(set[idx].data_ptr != NULL);
     return (set[idx].data_ptr);
   }
 
@@ -639,18 +622,8 @@ public:
 
 #else
   virtual bool commit(yield_func_t &yield) {
-  // only execution phase
-#if TX_ONLY_EXE
-  gc_readset();
-  gc_writeset();
-  return dummy_commit();
-#endif
-
-  // prepare_write_contents();
-  // log_remote(yield); // log remote using *logger_*
-
-  // write the modifications of records back
   write_back(yield);
+  release_reads(yield);
   return true;
 }
 

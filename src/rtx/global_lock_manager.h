@@ -39,6 +39,7 @@ public:
 	void check_to_notify(int my_worker_id, oltp::RRpc *rpc_) {
 	using namespace rwlock_4_waitdie;
 		if(waiters == NULL) return;
+		uint8_t res = LOCK_SUCCESS_MAGIC;
 		for (auto itr = waiters->begin(); itr != waiters->end(); ) {
 			volatile uint64_t* lockptr = itr->first;
 			assert(itr->second.size() > 0);
@@ -48,45 +49,36 @@ public:
 			char* reply_msg = rpc_->get_reply_buf();
 			size_t more = 0;
 		    switch(first_waiter.type) {
-		      case RTX_REQ_LOCK_READ: {
-		          while (true) {
-		            uint64_t l = *lockptr;
-		            if(l & 0x1 == W_LOCKED) {
-		            	goto NEXT_ITEM; //continue waiting
-		            } else {
-		              if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
-		                // clear expired lease (optimization)
-		                if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-		                             R_LOCKED_WORD(first_waiter.txn_start_time, rwlock::LEASE_TIME))))
-		                  continue;
-		                else
-		                  goto SUCCESS;  //successfully read locked this item
-		              } else { // read locked: not conflict
-		                goto SUCCESS;    //successfully read locked this item
-		              }
-		            }
-		          }
-		      }
-		        break;
-		      case RTX_REQ_LOCK_WRITE: {
-		        while(true) {
-		          uint64_t l = *lockptr;
-		          if(l & 0x1 == W_LOCKED) {
-		          	goto NEXT_ITEM;  //continue waiting
-		          } else {
-		            if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
-		              // clear expired lease (optimization)
-		              if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-		                           W_LOCKED_WORD(first_waiter.txn_start_time, first_waiter.pid))))
-		                continue;
-		              else
-		                goto SUCCESS;
-		            } else { //read locked: conflict
-		            	goto NEXT_ITEM; //continue waiting
-		            }
-		          }
-		        }
-		      }
+		      case RTX_REQ_LOCK_READ:
+		      case RTX_REQ_LOCK_WRITE:
+		       	{
+			       	uint64_t my_ts = R_LEASE(first_waiter.txn_start_time);
+			       	if(first_waiter.type == RTX_REQ_LOCK_WRITE) {
+			       		my_ts += 1;
+			       	}
+			        while (true) {
+						volatile uint64_t l = *lockptr;
+						if(l == 0) {
+							if(unlikely(!__sync_bool_compare_and_swap(lockptr, l,
+								my_ts))) {
+								continue;
+							}
+							else {
+								// LOG(3) << "dengdao suo";
+								goto SUCCESS;	
+							}
+						}
+						else if(my_ts < l) {
+							// goon waiting
+							goto NEXT_ITEM;
+						}
+						else {
+							// LOG(3) << "dengbudao suo";
+							res = LOCK_FAIL_MAGIC;
+							goto SUCCESS;
+						}
+		          	}
+		      	}
 		        break;
 		    case SUNDIAL_REQ_READ: { // sundial read
 		      	while(true) {
@@ -140,9 +132,8 @@ public:
 		    }
 
 SUCCESS:
-	  		*((uint8_t *)reply_msg) = LOCK_SUCCESS_MAGIC;
+	  		*((uint8_t *)reply_msg) = res;
 	  		rpc_->send_reply(reply_msg,sizeof(uint8_t) + more, first_waiter.pid, first_waiter.cid);
-
 			itr->second.erase(itr->second.begin());
 NEXT_ITEM:
 			if (itr->second.empty()) {

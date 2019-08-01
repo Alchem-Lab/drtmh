@@ -87,6 +87,11 @@ struct OCCResponse {
   uint64_t seq;
 };
 
+struct WaitDieResponse {
+  uint16_t payload;
+  uint16_t idx;
+};
+
 struct SundialResponse {
   uint32_t wts;
   uint32_t rts;
