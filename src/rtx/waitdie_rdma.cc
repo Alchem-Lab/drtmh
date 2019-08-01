@@ -13,7 +13,8 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
     //TODO: currently READ lock is implemented the same as WRITE lock.
     //      which is too strict, thus limiting concurrency. 
     //      We need to implement the read-lock-compatible read-lock. 
-    uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
+    uint64_t lock_content = R_LEASE(txn_start_time);
+    uint64_t old_state = 0;
 
     if((*it).pid != node_id_) { // remote case
       auto off = (*it).off;
@@ -21,31 +22,44 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       // post RDMA requests
       Qp *qp = get_qp((*it).pid);
       assert(qp != NULL);
-
-      #if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-      MemNode *h = (MemNode *)local_buf;
-      #else
       char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
       RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      #endif
 
-      lock_req_->set_lock_meta(off,0,lock_content,local_buf);
-      lock_req_->post_reqs(scheduler_,qp);
-      worker_->indirect_yield(yield);
-      
-      // write_batch_helper_.mac_set_.insert(it->pid);
-      if (h->lock != 0) {
-        #if !NO_ABORT
-        END(lock);
-        return false;
-        #endif
+      while(true) {
+        lock_req_->set_lock_meta(off,old_state,lock_content,local_buf);
+        lock_req_->post_reqs(scheduler_,qp);
+        worker_->indirect_yield(yield);
+        
+        if (h->lock != old_state) {
+          if(lock_content < h->lock) {
+            worker_->yield_next(yield);
+            old_state = h->lock;
+            continue;
+          }
+          else {
+            END(lock);
+            // LOG(3) << lock_content << ' ' << h->lock << ' ' << old_state;
+            // LOG(3) << index << ' ' << (*it).key;
+            abort_cnt[1]++;
+            return false;
+          }
+        }
+        else {
+          // LOG(3) << "succ:"<<lock_content << ' ' << h->lock << ' ' << old_state;
+          // LOG(3) << "succ:" << index << ' ' << (*it).key;
+          scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
+              (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
+          worker_->indirect_yield(yield);
+          END(lock);
+          h->lock = 333; // success get the lock
+          return true;
+        }
       }
     }
     else { //local access
       assert(false);
       if(unlikely(!local_try_lock_op(it->node,
-                                     ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
+                                     R_LEASE(txn_start_time)))){
         #if !NO_ABORT
         END(lock);
         return false;
@@ -64,7 +78,8 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
     //TODO: currently READ lock is implemented the same as WRITE lock.
     //      which is too strict, thus limiting concurrency. 
     //      We need to implement the read-lock-compatible read-lock. 
-    uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
+    uint64_t lock_content = (R_LEASE(txn_start_time)) + 1;
+    uint64_t old_state = 0;
 
     if((*it).pid != node_id_) { // remote case
       auto off = (*it).off;
@@ -73,378 +88,67 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       Qp *qp = get_qp((*it).pid);
       assert(qp != NULL);
 
-      #if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-      MemNode *h = (MemNode *)local_buf;
-      #else
       char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
       RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      #endif
 
-      lock_req_->set_lock_meta(off,0,lock_content,local_buf);
-      lock_req_->post_reqs(scheduler_,qp);
-      worker_->indirect_yield(yield);
-      
-      // write_batch_helper_.mac_set_.insert(it->pid);
-      if (h->lock != 0) {
-        #if !NO_ABORT
-        END(lock);
-        return false;
-        #endif
-      }
-    }
-    else { //local access
-      if(unlikely(!local_try_lock_op(it->node,
-                                     ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
-        #if !NO_ABORT
-        END(lock);
-        return false;
-        #endif
-      } // check local lock
-    }
-
-    END(lock);
-    return true;
-}
-
-bool WAITDIE::try_lock_read_w_FA_rdma(int index, yield_func_t &yield) {
-    std::vector<ReadSetItem> &set = read_set_;
-    auto it = set.begin() + index;
-    
-    START(lock);
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-
-      // post RDMA requests
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-#if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-#else
-      // copy the seq out, since it will be overwritten by the remote op
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      it->seq = h->seq;
-#endif
-
-      DSLR::Lock l(qp, off, local_buf, DSLR::SHARED);
-
-      bool ret = dslr_lock_manager->acquireLock(yield, l);
-      if (!ret) {
-        END(lock);
-        return false;
-      }
-
-      //read seq while locked
-      read_req_->set_read_meta(off + sizeof(uint64_t),local_buf + sizeof(uint64_t));
-      read_req_->post_reqs(scheduler_,qp);
-      // read request need to be polled
-      worker_->indirect_yield(yield);
-
-      write_batch_helper_.mac_set_.insert(it->pid);
-
-      if(!dslr_lock_manager->isLocked(std::make_pair(qp, off))) { // check locks
-      #if !NO_ABORT
-          END(lock);
-          return false;
-      #endif
-      }
-      if(h->seq != (*it).seq) {     // check seqs
-      #if !NO_ABORT
-          END(lock);
-          return false;
-      #endif
-      }
-    }
-    else {
-      assert(false);
-
-      if(unlikely(!local_try_lock_op(it->node,
-                                     ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
-#if !NO_ABORT
-        END(lock);
-        return false;
-#endif
-      } // check local lock
-      if(unlikely(!local_validate_op(it->node,it->seq))) {
-#if !NO_ABORT
-        END(lock);
-        return false;
-#endif
-      } // check seq
-    }
-
-    END(lock);
-    return true;
-}
-
-bool WAITDIE::try_lock_write_w_FA_rdma(int index, yield_func_t &yield) {
-    std::vector<ReadSetItem> &set = write_set_;
-    auto it = set.begin() + index;
-    
-    START(lock);
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-
-      // post RDMA requests
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-#if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-#else
-      // copy the seq out, since it will be overwritten by the remote op
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      it->seq = h->seq;
-#endif
-
-      DSLR::Lock l(qp, off, local_buf, DSLR::EXCLUSIVE);
-
-      bool ret = dslr_lock_manager->acquireLock(yield, l);
-      if (!ret) {
-        END(lock);
-        return false;
-      }
-
-      //read seq while locked
-      read_req_->set_read_meta(off + sizeof(uint64_t),local_buf + sizeof(uint64_t));
-      read_req_->post_reqs(scheduler_,qp);
-      // read request need to be polled
-      worker_->indirect_yield(yield);
-
-      write_batch_helper_.mac_set_.insert(it->pid);
-
-      if(!dslr_lock_manager->isLocked(std::make_pair(qp, off))) { // check locks
-      #if !NO_ABORT
-          END(lock);
-          return false;
-      #endif
-      }
-      if(h->seq != (*it).seq) {     // check seqs
-      #if !NO_ABORT
-          END(lock);
-          return false;
-      #endif
-      }
-    }
-    else {
-      assert(false);
-
-      if(unlikely(!local_try_lock_op(it->node,
-                                     ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
-#if !NO_ABORT
-        END(lock);
-        return false;
-#endif
-      } // check local lock
-      if(unlikely(!local_validate_op(it->node,it->seq))) {
-#if !NO_ABORT
-        END(lock);
-        return false;
-#endif
-      } // check seq
-    }
-
-    END(lock);
-    return true;
-}
-
-bool WAITDIE::try_lock_read_w_rwlock_rdma(int index, uint64_t end_time, yield_func_t &yield) {
-using namespace nocc::rtx::rwlock_4_waitdie;
-
-    std::vector<ReadSetItem> &set = read_set_;
-    auto it = set.begin() + index;
-    uint64_t _state = INIT;
-
-    START(lock);
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-      // post RDMA requests
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      #if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-      MemNode *h = (MemNode *)local_buf;
-      #else
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      #endif
-
-      while (true) {
-        lock_req_->set_lock_meta(off,_state, R_LOCKED_WORD(txn_start_time, rwlock::LEASE_TIME),local_buf);
+      while(true) {
+        lock_req_->set_lock_meta(off,old_state,lock_content,local_buf);
         lock_req_->post_reqs(scheduler_,qp);
         worker_->indirect_yield(yield);
 
-        uint64_t old_state = *(uint64_t*)local_buf;
-        if (old_state == _state) { // success 
-          END(lock);
-          return true;
-        }
-        else if ((old_state & 1) == W_LOCKED) { // write-locked
-
-          if (txn_start_time < START_TIME(old_state))
-            //need some random backoff?
+        if(h->lock != old_state) {
+          if(lock_content < h->lock) {
+            worker_->yield_next(yield);
+            old_state = h->lock;
             continue;
+          }
           else {
             END(lock);
+            abort_cnt[2]++;
             return false;
           }
         }
         else {
-          if (EXPIRED(START_TIME(old_state), LEASE_DURATION(old_state))) {
-            _state = old_state; // retry with corrected state
-            continue;
-          } else { // success: unexpired read leased
-            END(lock);
-            return true;
-          }
-        }
-      }
-    } else { // local access
-      while (true) {
-        volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          if (txn_start_time < START_TIME(l))
-            //need some random backoff?
-            continue;
-          else {
-            END(lock);
-            return false;
-          }
-        } else {
-          if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
-            // clear expired lease (optimization)
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         R_LOCKED_WORD(txn_start_time, rwlock::LEASE_TIME))))
-              continue;
-            else {
-              END(lock);
-              return true;
-            }
-          } else { //read locked: not conflict
-            END(lock);
-            return true;
-          }
-        }
-      }
-    }
-}
-
-bool WAITDIE::try_lock_write_w_rwlock_rdma(int index, yield_func_t &yield) {
-using namespace nocc::rtx::rwlock_4_waitdie;
-
-    std::vector<ReadSetItem> &set = write_set_;
-    auto it = set.begin() + index;
-    uint64_t _state = INIT;
-
-    START(lock);
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-      // post RDMA requests
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      #if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-      MemNode *h = (MemNode *)local_buf;
-      #else
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      #endif
-
-      while (true) {
-        lock_req_->set_lock_meta(off,_state,W_LOCKED_WORD(txn_start_time, response_node_),local_buf);
-        lock_req_->post_reqs(scheduler_,qp);
-        worker_->indirect_yield(yield);
-
-        uint64_t old_state = *(uint64_t*)local_buf;
-        if (old_state == _state) { // success
+          scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
+              (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
+          worker_->indirect_yield(yield);
+          h->lock = 333; // success get the lock
           END(lock);
           return true;
-        } else if ((old_state & 1) == W_LOCKED) { // write-locked: conflict
-          if (txn_start_time < START_TIME(old_state))
-            //need some random backoff?
-            continue;
-          else {
-            END(lock);
-            return false;
-          }
-        } else {
-          if (EXPIRED(START_TIME(old_state), LEASE_DURATION(old_state))) {
-            _state = old_state; // retry with corrected state
-            continue;
-          } else { // read locked: conflict
-            if (txn_start_time < START_TIME(old_state))
-              //need some random backoff?
-              continue;
-            else {
-              END(lock);
-              return false;
-            }
-          }
-        }
-      }
-    } else { // local access
-      while(true) {
-        volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          if (txn_start_time < START_TIME(l))
-            //need some random backoff?
-            continue;
-          else {
-            END(lock);
-            return false;
-          }
-        } else {
-          if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
-            // clear expired lease (optimization)
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         W_LOCKED_WORD(txn_start_time, response_node_))))
-              continue;
-            else {
-              END(lock);
-              return true;
-            }
-          } else { //read locked
-            if (txn_start_time < START_TIME(l))
-              //need some random backoff?
-              continue;
-            else {
-              END(lock);
-              return false;
-            }
-          }
         }
       }
     }
+    else { //local access
+      if(unlikely(!local_try_lock_op(it->node,
+                                     R_LEASE(txn_start_time) + 1))){
+        #if !NO_ABORT
+        END(lock);
+        return false;
+        #endif
+      } // check local lock
+    }
+
+    END(lock);
+    return true;
 }
 
 void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
   // can only work with lock_w_rdma
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
+  uint64_t lock_content = R_LEASE(txn_start_time);
 
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
-    if((*it).tableid == 7) continue;
     if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
       RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      if(node->lock == 0) { // successfull locked
+      if(node->lock == 333) { // successfull locked
         //Qp *qp = qp_vec_[(*it).pid];
         Qp *qp = get_qp((*it).pid);
         assert(qp != NULL);
         node->lock = 0;
         scheduler_->post_send(qp,cor_id_,IBV_WR_RDMA_WRITE,(char *)(node),sizeof(uint64_t),
                               (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
+      }
+      else {
+        // LOG(3) << node->lock;
       }
     } else {
       while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
@@ -455,16 +159,12 @@ void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
 }
 
 void WAITDIE::release_writes_w_rdma(yield_func_t &yield) {
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
+  uint64_t lock_content =  R_LEASE(txn_start_time) + 1;
 
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
       RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      if(node->lock == 0) { // successfull locked
+      if(node->lock == 333) { // successfull locked
         //Qp *qp = qp_vec_[(*it).pid];
         Qp *qp = get_qp((*it).pid);
         assert(qp != NULL);
@@ -472,92 +172,11 @@ void WAITDIE::release_writes_w_rdma(yield_func_t &yield) {
         scheduler_->post_send(qp,cor_id_,IBV_WR_RDMA_WRITE,(char *)(node),sizeof(uint64_t),
                               (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
       }
+      else {
+        // LOG(3) << node->lock;
+      }
     } else {
       while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
-  return;
-}
-
-void WAITDIE::release_reads_w_rwlock_rdma(yield_func_t &yield) {
-  // can only work with lock_w_rdma
-  // we don't need to do anything here since the read will expire eventually
-  // and the later read or write will help cleanup.
-  return;
-}
-
-void WAITDIE::release_writes_w_rwlock_rdma(yield_func_t &yield) {
-  using namespace rwlock_4_waitdie;
-  
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      if(node->lock == 0) { // successfull locked
-        //Qp *qp = qp_vec_[(*it).pid];
-        Qp *qp = get_qp((*it).pid);
-        assert(qp != NULL);
-        node->lock = rwlock::INIT;
-        scheduler_->post_send(qp,cor_id_,IBV_WR_RDMA_WRITE,(char *)(node),sizeof(uint64_t),
-                              (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
-      }
-    } else {
-      while (!unlikely(local_try_release_op(it->tableid, it->key, 
-                        W_LOCKED_WORD(txn_start_time, response_node_)))) ;
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
-  return;
-}
-
-void WAITDIE::release_reads_w_FA_rdma(yield_func_t &yield) {
-  // can only work with lock_w_rdma
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = read_set_.begin();it != read_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));      
-#endif
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-      if(dslr_lock_manager->isLocked(std::make_pair(qp, (*it).off))) { // successfull locked
-        dslr_lock_manager->releaseLock(yield, std::make_pair(qp, (*it).off));
-      }
-    } else {
-      assert(false); // not implemented
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
-  return;
-}
-
-void WAITDIE::release_writes_w_FA_rdma(yield_func_t &yield) {
-  // can only work with lock_w_rdma
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));      
-#endif
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-      if(dslr_lock_manager->isLocked(std::make_pair(qp, (*it).off))) { // successfull locked
-        dslr_lock_manager->releaseLock(yield, std::make_pair(qp, (*it).off));
-      }
-    } else {
-      assert(false); // not implemented
     } // check pid
   }   // for
   worker_->indirect_yield(yield);
@@ -596,78 +215,6 @@ void WAITDIE::write_back_w_rdma(yield_func_t &yield) {
         worker_->indirect_yield(yield);
       }
 
-    } else { // local write
-      inplace_write_op(it->node,it->data_ptr,it->len);
-    } // check pid
-  }   // for
-  // gather results
-  worker_->indirect_yield(yield);
-  END(commit);
-}
-
-void WAITDIE::write_back_w_rwlock_rdma(yield_func_t &yield) {
-
-  /**
-   * XD: it is harder to apply PA for one-sided operations.
-   * This is because signaled requests are mixed with unsignaled requests.
-   * It got little improvements, though. So I skip it now.
-   */
-  RDMAWriteReq req(cor_id_,PA /* whether to use passive ack*/);
-  START(commit);
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-
-    if((*it).pid != node_id_) {
-
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      node->lock = rwlock::INIT;
-      req.set_write_meta((*it).off + sizeof(RdmaValHeader),(*it).data_ptr,(*it).len);
-      req.set_unlock_meta((*it).off);
-      req.post_reqs(scheduler_,qp);
-
-      // avoid send queue from overflow
-      if(unlikely(qp->rc_need_poll())) {
-        worker_->indirect_yield(yield);
-      }
-
-    } else { // local write
-      inplace_write_op(it->node,it->data_ptr,it->len);
-    } // check pid
-  }   // for
-  // gather results
-  worker_->indirect_yield(yield);
-  END(commit);
-}
-
-void WAITDIE::write_back_w_FA_rdma(yield_func_t &yield) {
-
-  /**
-   * XD: it is harder to apply PA for one-sided operations.
-   * This is because signaled requests are mixed with unsignaled requests.
-   * It got little improvements, though. So I skip it now.
-   */
-  RDMAWriteOnlyReq req(cor_id_,PA /* whether to use passive ack*/);
-  START(commit);
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-
-    if((*it).pid != node_id_) {
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      req.set_write_meta((*it).off + sizeof(RdmaValHeader),(*it).data_ptr,(*it).len);
-      req.post_reqs(scheduler_,qp);
-      // avoid send queue from overflow
-      if(unlikely(qp->rc_need_poll())) {
-        worker_->indirect_yield(yield);
-      }
     } else { // local write
       inplace_write_op(it->node,it->data_ptr,it->len);
     } // check pid

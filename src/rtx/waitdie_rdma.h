@@ -93,7 +93,7 @@ protected:
     auto seq = node->seq;
     data_ptr = data_ptr + sizeof(MemNode);
 #else
-    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
+    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader),false);
     RdmaValHeader *header = (RdmaValHeader *)data_ptr;
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
@@ -119,7 +119,7 @@ protected:
     auto seq = node->seq;
     data_ptr = data_ptr + sizeof(MemNode);
 #else
-    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
+    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader), false);
     RdmaValHeader *header = (RdmaValHeader *)data_ptr;
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
@@ -360,9 +360,9 @@ public:
 
 #if ONE_SIDED_READ
     // step 2: get the read lock. If fail, return false
-    if(!try_lock_read_w_rwlock_rdma(index, txn_end_time, yield)) {
-      release_reads_w_rwlock_rdma(yield);
-      release_writes_w_rwlock_rdma(yield);
+    if(!try_lock_read_w_rdma(index, yield)) {
+      release_reads_w_rdma(yield);
+      release_writes_w_rdma(yield);
       return -1;
     }
 #else
@@ -409,9 +409,14 @@ public:
 
 #if ONE_SIDED_READ
     // step 3: get the write lock. If fail, return false
-    if(!try_lock_write_w_rwlock_rdma(index, yield)) {
-      release_reads_w_rwlock_rdma(yield);
-      release_writes_w_rwlock_rdma(yield);
+    // if(!try_lock_write_w_rwlock_rdma(index, yield)) {
+    //   release_reads_w_rwlock_rdma(yield);
+    //   release_writes_w_rwlock_rdma(yield);
+    //   return -1;
+    // }
+    if(!try_lock_write_w_rdma(index, yield)) {
+      release_reads_w_rdma(yield);
+      release_writes_w_rdma(yield);
       return -1;
     }
 #else
@@ -434,18 +439,17 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = read_set_;
-    if(set[idx].tableid == 7) return (char*)malloc(set[idx].len);
 
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
 
+#if ONE_SIDED_READ
+    return set[idx].data_ptr;
+#else
+
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
-#if ONE_SIDED_READ
-      assert(false);
-#endif
-
       // do actual reads here
       auto replies = send_batch_read();
       assert(replies > 0);
@@ -455,6 +459,7 @@ public:
       assert(set[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
     }
+#endif
 
     return (set[idx].data_ptr);
   }
@@ -469,11 +474,16 @@ public:
     ASSERT(len == set[idx].len) <<
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
 
+#if ONE_SIDED_READ
+      // if(!try_lock_write_w_rdma(idx, yield)) {
+      //   release_reads_w_rdma(yield);
+      //   release_writes_w_rdma(yield);
+      //   return false;
+      // }
+      return set[idx].data_ptr;
+#else
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
-#if ONE_SIDED_READ
-      assert(false);
-#endif
       // do actual reads here
       auto replies = send_batch_read();
       assert(replies > 0);
@@ -483,6 +493,7 @@ public:
       assert(set[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
     }
+#endif
 
     return (set[idx].data_ptr);
   }
