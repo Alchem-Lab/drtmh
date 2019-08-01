@@ -135,6 +135,7 @@ bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) 
   if(need_yield) {
     worker_->indirect_yield(yield);
   }
+  need_yield = false;
   for(auto& item : read_set_) {
     RdmaValHeader* header = (RdmaValHeader*)((char*)item.data_ptr - sizeof(RdmaValHeader));
     uint32_t node_rts = RTS(header->seq);
@@ -153,10 +154,15 @@ bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) 
         req.set_write_meta(item.off + sizeof(uint64_t), (char*)header + sizeof(uint64_t),
           sizeof(uint64_t));
         req.post_reqs(scheduler_, qp);
+        need_yield = true;
         if(unlikely(qp->rc_need_poll())) {
           worker_->indirect_yield(yield);
+          need_yield = false;
         }
       }
+    }
+    if(need_yield) {
+      worker_->indirect_yield(yield);
     }
   }
   return true;

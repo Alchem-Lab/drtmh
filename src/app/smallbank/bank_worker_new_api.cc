@@ -56,6 +56,12 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
     }
     if(val == NULL) return txn_result_t(false, 73);
   }
+#if SUNDIAL_TX
+  if(!rtx_->prepare(yield))
+      return txn_result_t(false, 73);
+#endif
+  int dummy_ret = rtx_->dummy_work(100000, indexes[3]); 
+  LOG(3) << dummy_ret;
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret, 73);
 }

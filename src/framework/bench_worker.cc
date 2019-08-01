@@ -384,7 +384,7 @@ void BenchWorker::exit_handler() {
 
     exit_report();
 #endif
-#if MVCC_TX || NOWAIT_TX || SUNDIAL_TX
+#if MVCC_TX || NOWAIT_TX || SUNDIAL_TX || OCC_TX
     int temp[40];
     for(int i = 0; i < 40; ++i)
         temp[i] = 0;

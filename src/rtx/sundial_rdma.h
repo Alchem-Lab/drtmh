@@ -319,14 +319,17 @@ public:
     // the txn_end_time is approximated using the LEASE_TIME
     txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }
-
-  virtual bool commit(yield_func_t &yield) {
+  bool prepare(yield_func_t &yield) {
     if(!try_renew_all_lease_rdma(commit_id_, yield)) {
+    //if(false) {
       release_writes(yield);
       release_reads(yield);
       return false;
     }
-#if ONE_SIDED_READ
+    return true;
+  }
+  virtual bool commit(yield_func_t &yield) {
+    #if ONE_SIDED_READ
     return try_update_rdma(yield);
 #else
     return try_update_rpc(yield);

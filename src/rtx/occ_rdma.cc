@@ -71,20 +71,20 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
 #endif
       if(node->lock != 0){ // check locks
 #if !NO_ABORT
-        LOG(3) << "abort!";
+        //LOG(3) << "abort!";
         abort_cnt[6]++;
         return false;
 #endif
       }
       if(node->seq != (*it).seq) {     // check seqs
 #if !NO_ABORT
-        LOG(3) << node->seq << ' ' << (*it).seq;
+       // LOG(3) << node->seq << ' ' << (*it).seq;
         abort_cnt[7]++;
         return false;
 #endif
       }
       else {
-        LOG(3) << node->seq;
+        //LOG(3) << node->seq;
       }
     }
   }

@@ -42,7 +42,7 @@ namespace rwlock {
 const uint64_t INIT = 0x0;
 const uint64_t W_LOCKED = 0x1;
 const uint64_t DELTA = 50; // 50 micro-seconds
-const uint64_t LEASE_TIME = 300000; // 0.4 milli-seconds
+const uint64_t LEASE_TIME = 3000; // 0.4 milli-seconds
 const uint64_t LEASE_TIME_RPC = 1500;
 
 // get current wall-time to the precision of microseconds

@@ -3,6 +3,8 @@
 #include "memstore/memdb.h"
 #include "core/rworker.h"
 #include "core/logging.h"
+#include "core/utils/latency_profier.h"
+#include "core/utils/count_vector.hpp"
 
 #if !ENABLE_TXN_API
 
@@ -46,6 +48,7 @@ typedef  uint8_t  partition_id_t;
 
 class TXOpBase {
  public:
+#include "occ_statistics.h"
   TXOpBase() { }
 
   // allow op implementation based on RPC
@@ -110,7 +113,15 @@ class TXOpBase {
   uint64_t     rdma_read_val(int pid,int tableid,uint64_t key,int len,char *val,yield_func_t &yield,int meta_len = 0, bool need_get_msg = true);
 
   uint64_t pending_rdma_read_val(int pid,int tableid,uint64_t key,int len,char *val,yield_func_t &yield,int meta_len = 0, bool need_get_msg = true);
-
+  int dummy_work(int len, int num) {
+    int ret = 0;
+    START(log);
+    for(int i = 0; i < len; ++i) {
+      ret += num % 3000;
+    }
+    END(log);
+    return ret;
+  }
 
   /*
    * Batch operations
