@@ -54,6 +54,9 @@ uint64_t ringsz;
  */
 uint64_t calvin_request_buffer_sz;
 uint64_t per_thread_calvin_request_buffer_sz;
+
+uint64_t calvin_forward_buffer_sz;
+uint64_t per_thread_calvin_forward_buffer_sz;
 #endif
 
 RdmaCtrl *cm;
@@ -72,6 +75,7 @@ char *rdma_buffer = NULL;
 char *store_buffer = NULL;
 #ifdef CALVIN_TX
 char *calvin_request_buffer = NULL;
+char * calvin_forward_buffer = NULL;
 #endif
 char *free_buffer  = NULL;
 
@@ -179,15 +183,22 @@ BenchRunner::run() {
   total_sz += store_size;
 
 #ifdef CALVIN_TX
-  // 128M per co-routine
   // TODO (chao): we may need to compress the size of each calvin_request
   // to fit into this area when large amounts of nodes/threads/coroutines
   // are involved. 
-  per_thread_calvin_request_buffer_sz = 64 * M * coroutine_num * net_def_.size();
+  per_thread_calvin_request_buffer_sz = (sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS * sizeof(calvin_request)) * coroutine_num * net_def_.size();
   calvin_request_buffer_sz = per_thread_calvin_request_buffer_sz * (nthreads + 1);
   calvin_request_buffer = rdma_buffer + total_sz;
   total_sz += calvin_request_buffer_sz;
   LOG(3) << "add calvin request buffer of size " << get_memory_size_g(calvin_request_buffer_sz) << "G.";
+
+#if ONE_SIDED_READ == 1
+  per_thread_calvin_forward_buffer_sz = (MAX_CALVIN_REQ_CNTS << MAX_CALVIN_SETS_SUPPRTED_IN_BITS) * sizeof(read_compact_val_t) * coroutine_num;
+  calvin_forward_buffer_sz = per_thread_calvin_forward_buffer_sz * (nthreads + 1);
+  calvin_forward_buffer = rdma_buffer + total_sz;
+  total_sz += calvin_forward_buffer_sz;
+  LOG(3) << "add calvin forward buffer of size " << get_memory_size_g(calvin_forward_buffer_sz) << "G.";
+#endif
 #endif
 
   // Init rmalloc

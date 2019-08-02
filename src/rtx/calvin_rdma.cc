@@ -783,10 +783,13 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   if (!am_I_passive_participant && !am_I_active_participant)
     return false;
 
+
+// #if 1
+#if ONE_SIDED_READ == 0
+
   // phase 3: serving remote reads to active participants
   // If I am an active participant, only send to *other* active participants
-#if 1
-// #if ONE_SIDED_READ == 0
+
   start_batch_read();
 
   // fprintf(stdout, "active participants: \n");
@@ -892,7 +895,7 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
     bool has_collected_all = true;
     for (auto i = 0; i < read_set_.size(); ++i) {
       if (read_set_[i].data_ptr == NULL) {
-        uint64_t key = req_seq << 6;
+        uint64_t key = req_seq << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
         key |= (i<<1);
         auto it = fv.find(key);
         if (it != fv.end()) {
@@ -907,7 +910,7 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
     }
     for (auto i = 0; i < write_set_.size(); ++i) {
       if (write_set_[i].data_ptr == NULL) {
-        uint64_t key = req_seq << 6;
+        uint64_t key = req_seq << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
         key |= ((i<<1) + 1);
         auto it = fv.find(key);
         if (it != fv.end()) {
@@ -929,8 +932,116 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   }
 
 #else
-  assert(false);
-#endif
+
+  // phase 3: serving remote reads to active participants
+  // If I am an active participant, only send to *other* active participants
+
+  std::set<int> mac_set;
+  for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
+    if (*itr != response_node_)
+      mac_set.insert(*itr);
+  }
+
+  auto forward_offsets_ = static_cast<BenchWorker*>(worker_)->forward_offsets_;
+  
+  if (mac_set.size() > 0) {
+    rtx::RDMAWriteReq req1(cor_id_, PA);
+    for (int i = 0; i < read_set_.size(); ++i) {
+        if (read_set_[i].pid == response_node_) {
+          for (auto mac : mac_set) {
+            Qp *qp = get_qp(mac);
+            assert(qp != NULL);
+            int forward_idx = req_seq << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
+            forward_idx |= (i<<1);
+            uint64_t remote_off = forward_offsets_[cor_id_] + forward_idx * sizeof(read_compact_val_t);
+
+            assert(read_set_[i].len <= MAX_VAL_LENGTH);
+            req1.set_write_meta_for<0>(remote_off + sizeof(uint32_t), 
+                    read_set_[i].data_ptr, read_set_[i].len);
+            uint32_t len = read_set_[i].len;
+            req1.set_write_meta_for<1>(remote_off, (char*)&len, sizeof(uint32_t));
+            req1.post_reqs(scheduler_, qp);
+            if (unlikely(qp->rc_need_poll())) {
+              worker_->indirect_yield(yield);
+            }
+          }
+          worker_->indirect_yield(yield);
+        }
+    }
+
+    for (int i = 0; i < write_set_.size(); ++i) {
+        if (write_set_[i].pid == response_node_) {
+          for (auto mac : mac_set) {
+            Qp *qp = get_qp(mac);
+            assert(qp != NULL);
+            int forward_idx = req_seq << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
+            forward_idx |= (i<<1) + 1;
+            uint64_t remote_off = forward_offsets_[cor_id_] + forward_idx * sizeof(read_compact_val_t);
+
+            assert(write_set_[i].len <= MAX_VAL_LENGTH);
+            req1.set_write_meta_for<0>(remote_off + sizeof(uint32_t), 
+                    write_set_[i].data_ptr, write_set_[i].len);
+            uint32_t len = write_set_[i].len;
+            req1.set_write_meta_for<1>(remote_off, (char*)&len, sizeof(uint32_t));
+            req1.post_reqs(scheduler_, qp);
+            if (unlikely(qp->rc_need_poll())) {
+              worker_->indirect_yield(yield);
+            }
+          }
+          worker_->indirect_yield(yield);
+        }
+    }
+  }
+
+  if (!am_I_active_participant)
+    return false;
+
+  // phase 4: check if all read_set and write_set has been collected.
+  //          if not, wait.
+
+  auto forward_addresses = static_cast<BenchWorker*>(worker_)->forward_addresses;
+  
+  while (true) {
+    bool has_collected_all = true;
+    for (auto i = 0; i < read_set_.size(); ++i) {
+      if (read_set_[i].data_ptr == NULL) {
+        uint64_t key = req_seq << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
+        key |= (i<<1);
+        read_compact_val_t* fv = (read_compact_val_t*)forward_addresses[cor_id_] + key;
+        if (fv->len != 0) {
+          read_set_[i].data_ptr = (char*)malloc(fv->len);
+          memcpy(read_set_[i].data_ptr, fv->value, fv->len);
+          // fprintf(stdout, "key %d read idx %d found.\n", key, i);
+        } else {
+          has_collected_all = false;
+          break;
+        }
+      }
+    }
+    for (auto i = 0; i < write_set_.size(); ++i) {
+      if (write_set_[i].data_ptr == NULL) {
+        uint64_t key = req_seq << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
+        key |= ((i<<1) + 1);
+        read_compact_val_t* fv = (read_compact_val_t*)forward_addresses[cor_id_] + key;
+        if (fv->len != 0) {
+          write_set_[i].data_ptr = (char*)malloc(fv->len);
+          memcpy(write_set_[i].data_ptr, fv->value, fv->len);
+          // fprintf(stdout, "key %d write idx %d found.\n", key, i);
+        } else {
+          has_collected_all = false;
+          break;
+        }
+      }
+    }
+
+    if (has_collected_all) break;
+    else {
+      // fprintf(stdout, "waiting for read/write set ready.\n");
+      worker_->yield_next(yield);
+    }
+  }
+
+#endif // ONE_SIDED_READ
 
   return am_I_active_participant;
 }
@@ -1105,7 +1216,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
       // set_item.data_ptr = (char*)malloc(item->len);
       // memcpy(set_item.data_ptr, item->value, item->len);
 
-      uint64_t key = item->req_seq << 6;
+      uint64_t key = item->req_seq << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
       key |= ((item->index_in_set << 1));
       fv[key] = *item;
 
@@ -1121,7 +1232,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
 
       // set_item.data_ptr = (char*)malloc(item->len);
       // memcpy(set_item.data_ptr, item->value, item->len);
-      uint64_t key = item->req_seq << 6;
+      uint64_t key = item->req_seq << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
       key |= ((item->index_in_set << 1) + 1);
       fv[key] = *item;
 

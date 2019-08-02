@@ -40,11 +40,12 @@ __thread rtx::WAITDIE  **new_txs_ = NULL;
 __thread rtx::CALVIN  **new_txs_ = NULL;
 db::EpochManager* epoch_manager = NULL; 
 extern uint64_t per_thread_calvin_request_buffer_sz;
+extern uint64_t per_thread_calvin_forward_buffer_sz;
 namespace oltp {
 extern char* calvin_request_buffer;
+extern char* calvin_forward_buffer;
 }
 
-#define MAX_CALVIN_REQ_CNTS (200*1000)
 #endif
 
 extern uint64_t total_ring_sz;
@@ -161,7 +162,12 @@ void BenchWorker::init_calvin() {
   epoch_done_schedule = new bool[1 + server_routine];
   memset(epoch_done_schedule, 0, sizeof(bool)*(1 + server_routine));
   mach_received = new std::set<int>[1 + server_routine];
+#if ONE_SIDED_READ == 0
   forwarded_values = new std::map<uint64_t, read_val_t>[1 + server_routine];
+#else
+  forward_addresses = new char*[1 + server_routine];
+  forward_offsets_ = new uint64_t[1 + server_routine];
+#endif
 
 #if ONE_SIDED_READ == 0  
   epoch_status_ = new uint8_t*[1 + server_routine];
@@ -182,19 +188,19 @@ void BenchWorker::init_calvin() {
   for (int i = 0; i < server_routine+1; i++)
     send_buffers[i] = rpc_->get_static_buf(MAX_MSG_SIZE);
 #else
+  const char *start_ptr = (char *)(cm_->conn_buf_);
+  LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
+
+  /*set up req_buffer and req offsets*/
   req_buffers = new std::vector<char*>[1 + server_routine];
   int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
-  char* base_ptr_ = oltp::calvin_request_buffer + 
+  char* req_base_ptr_ = oltp::calvin_request_buffer + 
                     per_thread_calvin_request_buffer_sz * worker_id_;
-  char *start_ptr = (char *)(cm_->conn_buf_);
-  uint64_t base_offset_ = base_ptr_ - start_ptr;
-
-
-  LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
+  // uint64_t req_base_offset_ = req_base_ptr_ - start_ptr;
   for (int i = 0; i < server_routine+1; i++) {
     LOG(3) << "routine " << i;
     for (int j = 0; j < cm_->get_num_nodes(); j++) {
-      char* buf = base_ptr_ + buf_len * i * cm_->get_num_nodes() + buf_len * j;
+      char* buf = req_base_ptr_ + buf_len * i * cm_->get_num_nodes() + buf_len * j;
       req_buffers[i].push_back(buf);
       calvin_header* ch = (calvin_header*)req_buffers[i][req_buffers[i].size()-1];
       ch->epoch_status = CALVIN_EPOCH_READY;
@@ -212,6 +218,21 @@ void BenchWorker::init_calvin() {
         LOG(3) << "node " << j << "'s offset: " << offsets_[i][j];
     }
   }
+
+  /* set up forward addresses and offsets */
+  char* forward_base_ptr_ = oltp::calvin_forward_buffer + 
+                        per_thread_calvin_forward_buffer_sz * worker_id_;
+  // uint64_t forward_base_offset_ = forward_base_ptr_ - start_ptr;
+  LOG(3) << "forward offsets:";
+  for (int i = 0; i < server_routine+1; i++) {
+    LOG(3) << "routine " << i;
+    int n_forwarded = MAX_CALVIN_REQ_CNTS << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
+    forward_addresses[i] = forward_base_ptr_ + i * n_forwarded * sizeof(read_compact_val_t);
+    forward_offsets_[i] = forward_addresses[i] - start_ptr;
+    LOG(3) << "forward_address " << static_cast<void*>(forward_addresses[i]);
+    LOG(3) << "forward_offset " << forward_offsets_[i];
+  }
+
 #endif
 }
 #endif
@@ -492,8 +513,14 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     // for (int i = 0; i < deterministic_requests[cor_id_].size(); i++)
     //   free((char*)deterministic_requests[cor_id_][i]);
     deterministic_requests[cor_id_].clear();
+
+#if ONE_SIDED_READ == 0
     forwarded_values[cor_id_].clear();
-    
+#else
+    int n_forwarded = MAX_CALVIN_REQ_CNTS << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
+    memset(forward_addresses[cor_id_], 0, n_forwarded * sizeof(read_compact_val_t));
+#endif
+
     uint64_t start = nocc::util::get_now();
     ((calvin_header*)req_buf)->node_id = cm_->get_nodeid();
     epoch_manager->get_current_epoch((char*)&((calvin_header*)req_buf)->epoch_id);
@@ -538,12 +565,12 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
 
         uint64_t request_timestamp = nocc::util::get_now();
         // buffer for 10 milliseconds for one epoch
-        if (request_timestamp - start < 10000) {
+        if (batch_size_ < MAX_CALVIN_REQ_CNTS) {
+        // if (request_timestamp - start < 10000) {
         // if (request_timestamp - start < 10000) {
           if (req_buf_end - req_buf >= sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request))
             assert(false);
-          *(calvin_request*)req_buf_end = calvin_request(tx_idx, 
-                                                         request_timestamp);
+          *(calvin_request*)req_buf_end = calvin_request(tx_idx, cm_->get_nodeid(), request_timestamp);
           req_buf_end += sizeof(calvin_request);
           batch_size_++;
           // if (batch_size_ >= 16000) break;
@@ -774,7 +801,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
         if(likely(ret.first)) {
           // commit case
           retry_count = 0;
-          ntxn_commits_ += 1;
+          if (req->req_initiator == cm_->get_nodeid())
+            ntxn_commits_ += 1;
           // self_generated requests
           assert(CS == 0);
         } else {

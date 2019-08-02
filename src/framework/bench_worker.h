@@ -55,12 +55,16 @@ extern __thread rtx::WAITDIE  **new_txs_;
 #elif defined(CALVIN_TX)
 extern __thread rtx::CALVIN  **new_txs_;
 
+// #define MAX_CALVIN_REQ_CNTS (200*1000)
+#define MAX_CALVIN_REQ_CNTS (2000)
+#define MAX_CALVIN_SETS_SUPPRTED_IN_BITS (5)
+#define MAX_CALVIN_SETS_SUPPORTED (1U<<(MAX_CALVIN_SETS_SUPPRTED_IN_BITS))  // 32 SETS
 #define CALVIN_REQ_INFO_SIZE 256
 
 typedef uint64_t timestamp_t;
 struct calvin_request {
-  calvin_request(int req_idx, timestamp_t timestamp) : 
-          req_idx(req_idx), timestamp(timestamp) {}
+  calvin_request(int req_idx, int req_initiator, timestamp_t timestamp) : 
+          req_idx(req_idx), req_initiator(req_initiator), timestamp(timestamp) {}
 
   // calvin_request(calvin_request* copy) :
   //         req_idx(copy->req_idx), timestamp(copy->timestamp), n_reads(copy->n_reads), n_writes(copy->n_writes) {
@@ -68,7 +72,7 @@ struct calvin_request {
   //         memcpy((char*)write_set, (char*)copy->write_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
   // }
   calvin_request(calvin_request* copy) :
-          req_idx(copy->req_idx), timestamp(copy->timestamp) {
+          req_idx(copy->req_idx), req_initiator(copy->req_initiator), timestamp(copy->timestamp) {
           memcpy(req_info, copy->req_info, CALVIN_REQ_INFO_SIZE);
   }
 
@@ -76,6 +80,8 @@ struct calvin_request {
     int req_idx;
     int req_seq;
   };
+
+  int req_initiator;
   
   timestamp_t timestamp;
 
@@ -132,6 +138,11 @@ struct read_val_t {
     memcpy(value, copy.value, len);
   }
   read_val_t() {}
+};
+
+struct read_compact_val_t {
+  uint32_t len;
+  char value[MAX_VAL_LENGTH];
 };
 
 extern     RdmaCtrl *cm;
@@ -325,12 +336,14 @@ class BenchWorker : public RWorker {
 #else
   std::vector<char*>* req_buffers;
   uint64_t** offsets_;
+  uint64_t* forward_offsets_;
+  char** forward_addresses;
 #endif // ONE_SIDED_READ
 #endif
-
+  
   //forwarded values are used by the CALVIN CLASS
   std::map<uint64_t, read_val_t>* forwarded_values;
-  
+
   LAT_VARS(yield);
 
   /* For statistics counts */
