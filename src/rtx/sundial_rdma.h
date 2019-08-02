@@ -19,7 +19,7 @@
 #include "rwlock.hpp"
 // #define SUNDIAL_DEBUG
 // #define SUNDIAL_NO_LOCK
-#define SUNDIAL_NOWAIT
+// #define SUNDIAL_NOWAIT
 namespace nocc {
 
 namespace rtx {
@@ -71,12 +71,10 @@ protected:
     START(temp);
     uint64_t off = 0;
     if(pid != node_id_) {
-    // if(pid != response_node_) {
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // atomicly read?
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
       RdmaValHeader *header = (RdmaValHeader*)data_ptr;
-      // auto seq = header->seq;
       data_ptr += sizeof(RdmaValHeader);
       read_set_.back().node = (MemNode*)off;
       read_set_.back().data_ptr = data_ptr;
@@ -312,12 +310,7 @@ public:
   virtual void begin(yield_func_t &yield) {
     read_set_.clear();
     write_set_.clear();
-    #if USE_DSLR
-      dslr_lock_manager->init();
-    #endif
     txn_start_time = rwlock::get_now();
-    // the txn_end_time is approximated using the LEASE_TIME
-    txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }
   bool prepare(yield_func_t &yield) {
     if(!try_renew_all_lease_rdma(commit_id_, yield)) {

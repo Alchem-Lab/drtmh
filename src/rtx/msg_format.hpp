@@ -39,8 +39,9 @@ struct RTXSundialReadItem {
   uint64_t key;
   uint8_t  tableid;
   uint16_t len;
-  inline RTXSundialReadItem(uint8_t pid,uint64_t key,uint8_t tableid,uint16_t len)
-      :pid(pid),key(key),tableid(tableid),len(len)
+  uint64_t timestamp;
+  inline RTXSundialReadItem(uint8_t pid,uint64_t key,uint8_t tableid,uint16_t len, uint64_t timestamp)
+      :pid(pid),key(key),tableid(tableid),len(len), timestamp(timestamp)
   {
   }
   RTXSundialReadItem(){}

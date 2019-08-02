@@ -80,50 +80,28 @@ public:
 		          	}
 		      	}
 		        break;
-		    case SUNDIAL_REQ_READ: { // sundial read
-		      	while(true) {
-		      		volatile uint64_t l = *lockptr;
-
-#ifdef SUNDIAL_WAIT_NO_LOCK
-		      		if (false){ // debug
-#else
-		      		if(WLOCKTS(l)) { // still locked
-#endif
-								// LOG(3) << "wait still locked";
-		      			goto NEXT_ITEM;
-		      		} else {
-		      			// auto node = db_->stores_[item.tableid]->Get(item.key);
-		      			auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
-
-				        prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
-				        more = first_waiter.item.len + sizeof(SundialResponse);
-
-				        goto SUCCESS;
-		      		}
-		      	}
-		    }
-		      break;
 		    case SUNDIAL_REQ_LOCK_READ: { // sundial lock and read
 		    	auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
 		    	while(true) {
 		    		volatile uint64_t l = *lockptr;
-
-#ifdef SUNDIAL_WAIT_NO_LOCK
-		    		if(false){ // debug
-#else
-		    		if(WLOCKTS(l) || RLOCKTS(l)) {
-#endif
-		    			goto NEXT_ITEM;
-		    		} else {
-							if( unlikely(!__sync_bool_compare_and_swap(lockptr, 0, SUNDIALWLOCK))){
-								LOG(3) << "fail change lock";
+		    		if(l == 0) {
+		    			if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, first_waiter.txn_start_time))){
+							LOG(3) << "fail change lock";
 		    				continue;
-							}
+						}
 		    			else {
 		    				prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
 		    				more = first_waiter.item.len + sizeof(SundialResponse);
 		    				goto SUCCESS;
 		    			}
+		    			goto NEXT_ITEM;
+		    		}
+		    		else if(first_waiter.txn_start_time < l) {
+		    			goto NEXT_ITEM;
+		    		}
+		    		else {
+		    			res = LOCK_FAIL_MAGIC;
+		    			goto SUCCESS;
 		    		}
 		    	}
 		    }

@@ -14,7 +14,7 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
     //      which is too strict, thus limiting concurrency. 
     //      We need to implement the read-lock-compatible read-lock. 
     uint64_t lock_content = R_LEASE(txn_start_time);
-    uint64_t old_state = 0;
+    // uint64_t old_state = 0;
 
     if((*it).pid != node_id_) { // remote case
       auto off = (*it).off;
@@ -26,14 +26,14 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       RdmaValHeader *h = (RdmaValHeader *)local_buf;
 
       while(true) {
-        lock_req_->set_lock_meta(off,old_state,lock_content,local_buf);
+        lock_req_->set_lock_meta(off,0,lock_content,local_buf);
         lock_req_->post_reqs(scheduler_,qp);
         worker_->indirect_yield(yield);
         
-        if (h->lock != old_state) {
+        if (h->lock != 0) {
           if(lock_content < h->lock) {
             worker_->yield_next(yield);
-            old_state = h->lock;
+            // old_state = h->lock;
             continue;
           }
           else {
@@ -79,7 +79,7 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
     //      which is too strict, thus limiting concurrency. 
     //      We need to implement the read-lock-compatible read-lock. 
     uint64_t lock_content = (R_LEASE(txn_start_time)) + 1;
-    uint64_t old_state = 0;
+    // uint64_t old_state = 0;
 
     if((*it).pid != node_id_) { // remote case
       auto off = (*it).off;
@@ -92,14 +92,14 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       RdmaValHeader *h = (RdmaValHeader *)local_buf;
 
       while(true) {
-        lock_req_->set_lock_meta(off,old_state,lock_content,local_buf);
+        lock_req_->set_lock_meta(off,0,lock_content,local_buf);
         lock_req_->post_reqs(scheduler_,qp);
         worker_->indirect_yield(yield);
 
-        if(h->lock != old_state) {
+        if(h->lock != 0) {
           if(lock_content < h->lock) {
             worker_->yield_next(yield);
-            old_state = h->lock;
+            // old_state = h->lock;
             continue;
           }
           else {
@@ -516,6 +516,7 @@ void WAITDIE::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
               // LOG(3) << "add to wait";
               global_lock_manager->add_to_waitlist(&(node->lock), waiter);
               res = LOCK_WAIT_MAGIC;
+              // res = LOCK_FAIL_MAGIC;
               goto END;
             } else {
               res = LOCK_FAIL_MAGIC;
@@ -550,9 +551,6 @@ NEXT_ITEM:
   }
 
 END:
-  //char *log_buf = next_log_entry(&local_log,32);
-  //assert(log_buf != NULL);
-  //sprintf(log_buf,"reply to  %d c:%d, \n",id,cid);
   if (res != LOCK_WAIT_MAGIC) {
     *((uint8_t *)reply_msg) = res;
     rpc_->send_reply(reply_msg,sizeof(uint8_t),id,cid);

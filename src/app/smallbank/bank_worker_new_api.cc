@@ -56,7 +56,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
     }
     if(val == NULL) return txn_result_t(false, 73);
   }
-#if SUNDIAL_TX
+#if SUNDIAL_TX && ONE_SIDED_READ
   if(!rtx_->prepare(yield))
       return txn_result_t(false, 73);
 #endif
