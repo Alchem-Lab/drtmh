@@ -91,11 +91,11 @@ struct calvin_header {
   volatile uint8_t epoch_status;
   uint64_t epoch_id;
   volatile uint64_t batch_size; // the batch size
-  union {
+  // union {
     uint64_t chunk_size; // the number of calvin_requests in this rpc call
     volatile uint64_t received_size;
-  };
-};
+  // };
+} __attribute__ ((aligned (8)));
 
 class calvin_request_compare {
 public:
