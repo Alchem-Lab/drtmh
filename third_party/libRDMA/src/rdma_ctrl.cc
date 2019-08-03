@@ -265,6 +265,7 @@ void RdmaCtrl::register_dgram_mr(char *ptr, uint64_t size, int dev_id) {
         return;
     }
 
+    fprintf(stdout, "register_dgram_mr: %p %p %lu %d\n", rdma_device->pd, ptr, size, DEFAULT_PROTECTION_FLAG);
     rdma_device->dgram_buf_mr = ibv_reg_mr(rdma_device->pd,(char *)ptr, size,
                                            DEFAULT_PROTECTION_FLAG);
     CE_2(!rdma_device->dgram_buf_mr

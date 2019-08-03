@@ -67,6 +67,10 @@ target_compile_options(noccnowait PRIVATE "-DNOWAIT_TX")
 add_executable(noccwaitdie ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccwaitdie PRIVATE "-DWAITDIE_TX")
 
+# add_executable(nocccalvin ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+add_executable(nocccalvin ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(nocccalvin PRIVATE "-DCALVIN_TX")
+
 add_executable(noccsundial ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsundial PRIVATE "-DSUNDIAL_TX")
 
@@ -96,7 +100,7 @@ include(cmake/Dependencies.cmake)
 #
 # Configure binary linking
 #
-set( apps noccrad noccocc noccsi noccfarm noccnowait noccsundial noccmvcc noccwaitdie nn nr )
+set( apps noccrad noccocc noccsi noccfarm noccnowait noccsundial noccmvcc noccwaitdie nocccalvin nn nr )
 foreach( prog ${apps} )
   if( LINK_STATIC_LIB )
     target_link_libraries( ${prog}
@@ -125,7 +129,7 @@ install(TARGETS noccnowait 	DESTINATION scripts)
 install(TARGETS noccwaitdie   	DESTINATION scripts)
 install(TARGETS noccsundial   	DESTINATION scripts)
 install(TARGETS noccmvcc     DESTINATION scripts)
-
+install(TARGETS nocccalvin  DESTINATION scripts)
 ## for tests
 if(GTEST)
     include(cmake/gtest.cmake)

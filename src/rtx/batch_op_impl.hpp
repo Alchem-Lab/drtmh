@@ -47,6 +47,7 @@ struct BatchOpCtrlBlock {
       if(!pa) {
         rpc->prepare_multi_req(reply_buf_,mac_set_.size(),cid);
       }
+
       rpc->broadcast_to(req_buf_,rpc_id,
                         batch_msg_size(),
                         cid,RRpc::REQ,mac_set_);
@@ -81,6 +82,11 @@ void TXOpBase::add_batch_entry_wo_mac(BatchOpCtrlBlock &ctrl,int pid, _Args&& ..
   // copy the entries
   *((REQ *)ctrl.req_buf_end_) = REQ(std::forward<_Args>(args)...);
   ctrl.req_buf_end_ += sizeof(REQ);
+}
+
+inline __attribute__((always_inline))
+void TXOpBase::add_mac(BatchOpCtrlBlock &ctrl, int mac) {
+  ctrl.add_mac(mac);
 }
 
 inline  __attribute__((always_inline))

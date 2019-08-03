@@ -218,7 +218,8 @@ void RWorker::create_rdma_ud_connections(int total_connections) {
 
   using namespace rdmaio::udmsg;
   msg_handler_ = new UDMsg(cm_,worker_id_,total_connections,
-                           2048, // max concurrent msg received
+                           // 2048*32, // max concurrent msg received
+                           rdmaio::udmsg::MAX_RECV_SIZE,
                            std::bind(&RRpc::poll_comp_callback,rpc_,
                                      std::placeholders::_1,std::placeholders::_2,std::placeholders::_3),
                            dev_id,port_idx,1);

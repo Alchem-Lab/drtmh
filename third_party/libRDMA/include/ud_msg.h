@@ -9,7 +9,7 @@ namespace rdmaio {
 
   namespace udmsg {
 
-    const int MAX_RECV_SIZE = 2048;
+    const uint64_t MAX_RECV_SIZE = UD_MAX_RECV_SIZE;
     const uint64_t UD_MAX_DOORBELL_SIZE = 16;
 
     const int SEND_QP_IDX = 1; // send qp index starts at 1,2,3...
@@ -21,7 +21,7 @@ namespace rdmaio {
 
     public:
 
-      UDMsg(RdmaCtrl *cm,int tid,int total,int max_recv_num,msg_func_t func,int dev_id,int port_id,int send_num);
+      UDMsg(RdmaCtrl *cm,int tid,int total, uint64_t max_recv_num,msg_func_t func,int dev_id,int port_id,int send_num);
 
       Qp::IOStatus send_to(int key,char *msg,int len);
       Qp::IOStatus send_to(int node_id,int tid,char *msg,int len);
@@ -65,9 +65,9 @@ namespace rdmaio {
 
       // related to qp infos
       int recv_head_;
-      int idle_recv_num_;
-      int max_idle_recv_num_ = 1;
-      int max_recv_num_ = 0;
+      uint64_t idle_recv_num_;
+      uint64_t max_idle_recv_num_ = 1;
+      uint64_t max_recv_num_ = 0;
 
 
       // recv data structures
@@ -102,7 +102,7 @@ namespace rdmaio {
       //-------------------------------------
       // private helper functions
       void init();
-      void post_recvs(int recv_num);
+      void post_recvs(uint64_t recv_num);
     };
   };  // end namespace ud_msg
 };

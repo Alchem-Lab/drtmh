@@ -12,12 +12,21 @@
 
 #include "rtx/logger.hpp"
 
+// #define MAX_CALVIN_REQ_CNTS (200*1000)
+#define MAX_CALVIN_REQ_CNTS (2000)
+#define MAX_CALVIN_SETS_SUPPRTED_IN_BITS (5)
+#define MAX_CALVIN_SETS_SUPPORTED (1U<<(MAX_CALVIN_SETS_SUPPRTED_IN_BITS))  // 32 SETS
+#define CALVIN_REQ_INFO_SIZE 256
+
 #ifdef OCC_TX
 #include "rtx/occ.h"
+
 #elif defined(NOWAIT_TX)
 #include "rtx/nowait_rdma.h"
+
 #elif defined(WAITDIE_TX)
 #include "rtx/waitdie_rdma.h"
+
 #elif defined(SUNDIAL_TX)
 #include "rtx/sundial_rdma.h"
 #elif defined(MVCC_TX)
@@ -27,6 +36,9 @@
 //       which should be refactored later after.
 #include "rtx/global_vars.h"
 #endif
+
+#elif defined(CALVIN_TX)
+#include "rtx/calvin_rdma.h"
 #endif
 
 #include <queue>          // std::queue
@@ -56,13 +68,101 @@ extern __thread rtx::WAITDIE  **new_txs_;
 extern __thread rtx::SUNDIAL  **new_txs_;
 #elif defined(MVCC_TX)
 extern __thread rtx::MVCC  **new_txs_;
+#elif defined(CALVIN_TX)
+extern __thread rtx::CALVIN  **new_txs_;
+
+
+typedef uint64_t timestamp_t;
+struct calvin_request {
+  calvin_request(int req_idx, int req_initiator, timestamp_t timestamp) : 
+          req_idx(req_idx), req_initiator(req_initiator), timestamp(timestamp) {}
+
+  // calvin_request(calvin_request* copy) :
+  //         req_idx(copy->req_idx), timestamp(copy->timestamp), n_reads(copy->n_reads), n_writes(copy->n_writes) {
+  //         memcpy((char*)read_set, (char*)copy->read_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
+  //         memcpy((char*)write_set, (char*)copy->write_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
+  // }
+  calvin_request(calvin_request* copy) :
+          req_idx(copy->req_idx), req_initiator(copy->req_initiator), timestamp(copy->timestamp) {
+          memcpy(req_info, copy->req_info, CALVIN_REQ_INFO_SIZE);
+  }
+
+  union {
+    int req_idx;
+    int req_seq;
+  };
+
+  int req_initiator;
+  
+  timestamp_t timestamp;
+
+  char req_info[CALVIN_REQ_INFO_SIZE];
+  // uint64_t n_reads;
+  // rtx::CALVIN::ReadSetItem read_set[MAX_SET_ITEMS];
+  // uint64_t n_writes;
+  // rtx::CALVIN::ReadSetItem write_set[MAX_SET_ITEMS];
+};
+
+struct calvin_header {
+  uint8_t node_id;
+  volatile uint8_t epoch_status;
+  uint64_t epoch_id;
+  volatile uint64_t batch_size; // the batch size
+  // union {
+    uint64_t chunk_size; // the number of calvin_requests in this rpc call
+    volatile uint64_t received_size;
+  // };
+} __attribute__ ((aligned (8)));
+
+class calvin_request_compare {
+public:
+  bool operator()(const calvin_request* lhs, 
+                  const calvin_request* rhs) {
+    return lhs->timestamp < rhs->timestamp;
+  }
+};
+
+#define CALVIN_EPOCH_READY 0
+#define CALVIN_EPOCH_DONE  1
 #endif
+
+#define MAX_VAL_LENGTH 128
+struct read_val_t {
+  uint32_t req_seq;
+  int read_or_write;
+  int index_in_set;
+  uint32_t len;
+  char value[MAX_VAL_LENGTH];
+  read_val_t(int req_seq, int rw, int index, uint32_t len, char* val) :
+    req_seq(req_seq),
+    read_or_write(rw),
+    index_in_set(index),
+    len(len) {
+      assert(len < MAX_VAL_LENGTH);
+      memcpy(value, val, len);
+    }
+  read_val_t(const read_val_t& copy) {
+    req_seq = copy.req_seq;
+    read_or_write = copy.read_or_write;
+    index_in_set = copy.index_in_set;
+    len = copy.len;
+    memcpy(value, copy.value, len);
+  }
+  read_val_t() {}
+};
+
+struct read_compact_val_t {
+  uint32_t len;
+  char value[MAX_VAL_LENGTH];
+};
 
 extern     RdmaCtrl *cm;
 
 extern __thread int *pending_counts_;
 
 #define RPC_REQ 0
+#define RPC_CALVIN_SCHEDULE 31
+#define RPC_CALVIN_EPOCH_STATUS 30
 
 namespace oltp {
 
@@ -74,18 +174,36 @@ extern View* my_view; // replication setting of the data
 typedef std::pair<bool, double> txn_result_t;
 
 /* Registerered Txn execution function */
+#ifdef CALVIN_TX
+typedef txn_result_t (*calvin_txn_fn_t)(BenchWorker *, calvin_request *, yield_func_t &yield);
+#else
 typedef txn_result_t (*txn_fn_t)(BenchWorker *,yield_func_t &yield);
+#endif
+
+typedef void (*txn_gensets_fn_t)(BenchWorker *, char*, yield_func_t &yield);
 struct workload_desc {
   workload_desc() {}
+#ifdef CALVIN_TX
+  workload_desc(const std::string &name, double frequency, calvin_txn_fn_t fn, txn_gensets_fn_t gen_sets_fn = NULL)
+      : name(name), frequency(frequency), fn(fn), gen_sets_fn(gen_sets_fn)
+#else
   workload_desc(const std::string &name, double frequency, txn_fn_t fn)
       : name(name), frequency(frequency), fn(fn)
+#endif
   {
     ALWAYS_ASSERT(frequency >= 0.0);
     ALWAYS_ASSERT(frequency <= 1.0);
   }
   std::string name;
   double frequency;
-  txn_fn_t fn;
+
+#ifdef CALVIN_TX
+  calvin_txn_fn_t fn;
+  txn_gensets_fn_t gen_sets_fn;
+#else
+  txn_fn_t fn;  
+#endif
+
   util::BreakdownTimer latency_timer; // calculate the latency for each TX
   Profile p; // per tx profile
 };
@@ -127,8 +245,16 @@ class BenchWorker : public RWorker {
   virtual void exit_handler();
   virtual void run(); // run -> call worker routine
   virtual void worker_routine(yield_func_t &yield);
-
   void req_rpc_handler(int id,int cid,char *msg,void *arg);
+
+#ifdef CALVIN_TX
+  void init_calvin();
+  void worker_routine_for_calvin(yield_func_t &yield);
+  void calvin_schedule_rpc_handler(int id,int cid,char *msg,void *arg);
+  void check_schedule_done(int cid);
+  void calvin_epoch_status_rpc_handler(int id, int cid, char *msg, void *arg);
+  bool check_epoch_done();
+#endif
 
   void change_ctx(int cor_id) {
     tx_ = txs_[cor_id];
@@ -211,7 +337,30 @@ class BenchWorker : public RWorker {
 #elif defined(MVCC_TX)
   rtx::MVCC *rtx_;
   rtx::MVCC *rtx_hook_ = NULL;
+#elif defined(CALVIN_TX)
+  rtx::CALVIN *rtx_;
+  rtx::CALVIN *rtx_hook_ = NULL;
+  std::vector<calvin_request*>* deterministic_requests;
+  bool* epoch_done_schedule;
+  std::set<int>* mach_received;
+
+  // the following data structures should be allocated using Rmalloc
+  // when using one-sided ops.
+#if ONE_SIDED_READ == 0
+  uint8_t** epoch_status_; // per-routine status
+  std::vector<char*>* req_buffers;     // per-routine buffers
+  char** send_buffers;
+#else
+  std::vector<char*>* req_buffers;
+  uint64_t** offsets_;
+#endif // ONE_SIDED_READ
 #endif
+  
+  //forwarded related structures are used by the CALVIN CLASS
+  std::map<uint64_t, read_val_t>* forwarded_values;
+  uint64_t* forward_offsets_;
+  char** forward_addresses;
+
   LAT_VARS(yield);
 
   /* For statistics counts */
@@ -224,6 +373,9 @@ class BenchWorker : public RWorker {
   size_t ntxn_remote_counts_;
   util::BreakdownTimer latency_timer_;
   CountVector<double> latencys_;
+
+  // Use a lot more QPs to emulate a larger cluster, if necessary
+#include "rtx/qp_selection_helper.h"
 
  private:
   bool initilized_;

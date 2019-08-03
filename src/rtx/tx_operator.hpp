@@ -21,6 +21,7 @@
 #define RTX_RENEW_LEASE_RPC_ID 10
 #define RTX_UPDATE_RPC_ID 9
 #define RTX_LOCK_READ_RPC_ID 14
+#define RTX_CALVIN_FORWARD_RPC_ID 19
 
 #endif
 
@@ -129,6 +130,8 @@ class TXOpBase {
    */
   void     start_batch_rpc_op(BatchOpCtrlBlock &ctrl);
 
+  void     add_mac(BatchOpCtrlBlock &ctrl, int mac);
+  
   template <typename REQ,typename... _Args> // batch req
   void     add_batch_entry(BatchOpCtrlBlock &ctrl,int pid,_Args&& ... args);
 
@@ -142,6 +145,10 @@ class TXOpBase {
  public:
   MemDB *db_       = NULL;
   int abort_cnt[40];
+
+  // some debug info
+  const static int DEBUG_CNT = 30;
+  int P[1024] = {0};
 
  protected:
   RWorker *worker_ = NULL;

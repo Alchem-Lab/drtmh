@@ -85,6 +85,27 @@ class TpccWorker : public TpccMixin, public BenchWorker {
   ~TpccWorker();
 
 #if ENABLE_TXN_API
+#ifdef CALVIN_TX
+#define DECLARE_GEN_RWSETS_FUNC(name) \
+  void name##_gen_rwsets(char* buf, yield_func_t &yield);
+
+  txn_result_t txn_new_order_new_api(calvin_request* req, yield_func_t &yield);
+  DECLARE_GEN_RWSETS_FUNC(txn_new_order_new_api)
+  txn_result_t txn_payment_api(calvin_request* req, yield_func_t &yield);
+  DECLARE_GEN_RWSETS_FUNC(txn_payment_api)
+  txn_result_t txn_delivery_api(calvin_request* req, yield_func_t &yield);
+  DECLARE_GEN_RWSETS_FUNC(txn_delivery_api)
+  txn_result_t txn_stock_level_api(calvin_request* req, yield_func_t &yield);
+  DECLARE_GEN_RWSETS_FUNC(txn_stock_level_api)  
+  txn_result_t txn_order_status_api(calvin_request* req, yield_func_t &yield);
+  DECLARE_GEN_RWSETS_FUNC(txn_order_status_api)
+  txn_result_t txn_super_stock_level_api(calvin_request* req, yield_func_t &yield);
+  DECLARE_GEN_RWSETS_FUNC(txn_super_stock_level_api)
+  txn_result_t txn_payment_naive_api(calvin_request* req, yield_func_t &yield);    // non speculative execution  
+  DECLARE_GEN_RWSETS_FUNC(txn_payment_naive_api)
+  txn_result_t txn_payment_naive1_api(calvin_request* req, yield_func_t &yield);   // + batching
+  DECLARE_GEN_RWSETS_FUNC(txn_payment_naive1_api)
+#else
   txn_result_t txn_new_order_new_api(yield_func_t &yield);
   txn_result_t txn_payment_api(yield_func_t &yield);
   txn_result_t txn_delivery_api(yield_func_t &yield);
@@ -93,6 +114,7 @@ class TpccWorker : public TpccMixin, public BenchWorker {
   txn_result_t txn_super_stock_level_api(yield_func_t &yield);
   txn_result_t txn_payment_naive_api(yield_func_t &yield);    // non speculative execution  
   txn_result_t txn_payment_naive1_api(yield_func_t &yield);   // + batching
+#endif
 #else
   txn_result_t txn_new_order(yield_func_t &yield);
   txn_result_t txn_new_order_new(yield_func_t &yield);
@@ -156,6 +178,128 @@ class TpccWorker : public TpccMixin, public BenchWorker {
 
     rtx_hook_->report_statics(one_second);
   }
+
+#ifdef CALVIN_TX
+
+  /* Wrapper for implementation of transaction */
+  static txn_result_t TxnNewOrder(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    //txn_result_t r = static_cast<TpccWorker *>(w)->txn_new_order(yield);
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_new_order_new_api(req, yield);
+#else
+    assert(false);
+#endif
+    return r;
+  }
+
+  static void TxnNewOrderGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    static_cast<TpccWorker *>(w)->txn_new_order_new_api_gen_rwsets(buf, yield);
+#else
+    assert(false);
+#endif
+  }
+
+  static txn_result_t TxnPayment(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+#if ENABLE_TXN_API
+#if NAIVE == 1
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_payment_naive_api(req, yield);
+#elif NAIVE == 2 || NAIVE == 3
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_payment_naive1_api(req, yield);
+#else
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_payment_api(req, yield);
+#endif
+#else
+    assert(false);
+#endif
+    return r;
+  }
+
+  static void TxnPaymentGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+#if ENABLE_TXN_API
+#if NAIVE == 1
+    static_cast<TpccWorker *>(w)->txn_payment_naive_api_gen_rwsets(buf, yield);
+#elif NAIVE == 2 || NAIVE == 3
+    static_cast<TpccWorker *>(w)->txn_payment_naive1_api_gen_rwsets(buf, yield);
+#else
+    static_cast<TpccWorker *>(w)->txn_payment_api_gen_rwsets(buf, yield);
+#endif
+#else
+    assert(false);
+#endif
+  }
+
+  static txn_result_t TxnDelivery(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_delivery_api(req, yield);    
+#else
+    assert(false);
+#endif
+    return r;
+  }
+
+  static void TxnDeliveryGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    // assert(false);
+    static_cast<TpccWorker *>(w)->txn_delivery_api_gen_rwsets(buf, yield);
+#else
+    assert(false);
+#endif
+  }
+
+  static txn_result_t TxnStockLevel(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_stock_level_api(req, yield);
+    //txn_result_t r = static_cast<TpccWorker *>(w)->txn_super_stock_level(yield);    
+#else
+    assert(false);
+#endif
+    return r;
+  }
+
+  static void TxnStockLevelGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    static_cast<TpccWorker *>(w)->txn_stock_level_api_gen_rwsets(buf, yield);
+#else
+    assert(false);
+#endif
+  }
+
+  static txn_result_t TxnSuperStockLevel(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_super_stock_level_api(req, yield);
+#else
+    assert(false); 
+#endif
+    return r;
+  }
+
+  static void TxnSuperStockLevelGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    static_cast<TpccWorker *>(w)->txn_super_stock_level_api_gen_rwsets(buf, yield);
+#else
+    assert(false);
+#endif
+  }
+
+  static txn_result_t TxnOrderStatus(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    txn_result_t r = static_cast<TpccWorker *>(w)->txn_order_status_api(req, yield);
+#else
+    assert(false);
+#endif
+    return r;
+  }
+
+  static void TxnOrderStatusGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+#if ENABLE_TXN_API
+    static_cast<TpccWorker *>(w)->txn_order_status_api_gen_rwsets(buf, yield);
+#else
+    assert(false);
+#endif
+  }
+
+#else
 
   /* Wrapper for implementation of transaction */
   static txn_result_t TxnNewOrder(BenchWorker *w,yield_func_t &yield) {
@@ -227,6 +371,8 @@ class TpccWorker : public TpccMixin, public BenchWorker {
 #endif
     return r;
   }
+
+#endif // CALVIN_TX
 };
 
 /* Loaders */

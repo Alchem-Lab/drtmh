@@ -134,6 +134,11 @@ void TpccWorker::thread_local_init() {
                                    cm,rdma_sched_,total_partition);
 #endif
     }
+#elif defined(CALVIN_TX)
+    if (txs_[i] == NULL) {
+      new_txs_[i] = new rtx::CALVIN(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                   cm,rdma_sched_,total_partition);
+    }
 #elif defined(SI_TX)
     txs_[i] = new DBSI(store_,worker_id_,rpc_,i);
 #elif defined(FARM)
@@ -640,7 +645,7 @@ txn_result_t TpccWorker::txn_delivery(yield_func_t &yield) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX) || defined(MVCC_TX)
+#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX) || defined(MVCC_TX) || defined(CALVIN_TX)
     DBTXIterator iter((DBTX *)tx_,NEWO);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -790,7 +795,7 @@ txn_result_t TpccWorker::txn_stock_level(yield_func_t &yield) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
     assert(false);
   }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX) || defined(MVCC_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX) || defined(MVCC_TX) || defined(CALVIN_TX)
   DBTXIterator iter((DBTX *)tx_,ORLI);
   if(tx_ != NULL) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -944,7 +949,7 @@ txn_result_t TpccWorker::txn_super_stock_level(yield_func_t &yield) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX) || defined(MVCC_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX) || defined(MVCC_TX) || defined(CALVIN_TX)
     DBTXIterator iter((DBTX *)tx_,ORLI);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -1056,7 +1061,7 @@ txn_result_t TpccWorker::txn_order_status(yield_func_t &yield) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
     assert(false);
   }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX) || defined(MVCC_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX)  || defined(SUNDIAL_TX) || defined(MVCC_TX) || defined(CALVIN_TX)
   DBTXIterator citer((DBTX *)tx_,CUST_INDEX,false);
   if(tx_ != NULL) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -1125,7 +1130,7 @@ txn_result_t TpccWorker::txn_order_status(yield_func_t &yield) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
     assert(false);
   }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX) || defined(MVCC_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX) || defined(MVCC_TX) || defined(CALVIN_TX)
   DBTXIterator iter((DBTX *)tx_,ORDER_INDEX);
   if(tx_ != NULL) {
     fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -1251,6 +1256,18 @@ workload_desc_vec_t TpccWorker::_get_workload() {
     m += g_txn_workload_mix[i];
   ALWAYS_ASSERT(m == 100);
 
+#ifdef CALVIN_TX
+  if (g_txn_workload_mix[0])
+    w.push_back(workload_desc("NewOrder", double(g_txn_workload_mix[0])/100.0, TxnNewOrder, TxnNewOrderGenRWSets));
+  if (g_txn_workload_mix[1])
+    w.push_back(workload_desc("Payment", double(g_txn_workload_mix[1])/100.0, TxnPayment, TxnPaymentGenRWSets));
+  if (g_txn_workload_mix[2])
+    w.push_back(workload_desc("Delivery", double(g_txn_workload_mix[2])/100.0, TxnDelivery, TxnDeliveryGenRWSets));
+  if (g_txn_workload_mix[3])
+    w.push_back(workload_desc("OrderStatus", double(g_txn_workload_mix[3])/100.0, TxnOrderStatus, TxnOrderStatusGenRWSets));
+  if (g_txn_workload_mix[4])
+    w.push_back(workload_desc("StockLevel", double(g_txn_workload_mix[4])/100.0, TxnStockLevel, TxnStockLevelGenRWSets));  
+#else
   if (g_txn_workload_mix[0])
     w.push_back(workload_desc("NewOrder", double(g_txn_workload_mix[0])/100.0, TxnNewOrder));
   if (g_txn_workload_mix[1])
@@ -1261,7 +1278,7 @@ workload_desc_vec_t TpccWorker::_get_workload() {
     w.push_back(workload_desc("OrderStatus", double(g_txn_workload_mix[3])/100.0, TxnOrderStatus));
   if (g_txn_workload_mix[4])
     w.push_back(workload_desc("StockLevel", double(g_txn_workload_mix[4])/100.0, TxnStockLevel));
-
+#endif
   return w;
 }
 
@@ -1280,7 +1297,7 @@ void TpccWorker::check_consistency() {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX) || defined(MVCC_TX)
+#elif defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX) || defined(MVCC_TX) || defined(CALVIN_TX)
     DBTXIterator iter((DBTX *)tx_,NEWO);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
@@ -1627,7 +1644,7 @@ txn_result_t TpccWorker::txn_payment_naive(yield_func_t &yield) {
       fprintf(stderr, "rtx_ should be used instead of tx_");
       assert(false);
     }
-#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX) || defined(MVCC_TX)
+#elif  defined(NOWAIT_TX) || defined(WAITDIE_TX) || defined(SUNDIAL_TX) || defined(MVCC_TX) || defined(CALVIN_TX)
     DBTXIterator iter((DBTX *)tx_,CUST_INDEX,false);
     if(tx_ != NULL) {
       fprintf(stderr, "rtx_ should be used instead of tx_");

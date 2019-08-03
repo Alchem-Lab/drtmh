@@ -56,7 +56,7 @@ bool bootstrap_ud_qps(RdmaCtrl *cm,int tid,int total,int dev_id,int port_idx,int
 }
 
 UDMsg::UDMsg(RdmaCtrl *cm,int thread_id,int total_threads,
-             int max_recv_num,msg_func_t fun,
+             uint64_t max_recv_num,msg_func_t fun,
              int dev_id,int port_idx,int send_qp_num)
     : cm_(cm),
       recv_qp_(cm->create_ud_qp(thread_id,dev_id,port_idx,RECV_QP_IDX)),
@@ -98,7 +98,7 @@ void UDMsg::init() {
   }
   //recv_buf_size_ = 512; // TODO!!
   // init recv relate data structures
-  for(int i = 0; i < max_recv_num_; i++) {
+  for(uint64_t i = 0; i < max_recv_num_; i++) {
     sge_[i].length = recv_buf_size_;
     //sge_[i].lkey   = recv_qp_->dev_->conn_buf_mr->lkey;
     sge_[i].addr = (uintptr_t)(Rmalloc(recv_buf_size_));
@@ -115,6 +115,7 @@ void UDMsg::init() {
 
     rr_[i].next    = (i < max_recv_num_ - 1) ?
                      &rr_[i + 1] : &rr_[0];
+    // fprintf(stdout, "rr %d inited.\n", i);
   }
 
   // init sender relate data structures
@@ -131,13 +132,14 @@ void UDMsg::init() {
   recv_head_ = 0;
 
   // post these recvs
+  // fprintf(stdout, "initial-post-recv %d\n", max_recv_num_);
   post_recvs(max_recv_num_);
   recv_qp_->inited_ = true;
 }
 
-inline void UDMsg::post_recvs(int recv_num) {
+inline void UDMsg::post_recvs(uint64_t recv_num) {
 
-  int tail   = recv_head_ + recv_num - 1;
+  uint64_t tail   = recv_head_ + recv_num - 1;
   if(tail >= max_recv_num_) {
     tail -= max_recv_num_;
   }
@@ -162,7 +164,7 @@ Qp::IOStatus UDMsg::send_to(int nid,char *msg,int len) {
 
 Qp::IOStatus UDMsg::send_to(int node_id,int tid,char *msg,int len) {
   //Qp::IOStatus UDMsg::send_to(int node_id,char *msg,int len) {
-
+  // fprintf(stdout, "sending using ud_msg.\n");
   Qp *send_qp = (*send_qps)[send_qp_idx_];
   int ret = (int) Qp::IO_SUCC;
   int key = _UD_ENCODE_ID(node_id,tid);
@@ -226,11 +228,26 @@ Qp::IOStatus UDMsg::broadcast_to(int *node_ids, int num_of_node, char *msg,int l
 
   send_qp_idx_ = (send_qp_idx_ + 1) % total_send_qps_;
 #endif
-  prepare_pending();
-  for(uint i = 0;i < num_of_node;++i) {
-    post_pending(node_ids[i],msg,len);
+  // fprintf(stdout, "broadcasting using ud_msg.\n");
+  if (len <= recv_buf_size_) {
+    prepare_pending();
+    for(uint i = 0;i < num_of_node;++i) {
+      post_pending(node_ids[i],msg,len);
+    }
+    flush_pending();
+  } else {
+    prepare_pending();
+    char* buf = msg;
+    while (buf-msg < len) {
+      uint sz = (msg+len)-buf < recv_buf_size_ ? 
+                                (msg+len)-buf : recv_buf_size_;
+      for (uint i = 0;i < num_of_node;++i) {
+        post_pending(node_ids[i], buf, sz);
+      }
+      buf += sz;
+    }
+    flush_pending();
   }
-  flush_pending();
   return Qp::IO_SUCC;
 }
 
@@ -368,6 +385,7 @@ void UDMsg::poll_comps(bool prepared) {
   idle_recv_num_ += poll_result;
   if(idle_recv_num_ > max_idle_recv_num_) {
     // re-post
+    // fprintf(stdout, "re-post-recv %d\n", idle_recv_num_);
     post_recvs(idle_recv_num_);
     idle_recv_num_ = 0;
   }

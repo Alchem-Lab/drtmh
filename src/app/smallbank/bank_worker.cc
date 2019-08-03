@@ -16,6 +16,7 @@
 #include "rtx/sundial_rdma.h"
 #include "rtx/mvcc_rdma.h"
 #include "rtx/waitdie_rdma.h"
+#include "rtx/calvin_rdma.h"
 
 #include <boost/bind.hpp>
 
@@ -470,6 +471,9 @@ void BankWorker::thread_local_init() {
 #elif defined(WAITDIE_TX)
     new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
+#elif defined(CALVIN_TX)
+    new_txs_[i] = new rtx::CALVIN(this,store_,rpc_,current_partition,worker_id_,i,-1,
+                                   cm,rdma_sched_,total_partition);
 #elif defined(FARM)
     txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
 #elif defined(SI_TX)
@@ -500,6 +504,29 @@ workload_desc_vec_t BankWorker::_get_workload() {
     m += g_txn_workload_mix[i];
   ALWAYS_ASSERT(m == 100);
 
+#ifdef CALVIN_TX
+  if(g_txn_workload_mix[0]) {
+    w.push_back(workload_desc("SendPayment", double(g_txn_workload_mix[0])/100.0, TxnSendPayment, TxnSendPaymentGenRWSets));
+  }
+  if(g_txn_workload_mix[1]) {
+    w.push_back(workload_desc("DepositChecking",double(g_txn_workload_mix[1])/100.0,TxnDepositChecking, TxnDepositCheckingGenRWSets));
+  }
+  if(g_txn_workload_mix[2]) {
+    w.push_back(workload_desc("Balance",double(g_txn_workload_mix[2])/100.0,TxnBalance, TxnBalanceGenRWSets));
+  }
+  if(g_txn_workload_mix[3]) {
+    w.push_back(workload_desc("Transact saving",double(g_txn_workload_mix[3])/100.0,TxnTransactSavings, TxnTransactSavingsGenRWSets));
+  }
+  if(g_txn_workload_mix[4]) {
+    w.push_back(workload_desc("Write check",double(g_txn_workload_mix[4])/100.0,TxnWriteCheck, TxnWriteCheckGenRWSets));
+  }
+  if(g_txn_workload_mix[5]) {
+    w.push_back(workload_desc("Txn amal",double(g_txn_workload_mix[5])/100.0,TxnAmal, TxnAmalGenRWSets));
+  }
+  if(g_txn_workload_mix[6]) {
+    w.push_back(workload_desc("YCSB",double(g_txn_workload_mix[6])/100.0,YCSB_Transaction, YCSB_Transaction_GenRWSets));
+  }
+#else
   if(g_txn_workload_mix[0]) {
     w.push_back(workload_desc("SendPayment", double(g_txn_workload_mix[0])/100.0, TxnSendPayment));
   }
@@ -521,6 +548,7 @@ workload_desc_vec_t BankWorker::_get_workload() {
   if(g_txn_workload_mix[6]) {
     w.push_back(workload_desc("YCSB",double(g_txn_workload_mix[6])/100.0,YCSB_Transaction));
   }
+#endif
   return w;
 }
 

@@ -44,43 +44,119 @@ extern int g_mico_dist_num;
 
 #if ENABLE_TXN_API
 
+#ifdef CALVIN_TX
+txn_result_t TpccWorker::txn_payment_api(calvin_request* req, yield_func_t &yield) {
+#else
 txn_result_t TpccWorker::txn_payment_api(yield_func_t &yield) {
-  assert(false); // not implemented yet
-  return txn_result_t(true,10);
-}
-
-txn_result_t TpccWorker::txn_delivery_api(yield_func_t &yield) {
-  assert(false); // not implemented yet
-  return txn_result_t(true,10);
-}
-
-txn_result_t TpccWorker::txn_stock_level_api(yield_func_t &yield) {
-  assert(false); // not implemented yet
-  return txn_result_t(true,10);
-}
-
-txn_result_t TpccWorker::txn_super_stock_level_api(yield_func_t &yield) {
-  assert(false); // not implemented yet
-  return txn_result_t(true,10);
-}
-
-txn_result_t TpccWorker::txn_order_status_api(yield_func_t &yield) {
-  assert(false); // not implemented yet
-  return txn_result_t(true,10);
-}
-
-
-txn_result_t TpccWorker::txn_payment_naive_api(yield_func_t &yield) {
-  assert(false); // not implemented yet
-  return txn_result_t(true,10);
-}
-
-txn_result_t TpccWorker::txn_payment_naive1_api(yield_func_t &yield) {
-  assert(false); // not implemented yet
-  return txn_result_t(true,10);
-}
-
 #endif
+  assert(false); // not implemented yet
+  return txn_result_t(true,10);
+}
+
+#ifdef CALVIN_TX
+void TpccWorker::txn_payment_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  assert(false); // not implemented yet
+  return;  
+}
+#endif
+
+#ifdef CALVIN_TX
+txn_result_t TpccWorker::txn_delivery_api(calvin_request* req, yield_func_t &yield) {
+#else
+txn_result_t TpccWorker::txn_delivery_api(yield_func_t &yield) {
+#endif
+  assert(false); // not implemented yet
+  return txn_result_t(true,10);
+}
+
+#ifdef CALVIN_TX
+void TpccWorker::txn_delivery_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  assert(false); // not implemented yet
+  return;  
+}
+#endif
+
+#ifdef CALVIN_TX
+txn_result_t TpccWorker::txn_stock_level_api(calvin_request* req, yield_func_t &yield) {
+#else
+txn_result_t TpccWorker::txn_stock_level_api(yield_func_t &yield) {
+#endif
+  assert(false); // not implemented yet
+  return txn_result_t(true,10);
+}
+
+#ifdef CALVIN_TX
+void TpccWorker::txn_stock_level_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  assert(false); // not implemented yet
+  return;  
+}
+#endif
+
+#ifdef CALVIN_TX
+txn_result_t TpccWorker::txn_super_stock_level_api(calvin_request* req, yield_func_t &yield) {
+#else
+txn_result_t TpccWorker::txn_super_stock_level_api(yield_func_t &yield) {
+#endif
+  assert(false); // not implemented yet
+  return txn_result_t(true,10);
+}
+
+#ifdef CALVIN_TX
+void TpccWorker::txn_super_stock_level_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  assert(false); // not implemented yet
+  return;  
+}
+#endif
+
+#ifdef CALVIN_TX
+txn_result_t TpccWorker::txn_order_status_api(calvin_request* req, yield_func_t &yield) {
+#else
+txn_result_t TpccWorker::txn_order_status_api(yield_func_t &yield) {
+#endif
+  assert(false); // not implemented yet
+  return txn_result_t(true,10);
+}
+
+#ifdef CALVIN_TX
+void TpccWorker::txn_order_status_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  assert(false); // not implemented yet
+  return;  
+}
+#endif
+
+#ifdef CALVIN_TX
+txn_result_t TpccWorker::txn_payment_naive_api(calvin_request* req, yield_func_t &yield) {
+#else
+txn_result_t TpccWorker::txn_payment_naive_api(yield_func_t &yield) {
+#endif
+  assert(false); // not implemented yet
+  return txn_result_t(true,10);
+}
+
+#ifdef CALVIN_TX
+void TpccWorker::txn_payment_naive_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  assert(false); // not implemented yet
+  return;  
+}
+#endif
+
+#ifdef CALVIN_TX
+txn_result_t TpccWorker::txn_payment_naive1_api(calvin_request* req, yield_func_t &yield) {
+#else
+txn_result_t TpccWorker::txn_payment_naive1_api(yield_func_t &yield) {
+#endif
+  assert(false); // not implemented yet
+  return txn_result_t(true,10);
+}
+
+#ifdef CALVIN_TX
+void TpccWorker::txn_payment_naive1_api_gen_rwsets(char* buf, yield_func_t &yield) {
+  assert(false); // not implemented yet
+  return;  
+}
+#endif
+
+#endif // ENABLE_TXN_API
 /* End namespace tpcc */
 }
 /* End namespace nocc framework */
