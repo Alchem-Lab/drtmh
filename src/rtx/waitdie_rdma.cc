@@ -97,7 +97,8 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
         worker_->indirect_yield(yield);
 
         if(h->lock != 0) {
-          if(lock_content < h->lock) {
+          //if(lock_content < h->lock) {
+          if(false) { // nowait
             worker_->yield_next(yield);
             // old_state = h->lock;
             continue;
@@ -504,6 +505,7 @@ void WAITDIE::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
           volatile uint64_t l = node->lock;
           // if(l & 0x1 == W_LOCKED) {
           if(l != 0) {
+            //if (false) { // nowait
             if (R_LEASE(item->txn_starting_timestamp) < l) {
               // wait for the lock
               lock_waiter_t waiter = {

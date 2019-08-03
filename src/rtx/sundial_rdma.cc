@@ -468,9 +468,11 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
     if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
+      //LOG(3) << "rpc recv success" << txn_start_time << ' ' << (*it).key;
       return true;
     }
     else if (resp_lock_status == LOCK_FAIL_MAGIC){
+      //LOG(3) << "rpc recv fail" << txn_start_time << ' ' << (*it).key;
       return false;
     }
     assert(false);
@@ -546,6 +548,7 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
         goto END;
 #else
         if(item->timestamp < l) {
+        //if(false) {
           lock_waiter_t waiter = {
               .type = SUNDIAL_REQ_LOCK_READ,
               .pid = id,
@@ -556,11 +559,16 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
               .db = db_,
             };
           global_lock_manager->add_to_waitlist(&node->lock, waiter);
+          //LOG(3) << "add to wait" << l << ' ' << item->key;
           goto NO_REPLY;  
         } 
+        else if(item->timestamp == l) {
+          assert(false);
+        }
         else {
           res = LOCK_FAIL_MAGIC;
           abort_cnt[36]++;
+          //LOG(3) << item->timestamp << ' ' << l << ' ' << item->key;
           goto END;
         }
 #endif
@@ -571,6 +579,7 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
           continue;
         }
         else {
+          //LOG(3) << "lock " << item->timestamp << ' ' << item->key;
           volatile uint64_t *lockptr = &(node->lock);
           assert((*lockptr) == item->timestamp);
           global_lock_manager->prepare_buf(reply_msg, item, db_);
@@ -637,7 +646,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
     auto& item = write_set_[i];
     if(item.pid != node_id_) { // remote case
     // if(item.pid != response_node_) { // remote case
-      // LOG(3) << "releasing" << (int)(*it).pid << ' ' << (int)(*it).tableid << ' ' << (int)(*it).key;
+       //LOG(3) << "rpc releasing"  << (item).key;
       add_batch_entry<RTXSundialUnlockItem>(write_batch_helper_, item.pid,
                                    /*init RTXSundialUnlockItem */
                                    item.pid,item.key,item.tableid);
@@ -669,7 +678,9 @@ void SUNDIAL::release_rpc_handler(int id,int cid,char *msg,void *arg) {
     assert(node != NULL);
     volatile uint64_t *lockptr = &(node->lock);
     volatile uint64_t l = node->lock;
-    __sync_bool_compare_and_swap(lockptr, l, 0); // TODO
+    node->lock = 0;
+    //LOG(3) << "release " << l << item->key;
+    //__sync_bool_compare_and_swap(lockptr, l, 0); // TODO
   }
   char* reply_msg = rpc_->get_reply_buf();
   rpc_->send_reply(reply_msg,0,id,cid); // a dummy reply

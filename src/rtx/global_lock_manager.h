@@ -65,15 +65,17 @@ public:
 							}
 							else {
 								// LOG(3) << "dengdao suo";
+                                res = LOCK_SUCCESS_MAGIC;
 								goto SUCCESS;	
 							}
 						}
 						else if(my_ts < l) {
-							// goon waiting
+							// go on waiting
 							goto NEXT_ITEM;
 						}
 						else {
 							// LOG(3) << "dengbudao suo";
+                            //LOG(3) << my_ts << ' ' << l;
 							res = LOCK_FAIL_MAGIC;
 							goto SUCCESS;
 						}
@@ -86,12 +88,14 @@ public:
 		    		volatile uint64_t l = *lockptr;
 		    		if(l == 0) {
 		    			if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, first_waiter.txn_start_time))){
-							LOG(3) << "fail change lock";
+							//LOG(3) << "fail change lock";
 		    				continue;
 						}
 		    			else {
 		    				prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
 		    				more = first_waiter.item.len + sizeof(SundialResponse);
+                            //LOG(3) << "wait lock" << first_waiter.txn_start_time << ' ' << first_waiter.item.key;
+                            res = LOCK_SUCCESS_MAGIC;
 		    				goto SUCCESS;
 		    			}
 		    			goto NEXT_ITEM;
@@ -101,6 +105,7 @@ public:
 		    		}
 		    		else {
 		    			res = LOCK_FAIL_MAGIC;
+                        //LOG(3) << "wait fail"<<first_waiter.txn_start_time << ' ' << l;
 		    			goto SUCCESS;
 		    		}
 		    	}

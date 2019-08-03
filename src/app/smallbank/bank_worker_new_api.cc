@@ -60,8 +60,8 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   if(!rtx_->prepare(yield))
       return txn_result_t(false, 73);
 #endif
-  // int dummy_ret = rtx_->dummy_work(100000, indexes[3]); 
-  // LOG(3) << dummy_ret;
+  int dummy_ret = rtx_->dummy_work(10000, indexes[3]); 
+  LOG(3) << dummy_ret;
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret, 73);
 }
@@ -92,7 +92,6 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   c0 = (checking::value*)rtx_->load_write(0,sizeof(checking::value),yield);
   c1 = (checking::value*)rtx_->load_write(1,sizeof(checking::value),yield);
   // LOG(3) << c0->c_balance << ' ' << c1->c_balance;
-
 
   // transactional logic
   if(c0->c_balance < amount) {
