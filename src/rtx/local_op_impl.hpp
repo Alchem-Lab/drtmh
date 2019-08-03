@@ -112,7 +112,11 @@ MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta, ui
   node->seq = old_seq + 2;
   if(commit_id == -1) {
     asm volatile("" ::: "memory");
+    #if OCC_TX
     node->lock = 0;
+    #else 
+    *(uint64_t*)(node->value) = 0;
+    #endif
   }
   return node;
 }

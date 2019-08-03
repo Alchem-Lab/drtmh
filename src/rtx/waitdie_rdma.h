@@ -579,7 +579,7 @@ public:
     #if USE_DSLR
       dslr_lock_manager->init();
     #endif
-    txn_start_time = rwlock::get_now();
+    txn_start_time = (rwlock::get_now()<<10) + response_node_ * 80 + worker_id_*10 + cor_id_ + 1;
     // the txn_end_time is approximated using the LEASE_TIME
     txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }
