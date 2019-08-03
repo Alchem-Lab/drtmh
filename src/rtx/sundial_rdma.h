@@ -258,8 +258,8 @@ public:
     auto& item = read_set_[idx];
     //if(false) {
 #if ONE_SIDED_READ
-    // if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
-    if(false) {
+    if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
+    //if(false) {
 #else
     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
 #endif

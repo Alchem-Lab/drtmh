@@ -508,8 +508,8 @@ void WAITDIE::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
           volatile uint64_t l = header->lock;
           // if(l & 0x1 == W_LOCKED) {
           if(l != 0) {
-            //if (false) { // nowait
-            if (R_LEASE(item->txn_starting_timestamp) < l) {
+            if (false) { // nowait
+            //if (R_LEASE(item->txn_starting_timestamp) < l) {
               // wait for the lock
               lock_waiter_t waiter = {
                 .type = item->type,

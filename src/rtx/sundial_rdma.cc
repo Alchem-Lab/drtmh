@@ -547,7 +547,7 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
         goto END;
 #else
         if(item->timestamp < l) {
-        // if(false) {
+        //if(false) {
           lock_waiter_t waiter = {
               .type = SUNDIAL_REQ_LOCK_READ,
               .pid = id,
@@ -593,6 +593,7 @@ NEXT_ITEM:
 
 END:
   *((uint8_t *)reply_msg) = res;
+  //nodelen = 0; // DEBUG
   rpc_->send_reply(reply_msg,sizeof(uint8_t) + nodelen,id,cid);
 NO_REPLY:
   ;

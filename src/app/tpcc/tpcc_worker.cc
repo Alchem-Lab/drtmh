@@ -87,10 +87,10 @@ void TpccWorker::thread_local_init() {
       new_txs_[i] = new rtx::OCCR(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #else
-      new_txs_[i] = new rtx::OCC(this,store_,rpc_,current_partition,i,current_partition);
+      new_txs_[i] = new rtx::OCC(this,store_,rpc_,current_partition,i,-1);
 #endif
 #else
-      new_txs_[i] = new rtx::OCCFast(this,store_,rpc_,current_partition,i,current_partition);
+      new_txs_[i] = new rtx::OCCFast(this,store_,rpc_,current_partition,i,-1);
 #endif
       new_txs_[i]->set_logger(new_logger_);
     }
@@ -117,10 +117,10 @@ void TpccWorker::thread_local_init() {
 #elif defined(MVCC_TX)
     if(txs_[i]  == NULL) {    
 #if ONE_SIDED_READ
-      new_txs_[i] = new rtx::MVCC(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+      new_txs_[i] = new rtx::MVCC(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition); 
 #else
-      new_txs_[i] = new rtx::MVCC(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+      new_txs_[i] = new rtx::MVCC(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
 #endif
     }
