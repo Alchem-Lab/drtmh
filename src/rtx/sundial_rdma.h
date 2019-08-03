@@ -68,7 +68,7 @@ protected:
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
-    START(temp);
+    START(read_lat);
     uint64_t off = 0;
     if(pid != node_id_) {
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
@@ -98,7 +98,7 @@ protected:
       read_set_.back().value = value;
     }
     commit_id_ = std::max(commit_id_, read_set_.back().wts);
-    END(temp);
+    END(read_lat);
 #else
     if(!try_read_rpc(index, yield)) {
       // abort
