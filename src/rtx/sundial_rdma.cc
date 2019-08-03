@@ -11,12 +11,12 @@ bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
   START(commit);
   for(auto& item : write_set_){
     if(item.pid != node_id_) {
-      RdmaValHeader *node = (RdmaValHeader*)(item.data_ptr - sizeof(RdmaValHeader));
+      RdmaValHeader *header = (RdmaValHeader*)(item.data_ptr - sizeof(RdmaValHeader));
       uint64_t newlease = (uint64_t)commit_id_ + (((uint64_t)(commit_id_)) << 32);
 #ifdef SUNDIAL_DEBUG
       LOG(3) << "write back new lease " << commit_id_;
 #endif
-      node->seq = newlease;
+      header->seq = newlease;
       Qp *qp = get_qp(item.pid);
       assert(qp != NULL);
       req.set_write_meta(item.off + sizeof(RdmaValHeader) - sizeof(uint64_t),
@@ -67,8 +67,9 @@ bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
     else { // local
       auto node = inplace_write_op(item.tableid, item.key, item.data_ptr, item.len, commit_id_);
       assert(node != NULL);
-      uint64_t l = node->lock;
-      volatile uint64_t *lockptr = &(node->lock);
+      RdmaValHeader* header = (RdmaValHeader*)node->value;
+      uint64_t l = header->lock;
+      volatile uint64_t *lockptr = &(header->lock);
       assert(__sync_bool_compare_and_swap(lockptr, l, 0)); // TODO
     }
   }
@@ -91,8 +92,9 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
     assert(node != NULL);
 
     while(true){
-      volatile uint64_t l = node->lock;
-      volatile uint64_t *lockptr = &(node->lock);
+      RdmaValHeader* header = (RdmaValHeader*)node->value;
+      volatile uint64_t l = header->lock;
+      volatile uint64_t *lockptr = &(header->lock);
       if(l == 0) {
         LOG(3) << "already unlocked!";
         break;
@@ -215,36 +217,28 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
   uint64_t l = h->lock;
   uint64_t tss = h->seq;
 #else
-  uint64_t l = node->lock;
-  uint64_t tss = node->read_lock;
+  // uint64_t l = node->lock;
+  // uint64_t tss = node->read_lock;
+  RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value));
+  uint64_t l = h->lock;
+  uint64_t tss = h->seq;
 #endif
   uint32_t node_wts = WTS(tss);
   uint32_t node_rts = RTS(tss);
   if(wts != node_wts || (commit_id > node_rts && l != 0)) { // !!
-    // LOG(3) << "no renew " << wts << ' ' << node_wts << ' ' << commit_id << ' ' << node_rts << ' '
-    //   << (int)(WLOCKTS(node->lock));
-#ifdef SUNDIAL_DEBUG
-    LOG(3) << "not success renew lease " << node_rts << ' ' << commit_id;
-#endif
     return false;
   }
   else {
     if(node_rts < commit_id) {
-#ifdef SUNDIAL_DEBUG
-      LOG(3) << "success renew lease " << node_rts << ' ' << commit_id;
-#endif
       uint64_t newl = tss & 0xffffffff00000000;
       newl += commit_id;
-#if ONE_SIDED_READ
+// #if ONE_SIDED_READ
       h->seq = newl;
-#else
-      node->read_lock = newl;
-#endif
+// #else
+      // node->read_lock = newl;
+// #endif
     }
     else{
-#ifdef SUNDIAL_DEBUG
-      LOG(3) << "nosu renew lease "<< node_rts << ' ' << commit_id << ' ' << (int)tss;
-#endif
     }
     return true;
   }
@@ -322,14 +316,9 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
     assert(false);
   }
   else {
-    // atomic?
-    // it->node->lock += READLOCKADDONE;
-    // get the header(wts ,rts) and the real value
     global_lock_manager->prepare_buf(reply_buf_, (*it).tableid, (*it).key,
       (*it).len, db_);
     return true;
-    // atomic?
-    // it->node->lock -= READLOCKADDONE;
   }
   END(read_lat);
 }
@@ -350,10 +339,8 @@ void SUNDIAL::read_rpc_handler(int id,int cid,char *msg,void *arg) {
     if(item->pid != response_node_)
       continue;
 
-    // node->lock += READLOCKADDONE;
     global_lock_manager->prepare_buf(reply_msg, item, db_);
     nodelen = item->len + sizeof(SundialResponse);
-    // node->lock -= READLOCKADDONE;
     goto NEXT_ITEM;
   }
 NEXT_ITEM:
@@ -487,10 +474,12 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
     }
     assert(false);
   } else {
-    if(it->node == NULL)
+    if(it->node == NULL){
       it->node = local_lookup_op(it->tableid, it->key);
+    }
+    RdmaValHeader* header = (RdmaValHeader*)((char*)(it->node->value));
     while (true) {
-      volatile uint64_t l = it->node->lock;
+      volatile uint64_t l = header->lock;
 #ifdef SUNDIAL_NO_LOCK
       if(false){ // debug
 #else
@@ -511,7 +500,7 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
 #endif
       }
       else {
-        volatile uint64_t *lockptr = &(it->node->lock);
+        volatile uint64_t *lockptr = &(header->lock);
         if( unlikely(!__sync_bool_compare_and_swap(lockptr, 0, txn_start_time)))
           continue;
         else {
@@ -543,9 +532,9 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
       continue;
     node = local_lookup_op(item->tableid, item->key);
     assert(node != NULL && node->value != NULL);
-
+    RdmaValHeader* header = (RdmaValHeader*)((char*)(node->value));
     while(true) {
-      volatile uint64_t l = node->lock;
+      volatile uint64_t l = header->lock;
 #ifdef SUNDIAL_NO_LOCK
       if(false){ // debug
 #else
@@ -558,7 +547,7 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
         goto END;
 #else
         if(item->timestamp < l) {
-        //if(false) {
+        // if(false) {
           lock_waiter_t waiter = {
               .type = SUNDIAL_REQ_LOCK_READ,
               .pid = id,
@@ -568,7 +557,7 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
               .item = *item,
               .db = db_,
             };
-          global_lock_manager->add_to_waitlist(&node->lock, waiter);
+          global_lock_manager->add_to_waitlist(&header->lock, waiter);
           //LOG(3) << "add to wait" << l << ' ' << item->key;
           goto NO_REPLY;  
         } 
@@ -582,15 +571,15 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
           goto END;
         }
 #endif
-      } 
+      }
       else {
-        volatile uint64_t *lockptr = &(node->lock);
+        volatile uint64_t *lockptr = &(header->lock);
         if( unlikely(!__sync_bool_compare_and_swap(lockptr, 0, item->timestamp))) { // locked
           continue;
         }
         else {
           //LOG(3) << "lock " << item->timestamp << ' ' << item->key;
-          volatile uint64_t *lockptr = &(node->lock);
+          volatile uint64_t *lockptr = &(header->lock);
           assert((*lockptr) == item->timestamp);
           global_lock_manager->prepare_buf(reply_msg, item, db_);
           nodelen = item->len + sizeof(SundialResponse);
@@ -688,9 +677,10 @@ void SUNDIAL::release_rpc_handler(int id,int cid,char *msg,void *arg) {
       continue;
     auto node = local_lookup_op(item->tableid, item->key);
     assert(node != NULL);
-    volatile uint64_t *lockptr = &(node->lock);
-    volatile uint64_t l = node->lock;
-    node->lock = 0;
+    RdmaValHeader* header = (RdmaValHeader*)node->value;
+    // volatile uint64_t *lockptr = &(header->lock);
+    volatile uint64_t l = header->lock;
+    header->lock = 0;
     //LOG(3) << "release " << l << item->key;
     //__sync_bool_compare_and_swap(lockptr, l, 0); // TODO
   }

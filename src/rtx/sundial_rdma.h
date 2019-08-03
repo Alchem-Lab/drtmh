@@ -131,9 +131,7 @@ protected:
       uint64_t off = 0;
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // LOG(3) << "before get off, key " << (int)key;
-      START(log);
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader), false);
-      END(log);
       // LOG(3) << "after get off";
       RdmaValHeader *header = (RdmaValHeader*)data_ptr;
       // auto seq = header->seq;
@@ -149,14 +147,25 @@ protected:
       char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
       write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
       write_set_.back().value = (char*)(node->value);
-      // memcpy(data_ptr, (char*)value, sizeof(RdmaValHeader) + len);
     }
+#if ONE_SIDED_READ == 2
+    if(!try_lock_read_rpc(index, yield)) {
+      release_reads(yield);
+      release_writes(yield, false);
+      return -1;
+    }
+    process_received_data(reply_buf_, write_set_.back(), true);
+#elif ONE_SIDED_READ == 1
     if(!try_lock_read_rdma(index, yield)) {
       // abort
       release_reads(yield);
       release_writes(yield, false);
       return -1;
     }
+#else
+    assert(false);
+#endif // end HYBRID
+
 #else
     if(!try_lock_read_rpc(index, yield)) {
       // abort
