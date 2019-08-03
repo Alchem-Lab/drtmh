@@ -70,6 +70,16 @@ target_compile_options(noccwaitdie PRIVATE "-DWAITDIE_TX")
 add_executable(noccsundial ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsundial PRIVATE "-DSUNDIAL_TX")
 
+add_executable(noccsundial-rpc ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccsundial-rpc PRIVATE "-DSUNDIAL_TX")
+
+add_executable(noccsundial-onesided ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccsundial-onesided PRIVATE "-DSUNDIAL_TX")
+
+add_executable(noccsundial-hybrid ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccsundial-hybrid PRIVATE "-DSUNDIAL_TX")
+
+
 add_executable(noccmvcc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccmvcc PRIVATE "-DMVCC_TX")
 
@@ -96,7 +106,7 @@ include(cmake/Dependencies.cmake)
 #
 # Configure binary linking
 #
-set( apps noccrad noccocc noccsi noccfarm noccnowait noccsundial noccmvcc noccwaitdie nn nr )
+set( apps noccrad noccocc noccsi noccfarm noccnowait noccsundial-rpc noccsundial-onesided noccsundial-hybrid noccsundial noccmvcc noccwaitdie nn nr )
 foreach( prog ${apps} )
   if( LINK_STATIC_LIB )
     target_link_libraries( ${prog}
@@ -124,6 +134,9 @@ install(TARGETS noccsi   	DESTINATION scripts)
 install(TARGETS noccnowait 	DESTINATION scripts)
 install(TARGETS noccwaitdie   	DESTINATION scripts)
 install(TARGETS noccsundial   	DESTINATION scripts)
+install(TARGETS noccsundial-rpc   	DESTINATION scripts)
+install(TARGETS noccsundial-onesided   	DESTINATION scripts)
+install(TARGETS noccsundial-hybrid   	DESTINATION scripts)
 install(TARGETS noccmvcc     DESTINATION scripts)
 
 ## for tests
