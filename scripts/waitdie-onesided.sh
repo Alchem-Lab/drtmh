@@ -27,7 +27,13 @@ if [ x"$4" != "x" ]; then
 	COROUTINES=$4
 fi
 
-echo "running $WL with $THREADS*$COROUTINES..."
-echo "./noccwaitdie --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>tmp/drtmh-noccwaitdie-$WL-2-ONESIDED.log_$1 2>&1"
+CC="noccwaitdie"
+OUT="out/drtmh-$CC-$WL-2-onesided.log"
 
-./noccwaitdie --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>tmp/drtmh-noccwaitdie-$WL-2-ONESIDED.log_$1 2>&1
+echo "running $WL with $THREADS*$COROUTINES..."
+echo "./$CC --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>${OUT}_$1 2>&1"
+./$CC --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>${OUT}_$1 2>&1
+
+if [ x"$1" == x"0" ]; then
+    cp ${OUT}_0 $OUT
+fi

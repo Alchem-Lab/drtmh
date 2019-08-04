@@ -12,14 +12,13 @@ import subprocess
 default_out_path = 'out'
 default_plot_path = 'plot'
 
-ccalgs = ['noccocc', 'noccnowait', 'noccwaitdie', 'noccmvcc', 'nocccalvin', 'noccmaat', 'noccsundial']
-shortcc = {'noccocc':'occ', 'noccnowait':'nowait', 'noccwaitdie':'waitdie', 'noccmvcc':'mvcc', 'nocccalvin':'calvin', 'noccmaat':'maat', 'noccsundial':'sundial'}
-versions = ['RPC','ONESIDED']
-apps = ['bank', 'tpcc']
+ccalgs = ['noccocc', 'noccnowait', 'noccwaitdie', 'noccmvcc', 'nocccalvin',  'noccsundial']
+shortcc = {'noccocc':'occ', 'noccnowait':'nowait', 'noccwaitdie':'waitdie', 'noccmvcc':'mvcc', 'nocccalvin':'calvin',  'noccsundial':'sundial'}
+versions = ['rpc','onesided', 'hybrid']
+apps = ['bank', 'ycsb', 'tpcc']
 
 mac_nums = [2,4]
 threads = 8
-coroutines = 10
 
 def plot_using_data(out_path, plot_path):
     if os.path.isdir(out_path) == False:
@@ -30,13 +29,13 @@ def plot_using_data(out_path, plot_path):
         os.system("mkdir -p " + plot_path)
 
     plt.clf()
-    plt.figure(figsize=(6,6))
+    plt.figure(figsize=(9,9))
 
     cc_outs=[]
     for wl in range(len(apps)):
         for idx, server_cnt in enumerate(mac_nums):
             j = wl*len(mac_nums)+idx
-            ax = plt.subplot(2, 2, j+1)
+            ax = plt.subplot(3, 2, j+1)
 
             cc_outs.append([])
             for version in versions:
@@ -75,7 +74,7 @@ def plot_using_data(out_path, plot_path):
             ax.yaxis.get_offset_text().set_size(2)
             ax.yaxis.set_ticks_position('left')
 
-    plt.legend((rects_list[0][0], rects_list[1][0]), versions, fontsize=6, bbox_to_anchor=(-1.2, -0.2, 2, .06), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+    plt.legend((rects_list[0][0], rects_list[1][0], rects_list[2][0]), versions, fontsize=6, bbox_to_anchor=(-1.2, -0.2, 2, .06), loc=3, ncol=3, mode="expand", borderaxespad=0.)
     plt.savefig(plot_path + '/' + 'cmp_tput_rpc_onesided' + '.pdf', bbox_inches='tight')
 
 if len(sys.argv) < 2:
