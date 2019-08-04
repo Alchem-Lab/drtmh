@@ -439,12 +439,14 @@ public:
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
       // do actual reads here
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
 #endif
@@ -468,12 +470,14 @@ public:
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
       // do actual reads here
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
 #endif
@@ -518,12 +522,14 @@ public:
        && set[idx].pid != node_id_) {
 
       // do actual reads here
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
 

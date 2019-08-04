@@ -120,6 +120,7 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       }
     }
     else { //local access
+      assert(false);
       if(unlikely(!local_try_lock_op(it->node,
                                      R_LEASE(txn_start_time) + 1))){
         #if !NO_ABORT
@@ -135,6 +136,7 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
 
 void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
   // can only work with lock_w_rdma
+  START(release_write);
   uint64_t lock_content = R_LEASE(txn_start_time);
 
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
@@ -151,15 +153,18 @@ void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
       else {
         // LOG(3) << header->lock;
       }
-    } else {
+    } 
+    else {
       while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
     } // check pid
   }   // for
   worker_->indirect_yield(yield);
+  END(release_write);
   return;
 }
 
 void WAITDIE::release_writes_w_rdma(yield_func_t &yield) {
+  START(release_write);
   uint64_t lock_content =  R_LEASE(txn_start_time) + 1;
 
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
@@ -176,11 +181,13 @@ void WAITDIE::release_writes_w_rdma(yield_func_t &yield) {
       else {
         // LOG(3) << header->lock;
       }
-    } else {
+    } 
+    else {
       while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
     } // check pid
   }   // for
   worker_->indirect_yield(yield);
+  END(release_write);
   return;
 }
 
@@ -253,36 +260,34 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
     else {
       assert(false);
     }
-
-  } else {
-      while (true) {
-        RdmaValHeader* header = (RdmaValHeader*)it->node->value;
-        volatile uint64_t l = header->lock;
-        if(l & 0x1 == W_LOCKED) {
-          if (txn_start_time < START_TIME(l))
-            //need some random backoff?
-            continue;
-          else {
-            END(lock);
-            return false;
-          }
-        } else {
-          if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
-            // clear expired lease (optimization)
-            volatile uint64_t *lockptr = &(header->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         R_LOCKED_WORD(txn_start_time, rwlock::LEASE_TIME))))
-              continue;
-            else {
-              END(lock);
-              return true;
-            }
-          } else { //read locked: not conflict
-            END(lock);
-            return true;
-          }
+  }
+  else {
+    while (true) {
+      RdmaValHeader* header = (RdmaValHeader*)it->node->value;
+      volatile uint64_t l = header->lock;
+      if(l != 0) {
+        if (R_LEASE(txn_start_time) < l){
+        // if(false) { // nowait
+          continue;
+        }
+        else {
+          END(lock);
+          abort_cnt[27]++;
+          return false;
         }
       }
+      else {
+        volatile uint64_t* lockptr = &(header->lock);
+        if(unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                R_LEASE(txn_start_time)))) {
+          continue;
+        }
+        else {
+          END(lock);
+          return true;
+        }
+      }
+    }
   }
 
   assert(false);
@@ -317,42 +322,35 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
       assert(false);  
     }
   } else {
-      while(true) {
-        RdmaValHeader* header = (RdmaValHeader*)it->node->value;
-        volatile uint64_t l = header->lock;
-        if(l & 0x1 == W_LOCKED) {
-          if (txn_start_time < START_TIME(l))
-            //need some random backoff?
-            continue;
-          else {
-            END(lock);
-            return false;
-          }
-        } else {
-          if (EXPIRED(START_TIME(l), LEASE_DURATION(l))) {
-            // clear expired lease (optimization)
-            volatile uint64_t *lockptr = &(header->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         W_LOCKED_WORD(txn_start_time, response_node_))))
-              continue;
-            else {
-              END(lock);
-              return true;
-            }
-          } else { //read locked
-            if (txn_start_time < START_TIME(l))
-              //need some random backoff?
-              continue;
-            else {
-              END(lock);
-              return false;
-            }
-          }
+    while (true) {
+      RdmaValHeader* header = (RdmaValHeader*)it->node->value;
+      volatile uint64_t l = header->lock;
+      if(l != 0) {
+        if (R_LEASE(txn_start_time) < l){
+        // if(false) { // nowait
+          continue;
+        }
+        else {
+          END(lock);
+          abort_cnt[28]++;
+          return false;
         }
       }
+      else {
+        volatile uint64_t* lockptr = &(header->lock);
+        if(unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                R_LEASE(txn_start_time) + 1))) {
+          continue;
+        }
+        else {
+          END(lock);
+          return true;
+        }
+      }
+    }
   }
 
-  worker_->indirect_yield(yield);
+  // worker_->indirect_yield(yield);
   END(lock);
 
   // get the response
@@ -360,6 +358,7 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
 
 void WAITDIE::release_reads(yield_func_t &yield, bool release_all) {
   using namespace rwlock_4_waitdie;
+  START(release_write);
   int num = read_set_.size();
   if(!release_all) {
     num -= 1;
@@ -378,10 +377,12 @@ void WAITDIE::release_reads(yield_func_t &yield, bool release_all) {
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   worker_->indirect_yield(yield);
+  END(release_write);
 }
 
 void WAITDIE::release_writes(yield_func_t &yield, bool release_all) {
   using namespace rwlock_4_waitdie;
+  START(release_write);
   int num = write_set_.size();
   if(!release_all) {
     num -= 1;
@@ -399,10 +400,12 @@ void WAITDIE::release_writes(yield_func_t &yield, bool release_all) {
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   worker_->indirect_yield(yield);
+  END(release_write);
 }
 
 
 void WAITDIE::write_back(yield_func_t &yield) {
+  START(commit);
   start_batch_rpc_op(write_batch_helper_);
   
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
@@ -422,6 +425,7 @@ void WAITDIE::write_back(yield_func_t &yield) {
 
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID);
   worker_->indirect_yield(yield);
+  END(commit);
 }
 
 

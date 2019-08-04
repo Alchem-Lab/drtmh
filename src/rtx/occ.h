@@ -139,7 +139,7 @@ class OCC : public TXOpBase {
 
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
-
+      START(read_lat);
       // do actual reads here
       auto replies = send_batch_read();
       assert(replies > 0);
@@ -149,6 +149,7 @@ class OCC : public TXOpBase {
         return NULL;
       }
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
 
@@ -164,7 +165,7 @@ class OCC : public TXOpBase {
 
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
-
+      START(read_lat);
       // do actual reads here
       auto replies = send_batch_read();
       assert(replies > 0);
@@ -173,6 +174,7 @@ class OCC : public TXOpBase {
       if(!parse_batch_result(replies)) return NULL;
       assert(set[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
+      END(read_lat);
     }
 
     return (set[idx].data_ptr);
@@ -188,7 +190,7 @@ class OCC : public TXOpBase {
 
     if(read_set_[idx].data_ptr == NULL
        && read_set_[idx].pid != node_id_) {
-
+      START(read_lat);
       // do actual reads here
       auto replies = send_batch_read();
       assert(replies > 0);
@@ -197,6 +199,7 @@ class OCC : public TXOpBase {
       if(!parse_batch_result(replies)) return NULL;
       assert(read_set_[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
+      END(read_lat);
     }
     return (V *)(read_set_[idx].data_ptr);
   }
