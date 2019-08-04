@@ -684,7 +684,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     assert(qp != NULL);
     MVCCHeader* header = (MVCCHeader*)recv_ptr;
     scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, recv_ptr,
-      sizeof(MVCCHeader), off, IBV_SEND_SIGNALED);
+      sizeof(MVCCHeader) + MVCC_VERSION_NUM * item.len, off, IBV_SEND_SIGNALED);
     worker_->indirect_yield(yield);
     int pos = -1;
     if((pos = check_read(header, txn_start_time)) == -1) {
@@ -696,7 +696,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
 
     // step 2: read the data and meta, check if i can read the data
     scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, recv_ptr,
-      sizeof(MVCCHeader) + MVCC_VERSION_NUM * item.len, off, 
+      sizeof(MVCCHeader) /*+ MVCC_VERSION_NUM * item.len*/, off, 
       IBV_SEND_SIGNALED);
     worker_->indirect_yield(yield);
     int new_pos = check_read(header, txn_start_time);

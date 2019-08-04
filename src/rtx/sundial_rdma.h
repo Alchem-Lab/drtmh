@@ -80,6 +80,15 @@ protected:
       read_set_.back().data_ptr = data_ptr;
       read_set_.back().wts = WTS(header->seq);
       read_set_.back().rts = RTS(header->seq);
+      Qp *qp = get_qp(pid);
+      scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, data_ptr, 
+          sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
+      worker_->indirect_yield(yield);
+      if(WTS(header->seq) != read_set_.back().wts) {
+        release_reads(yield);
+        release_writes(yield);
+        return -1;
+      }
       assert(off != 0);
     }
     else {
