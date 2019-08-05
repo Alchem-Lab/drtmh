@@ -13,9 +13,6 @@
 #ifdef CALVIN_TX
 #include "db/txs/epoch_manager.hpp"
 #include "rtx/qp_selection_helper.h"
-
-#define OFFSETOF(TYPE, ELEMENT) ((size_t)&(((TYPE *)0)->ELEMENT)) 
-
 #endif
 
 #include <queue>
@@ -173,14 +170,9 @@ void BenchWorker::init_calvin() {
   epoch_done_schedule = new bool[1 + server_routine];
   memset(epoch_done_schedule, 0, sizeof(bool)*(1 + server_routine));
   mach_received = new std::set<int>[1 + server_routine];
-#if ONE_SIDED_READ == 0
-  forwarded_values = new std::map<uint64_t, read_val_t>[1 + server_routine];
-#else
-  forward_addresses = new char*[1 + server_routine];
-  forward_offsets_ = new uint64_t[1 + server_routine];
-#endif
 
-#if ONE_SIDED_READ == 0  
+#if ONE_SIDED_READ == 0
+
   epoch_status_ = new uint8_t*[1 + server_routine];
   for (int i = 0; i < server_routine+1; i++) {
     epoch_status_[i] = new uint8_t[cm_->get_num_nodes()];
@@ -198,7 +190,11 @@ void BenchWorker::init_calvin() {
   send_buffers = new char*[1 + server_routine];
   for (int i = 0; i < server_routine+1; i++)
     send_buffers[i] = rpc_->get_static_buf(MAX_MSG_SIZE);
-#else
+
+  forwarded_values = new std::map<uint64_t, read_val_t>[1 + server_routine];
+
+#elif ONE_SIDED_READ == 1
+
   const char *start_ptr = (char *)(cm_->conn_buf_);
   LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
 
@@ -231,6 +227,9 @@ void BenchWorker::init_calvin() {
   }
 
   /* set up forward addresses and offsets */
+  forward_addresses = new char*[1 + server_routine];
+  forward_offsets_ = new uint64_t[1 + server_routine];
+
   char* forward_base_ptr_ = oltp::calvin_forward_buffer + 
                         per_thread_calvin_forward_buffer_sz * worker_id_;
   // uint64_t forward_base_offset_ = forward_base_ptr_ - start_ptr;
@@ -244,7 +243,42 @@ void BenchWorker::init_calvin() {
     LOG(3) << "forward_offset " << forward_offsets_[i];
   }
 
+#elif ONE_SIDED_READ == 2 // hybrid (onesided broadcast + rpc forward)
+
+  const char *start_ptr = (char *)(cm_->conn_buf_);
+  LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
+
+  /*set up req_buffer and req offsets*/
+  req_buffers = new std::vector<char*>[1 + server_routine];
+  int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
+  char* req_base_ptr_ = oltp::calvin_request_buffer + 
+                    per_thread_calvin_request_buffer_sz * worker_id_;
+  // uint64_t req_base_offset_ = req_base_ptr_ - start_ptr;
+  for (int i = 0; i < server_routine+1; i++) {
+    LOG(3) << "routine " << i;
+    for (int j = 0; j < cm_->get_num_nodes(); j++) {
+      char* buf = req_base_ptr_ + buf_len * i * cm_->get_num_nodes() + buf_len * j;
+      req_buffers[i].push_back(buf);
+      calvin_header* ch = (calvin_header*)req_buffers[i][req_buffers[i].size()-1];
+      ch->epoch_status = CALVIN_EPOCH_READY;
+      LOG(3) << "node " << j << "'s addrs: " << static_cast<void*>(req_buffers[i][j]);
+    }
+  }
+
+  LOG(3) << "offsets:";
+  offsets_ = new uint64_t*[1 + server_routine];
+  for (int i = 0; i < server_routine+1; i++) {
+    offsets_[i] = new uint64_t[cm_->get_num_nodes()];
+    LOG(3) << "routine " << i;
+    for (int j = 0; j < cm_->get_num_nodes(); j++) {
+      offsets_[i][j] = req_buffers[i][j] - start_ptr;
+        LOG(3) << "node " << j << "'s offset: " << offsets_[i][j];
+    }
+  }
+
+  forwarded_values = new std::map<uint64_t, read_val_t>[1 + server_routine]; 
 #endif
+
 }
 #endif
 
@@ -525,7 +559,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     //   free((char*)deterministic_requests[cor_id_][i]);
     deterministic_requests[cor_id_].clear();
 
-#if ONE_SIDED_READ == 0
+#if ONE_SIDED_READ == 0 || ONE_SIDED_READ == 2
     forwarded_values[cor_id_].clear();
 #else
     int n_forwarded = MAX_CALVIN_REQ_CNTS << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
@@ -801,7 +835,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
         ASSERT(tx_idx < workload.size()) << "in execution seq = " << i << ":  workload " << tx_idx << " does not exist.";
         (*txn_counts)[tx_idx] += 1;
     abort_retry:
-        ntxn_executed_ += 1;
+        if (req->req_initiator == cm_->get_nodeid())
+          ntxn_executed_ += 1;
         // fprintf(stdout, "executing %d %d %lu\n", i, req.req_idx, req.timestamp);
         auto ret = workload[tx_idx].fn(this, req, yield);
         // auto ret = txn_result_t(true, 73);

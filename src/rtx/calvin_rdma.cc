@@ -5,753 +5,6 @@ namespace nocc {
 
 namespace rtx {
 
-bool CALVIN::try_lock_read_w_rdma(int index, yield_func_t &yield) {
-    std::vector<ReadSetItem> &set = read_set_;
-    auto it = set.begin() + index;
-    START(lock);
-    //TODO: currently READ lock is implemented the same as WRITE lock.
-    //      which is too strict, thus limiting concurrency. 
-    //      We need to implement the read-lock-compatible read-lock. 
-    uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-
-      // post RDMA requests
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      #if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-      MemNode *h = (MemNode *)local_buf;
-      #else
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      #endif
-
-      lock_req_->set_lock_meta(off,0,lock_content,local_buf);
-      lock_req_->post_reqs(scheduler_,qp);
-      worker_->indirect_yield(yield);
-      
-      // write_batch_helper_.mac_set_.insert(it->pid);
-      if (h->lock != 0) {
-        #if !NO_ABORT
-        END(lock);
-        return false;
-        #endif
-      }
-    }
-    else { //local access
-      if(unlikely(!local_try_lock_op(it->node,
-                                     ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
-        #if !NO_ABORT
-        END(lock);
-        return false;
-        #endif
-      } // check local lock
-    }
-
-    END(lock);
-    return true;
-}
-
-bool CALVIN::try_lock_write_w_rdma(int index, yield_func_t &yield) {
-    std::vector<ReadSetItem> &set = write_set_;
-    auto it = set.begin() + index;
-    START(lock);
-    //TODO: currently READ lock is implemented the same as WRITE lock.
-    //      which is too strict, thus limiting concurrency. 
-    //      We need to implement the read-lock-compatible read-lock. 
-    uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-
-      // post RDMA requests
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      #if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-      MemNode *h = (MemNode *)local_buf;
-      #else
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      #endif
-
-      lock_req_->set_lock_meta(off,0,lock_content,local_buf);
-      lock_req_->post_reqs(scheduler_,qp);
-      worker_->indirect_yield(yield);
-      
-      // write_batch_helper_.mac_set_.insert(it->pid);
-      if (h->lock != 0) {
-        #if !NO_ABORT
-        END(lock);
-        return false;
-        #endif
-      }
-    }
-    else { //local access
-      if(unlikely(!local_try_lock_op(it->node,
-                                     ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
-        #if !NO_ABORT
-        END(lock);
-        return false;
-        #endif
-      } // check local lock
-    }
-
-    END(lock);
-    return true;
-}
-
-bool CALVIN::try_lock_read_w_FA_rdma(int index, yield_func_t &yield) {
-    std::vector<ReadSetItem> &set = read_set_;
-    auto it = set.begin() + index;
-    RDMAReadReq read_req(cor_id_);
-    
-    START(lock);
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-
-      // post RDMA requests
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-#if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-#else
-      // copy the seq out, since it will be overwritten by the remote op
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      it->seq = h->seq;
-#endif
-
-      DSLR::Lock l(qp, off, local_buf, DSLR::SHARED);
-
-      bool ret = dslr_lock_manager->acquireLock(yield, l);
-      if (!ret) {
-        END(lock);
-        return false;
-      }
-
-      //read seq while locked
-      read_req.set_read_meta(off + sizeof(uint64_t),local_buf + sizeof(uint64_t));
-      read_req.post_reqs(scheduler_,qp);
-      // read request need to be polled
-      worker_->indirect_yield(yield);
-
-      write_batch_helper_.mac_set_.insert(it->pid);
-
-      if(!dslr_lock_manager->isLocked(std::make_pair(qp, off))) { // check locks
-      #if !NO_ABORT
-          END(lock);
-          return false;
-      #endif
-      }
-      if(h->seq != (*it).seq) {     // check seqs
-      #if !NO_ABORT
-          END(lock);
-          return false;
-      #endif
-      }
-    }
-    else {
-      assert(false);
-
-      if(unlikely(!local_try_lock_op(it->node,
-                                     ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
-#if !NO_ABORT
-        END(lock);
-        return false;
-#endif
-      } // check local lock
-      if(unlikely(!local_validate_op(it->node,it->seq))) {
-#if !NO_ABORT
-        END(lock);
-        return false;
-#endif
-      } // check seq
-    }
-
-    END(lock);
-    return true;
-}
-
-bool CALVIN::try_lock_write_w_FA_rdma(int index, yield_func_t &yield) {
-    std::vector<ReadSetItem> &set = write_set_;
-    auto it = set.begin() + index;
-    RDMAReadReq read_req(cor_id_);
-    
-    START(lock);
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-
-      // post RDMA requests
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-#if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-#else
-      // copy the seq out, since it will be overwritten by the remote op
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      it->seq = h->seq;
-#endif
-
-      DSLR::Lock l(qp, off, local_buf, DSLR::EXCLUSIVE);
-
-      bool ret = dslr_lock_manager->acquireLock(yield, l);
-      if (!ret) {
-        END(lock);
-        return false;
-      }
-
-      //read seq while locked
-      read_req.set_read_meta(off + sizeof(uint64_t),local_buf + sizeof(uint64_t));
-      read_req.post_reqs(scheduler_,qp);
-      // read request need to be polled
-      worker_->indirect_yield(yield);
-
-      write_batch_helper_.mac_set_.insert(it->pid);
-
-      if(!dslr_lock_manager->isLocked(std::make_pair(qp, off))) { // check locks
-      #if !NO_ABORT
-          END(lock);
-          return false;
-      #endif
-      }
-      if(h->seq != (*it).seq) {     // check seqs
-      #if !NO_ABORT
-          END(lock);
-          return false;
-      #endif
-      }
-    }
-    else {
-      assert(false);
-
-      if(unlikely(!local_try_lock_op(it->node,
-                                     ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1)))){
-#if !NO_ABORT
-        END(lock);
-        return false;
-#endif
-      } // check local lock
-      if(unlikely(!local_validate_op(it->node,it->seq))) {
-#if !NO_ABORT
-        END(lock);
-        return false;
-#endif
-      } // check seq
-    }
-
-    END(lock);
-    return true;
-}
-
-bool CALVIN::try_lock_read_w_rwlock_rdma(int index, uint64_t end_time, yield_func_t &yield) {
-using namespace nocc::rtx::rwlock;
-
-    std::vector<ReadSetItem> &set = read_set_;
-    auto it = set.begin() + index;
-    RDMACASLockReq cas_req(cor_id_);
-    RDMAReadReq read_req(cor_id_);
-    uint64_t _state = INIT;
-
-    START(lock);
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-      // post RDMA requests
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      #if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-      MemNode *h = (MemNode *)local_buf;
-      #else
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      #endif
-
-      while (true) {
-        lock_req_->set_lock_meta(off,_state,R_LEASE(end_time),local_buf);
-        lock_req_->post_reqs(scheduler_,qp);
-        worker_->indirect_yield(yield);
-
-        uint64_t old_state = *(uint64_t*)local_buf;
-        if (old_state == _state) { // success 
-          END(lock);
-          return true;
-        }
-        else if ((old_state & 1) == W_LOCKED) { // write-locked
-          END(lock);
-          return false; 
-        }
-        else {
-          if (EXPIRED(END_TIME(old_state))) {
-            _state = old_state; // retry with corrected state
-            continue;
-          } else { // success: unexpired read leased
-            END(lock);
-            return true;
-          }
-        }
-      }
-    } else { // local access
-      while(true) {
-        volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          END(lock);
-          return false;
-        } else {
-          if (EXPIRED(END_TIME(l))) {
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         R_LEASE(end_time)))) {
-              continue;
-            } else {
-              END(lock);
-              return true;
-            }
-          } else {
-            END(lock);
-            return true;
-          }
-        }
-      }
-    }
-}
-
-bool CALVIN::try_lock_write_w_rwlock_rdma(int index, yield_func_t &yield) {
-using namespace nocc::rtx::rwlock;
-
-    std::vector<ReadSetItem> &set = write_set_;
-    auto it = set.begin() + index;
-    RDMACASLockReq cas_req(cor_id_);
-    RDMAReadReq read_req(cor_id_);
-    uint64_t _state = INIT;
-
-    START(lock);
-    if((*it).pid != node_id_) { // remote case
-      auto off = (*it).off;
-      // post RDMA requests
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      #if INLINE_OVERWRITE
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(MemNode);
-      MemNode *h = (MemNode *)local_buf;
-      #else
-      char *local_buf = (char *)((*it).data_ptr) - sizeof(RdmaValHeader);
-      RdmaValHeader *h = (RdmaValHeader *)local_buf;
-      #endif
-
-      // fprintf(stderr, "post write lock at off %x.\n", off);
-      while (true) {
-        lock_req_->set_lock_meta(off,_state,LOCKED(response_node_),local_buf);
-        lock_req_->post_reqs(scheduler_,qp);
-        worker_->indirect_yield(yield);
-
-        uint64_t old_state = *(uint64_t*)local_buf;
-        if (old_state == _state) { // success
-          END(lock);
-          return true;
-        } else if ((old_state & 1) == W_LOCKED) { // write-locked
-          END(lock);
-          return false;
-        } else {
-          if (EXPIRED(END_TIME(old_state))) {
-            _state = old_state; // retry with corrected state
-            continue;
-          } else { // success: unexpired read leased
-            END(lock);
-            return false;
-          }
-        }
-      }
-    } else { // local access
-      while (true) {
-        volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          END(lock);
-          return false;
-        } else {
-          if (EXPIRED(END_TIME(l))) {
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         LOCKED(response_node_)))) {
-              continue;
-            } else {
-              END(lock);
-              return true; 
-            }       
-          } else { //read locked
-            END(lock);
-            return false;
-          }
-        }
-      }
-    }
-}
-
-void CALVIN::release_reads_w_rdma(yield_func_t &yield) {
-  // can only work with lock_w_rdma
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = read_set_.begin();it != read_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      if(node->lock == 0) { // successfull locked
-        //Qp *qp = qp_vec_[(*it).pid];
-        Qp *qp = get_qp((*it).pid);
-        assert(qp != NULL);
-        node->lock = 0;
-        scheduler_->post_send(qp,cor_id_,IBV_WR_RDMA_WRITE,(char *)(node),sizeof(uint64_t),
-                              (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
-      }
-    } else {
-      while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
-  return;
-}
-
-void CALVIN::release_writes_w_rdma(yield_func_t &yield) {
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      if(node->lock == 0) { // successfull locked
-        //Qp *qp = qp_vec_[(*it).pid];
-        Qp *qp = get_qp((*it).pid);
-        assert(qp != NULL);
-        node->lock = 0;
-        scheduler_->post_send(qp,cor_id_,IBV_WR_RDMA_WRITE,(char *)(node),sizeof(uint64_t),
-                              (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
-      }
-    } else {
-      while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
-  return;
-}
-
-void CALVIN::release_reads_w_rwlock_rdma(yield_func_t &yield) {
-  return;
-}
-
-void CALVIN::release_writes_w_rwlock_rdma(yield_func_t &yield) {
-  using namespace rwlock;
-
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      if(node->lock == 0) { // successfull locked
-        //Qp *qp = qp_vec_[(*it).pid];
-        Qp *qp = get_qp((*it).pid);
-        assert(qp != NULL);
-        node->lock = rwlock::INIT;
-        scheduler_->post_send(qp,cor_id_,IBV_WR_RDMA_WRITE,(char *)(node),sizeof(uint64_t),
-                              (*it).off,IBV_SEND_INLINE | IBV_SEND_SIGNALED);
-      }
-    } else {
-      while (!unlikely(local_try_release_op(it->tableid, it->key, LOCKED(response_node_)))) ;
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
-  return;
-}
-
-void CALVIN::release_reads_w_FA_rdma(yield_func_t &yield) {
-  // can only work with lock_w_rdma
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = read_set_.begin();it != read_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));      
-#endif
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-      if(dslr_lock_manager->isLocked(std::make_pair(qp, (*it).off))) { // successfull locked
-        dslr_lock_manager->releaseLock(yield, std::make_pair(qp, (*it).off));
-      }
-    } else {
-      assert(false); // not implemented
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
-  return;
-}
-
-void CALVIN::release_writes_w_FA_rdma(yield_func_t &yield) {
-  // can only work with lock_w_rdma
-  uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != node_id_) {
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));      
-#endif
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-      if(dslr_lock_manager->isLocked(std::make_pair(qp, (*it).off))) { // successfull locked
-        dslr_lock_manager->releaseLock(yield, std::make_pair(qp, (*it).off));
-      }
-    } else {
-      assert(false); // not implemented
-
-    } // check pid
-  }   // for
-  worker_->indirect_yield(yield);
-  return;
-}
-
-void CALVIN::write_back_w_rdma(yield_func_t &yield) {
-
-  /**
-   * XD: it is harder to apply PA for one-sided operations.
-   * This is because signaled requests are mixed with unsignaled requests.
-   * It got little improvements, though. So I skip it now.
-   */
-  RDMAWriteReq req(cor_id_,PA /* whether to use passive ack*/);
-  START(commit);
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-
-    if((*it).pid != node_id_) {
-
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      node->lock = 0;
-      req.set_write_meta((*it).off + sizeof(RdmaValHeader),(*it).data_ptr,(*it).len);
-      req.set_unlock_meta((*it).off);      
-      req.post_reqs(scheduler_,qp);
-
-      // avoid send queue from overflow
-      if(unlikely(qp->rc_need_poll())) {
-        worker_->indirect_yield(yield);
-      }
-
-    } else { // local write
-      inplace_write_op(it->node,it->data_ptr,it->len);
-    } // check pid
-  }   // for
-  // gather results
-  worker_->indirect_yield(yield);
-  END(commit);
-}
-
-void CALVIN::write_back_w_rwlock_rdma(yield_func_t &yield) {
-
-  /**
-   * XD: it is harder to apply PA for one-sided operations.
-   * This is because signaled requests are mixed with unsignaled requests.
-   * It got little improvements, though. So I skip it now.
-   */
-  RDMAWriteReq req(cor_id_,PA /* whether to use passive ack*/);
-  START(commit);
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-
-    if((*it).pid != node_id_) {
-
-#if INLINE_OVERWRITE
-      MemNode *node = (MemNode *)((*it).data_ptr - sizeof(MemNode));
-#else
-      RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      node->lock = rwlock::INIT;
-      req.set_write_meta((*it).off + sizeof(RdmaValHeader),(*it).data_ptr,(*it).len);
-      req.set_unlock_meta((*it).off);
-      req.post_reqs(scheduler_,qp);
-
-      // avoid send queue from overflow
-      if(unlikely(qp->rc_need_poll())) {
-        worker_->indirect_yield(yield);
-      }
-
-    } else { // local write
-      inplace_write_op(it->node,it->data_ptr,it->len);
-    } // check pid
-  }   // for
-  // gather results
-  worker_->indirect_yield(yield);
-  END(commit);
-}
-
-void CALVIN::write_back_w_FA_rdma(yield_func_t &yield) {
-
-  /**
-   * XD: it is harder to apply PA for one-sided operations.
-   * This is because signaled requests are mixed with unsignaled requests.
-   * It got little improvements, though. So I skip it now.
-   */
-  RDMAWriteOnlyReq req(cor_id_,PA /* whether to use passive ack*/);
-  START(commit);
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
-
-    if((*it).pid != node_id_) {
-      //Qp *qp = qp_vec_[(*it).pid];
-      Qp *qp = get_qp((*it).pid);
-      assert(qp != NULL);
-
-      req.set_write_meta((*it).off + sizeof(RdmaValHeader),(*it).data_ptr,(*it).len);
-      req.post_reqs(scheduler_,qp);
-      // avoid send queue from overflow
-      if(unlikely(qp->rc_need_poll())) {
-        worker_->indirect_yield(yield);
-      }
-    } else { // local write
-      inplace_write_op(it->node,it->data_ptr,it->len);
-    } // check pid
-  }   // for
-  // gather results
-  worker_->indirect_yield(yield);
-  END(commit);
-}
-
-bool CALVIN::try_lock_read_w_rwlock_rpc(int index, uint64_t end_time, yield_func_t &yield) {
-  using namespace rwlock;
-
-  START(lock);
-  std::vector<ReadSetItem> &set = read_set_;
-  auto it = set.begin() + index;
-  if((*it).pid != node_id_) {
-
-    rpc_op<RTXLockRequestItem>(cor_id_, RTX_LOCK_RPC_ID, (*it).pid, 
-                               rpc_op_send_buf_,reply_buf_, 
-                               /*init RTXLockRequestItem*/  
-                               RTX_REQ_LOCK_READ,
-                               (*it).pid,(*it).tableid,(*it).key,(*it).seq, 
-                               txn_start_time
-    );
-
-    worker_->indirect_yield(yield);
-    END(lock);
-
-    // got the response
-    uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
-    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
-      return true;
-    else if (resp_lock_status == LOCK_FAIL_MAGIC)
-      return false;
-    assert(false);
-
-  } else {
-
-      while(true) {
-        volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          END(lock);
-          return false;
-        } else {
-          if (EXPIRED(END_TIME(l))) {
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         R_LEASE(end_time)))) {
-              continue;
-            } else {
-              END(lock);
-              return true;
-            }
-          } else {
-            END(lock);
-            return true;
-          }
-        }
-      }
-  }
-  assert(false);
-}
-
-bool CALVIN::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
-  using namespace rwlock;
-
-  START(lock);
-  std::vector<ReadSetItem> &set = write_set_;
-  auto it = set.begin() + index;
-
-  if((*it).pid != node_id_) {
-    rpc_op<RTXLockRequestItem>(cor_id_, RTX_LOCK_RPC_ID, (*it).pid, 
-                               rpc_op_send_buf_,reply_buf_, 
-                               /*init RTXLockRequestItem*/  
-                               RTX_REQ_LOCK_WRITE,
-                               (*it).pid,(*it).tableid,(*it).key,(*it).seq, 
-                               txn_start_time
-    );
-
-    worker_->indirect_yield(yield);
-    END(lock);
-
-    // got the response
-    uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
-    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
-      return true;
-    else if (resp_lock_status == LOCK_FAIL_MAGIC)
-      return false;
-    assert(false);
-  } else {
-
-      while (true) {
-        volatile uint64_t l = it->node->lock;
-        if(l & 0x1 == W_LOCKED) {
-          END(lock);
-          return false;
-        } else {
-          if (EXPIRED(END_TIME(l))) {
-            volatile uint64_t *lockptr = &(it->node->lock);
-            if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                         LOCKED(response_node_)))) {
-              continue;
-            } else {
-              END(lock);
-              return true; 
-            }       
-          } else { //read locked
-            END(lock);
-            return false;
-          }
-        }
-      }
-  }
-}
-
-
 // return false I am not supposed to execute
 // the actual transaction logic. (i.e., I am either not participating or am just a passive participant)
 bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
@@ -775,20 +28,6 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
         passive_participants.insert(read_set_[i].pid);
       }
   }
-  bool am_I_active_participant = active_participants.find(response_node_) != active_participants.end();
-  bool am_I_passive_participant = passive_participants.find(response_node_) != passive_participants.end();
-
-  if (!am_I_passive_participant && !am_I_active_participant)
-    return false;
-
-
-// #if 1
-#if ONE_SIDED_READ == 0
-
-  // phase 3: serving remote reads to active participants
-  // If I am an active participant, only send to *other* active participants
-
-  start_batch_read();
 
   // fprintf(stdout, "active participants: \n");
   // for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
@@ -800,8 +39,21 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   // for (auto itr = passive_participants.begin(); itr != passive_participants.end(); itr++) {
   //   fprintf(stdout, "%d ", *itr);
   // }
-
   // fprintf(stdout, "\n");
+  
+  bool am_I_active_participant = active_participants.find(response_node_) != active_participants.end();
+  bool am_I_passive_participant = passive_participants.find(response_node_) != passive_participants.end();
+
+  if (!am_I_passive_participant && !am_I_active_participant)
+    return false;
+  
+// #if 1
+#if ONE_SIDED_READ == 0 || ONE_SIDED_READ == 2
+
+  // phase 3: serving remote reads to active participants
+  // If I am an active participant, only send to *other* active participants
+
+  start_batch_read();
 
   // broadcast the active participants ONLY.
   
@@ -823,18 +75,6 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
                                      read_set_[i].data_ptr);
       }
     }
-
-    // for (int i = 0; i < write_set_.size(); ++i) {
-    //   if (write_set_[i].pid == response_node_) {
-    //     fprintf(stdout, "forward write idx %d\n", i);
-    //     assert(write_set_[i].data_ptr != NULL);
-    //     add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
-    //                                  write_set_[i].pid,
-    //                                  /* init read_val_t */ 
-    //                                  req_seq, 1, i, write_set_[i].len, 
-    //                                  write_set_[i].data_ptr);
-    //   }
-    // }
   
     // fprintf(stdout, "forward read start to machine: \n");
     // for (auto m : read_batch_helper_.mac_set_)
@@ -936,8 +176,10 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
 
   std::set<int> mac_set;
   for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
-    if (*itr != response_node_)
+    if (*itr != response_node_) {
       mac_set.insert(*itr);
+      // fprintf(stdout, "forwarding dest %d\n", *itr);
+    }
   }
 
   auto forward_offsets_ = static_cast<BenchWorker*>(worker_)->forward_offsets_;
@@ -953,11 +195,12 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
             forward_idx |= (i<<1);
             uint64_t remote_off = forward_offsets_[cor_id_] + forward_idx * sizeof(read_compact_val_t);
 
+            // fprintf(stdout, "forwarding read of index %d at %p to remote off %lu of length %u.\n", forward_idx, read_set_[i].data_ptr, remote_off, read_set_[i].len);
             assert(read_set_[i].len <= MAX_VAL_LENGTH);
-            req1.set_write_meta_for<0>(remote_off + sizeof(uint32_t), 
-                    read_set_[i].data_ptr, read_set_[i].len);
-            uint32_t len = read_set_[i].len;
-            req1.set_write_meta_for<1>(remote_off, (char*)&len, sizeof(uint32_t));
+            req1.set_write_meta_for<0>(remote_off + OFFSETOF(read_compact_val_t, value), read_set_[i].data_ptr, read_set_[i].len);
+            uint32_t* len = new uint32_t;
+            *len = read_set_[i].len;
+            req1.set_write_meta_for<1>(remote_off + OFFSETOF(read_compact_val_t, len), (char*)len, sizeof(uint32_t));
             req1.post_reqs(scheduler_, qp);
             if (unlikely(qp->rc_need_poll())) {
               worker_->indirect_yield(yield);
@@ -976,11 +219,13 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
             forward_idx |= (i<<1) + 1;
             uint64_t remote_off = forward_offsets_[cor_id_] + forward_idx * sizeof(read_compact_val_t);
 
+            // fprintf(stdout, "forwarding write of index %d at %p to remote off %lu of length %u.\n", forward_idx, write_set_[i].data_ptr, remote_off, write_set_[i].len);
             assert(write_set_[i].len <= MAX_VAL_LENGTH);
-            req1.set_write_meta_for<0>(remote_off + sizeof(uint32_t), 
+            req1.set_write_meta_for<0>(remote_off + OFFSETOF(read_compact_val_t, value), 
                     write_set_[i].data_ptr, write_set_[i].len);
-            uint32_t len = write_set_[i].len;
-            req1.set_write_meta_for<1>(remote_off, (char*)&len, sizeof(uint32_t));
+            uint32_t* len = new uint32_t;
+            *len = write_set_[i].len;
+            req1.set_write_meta_for<1>(remote_off + OFFSETOF(read_compact_val_t, len), (char*)len, sizeof(uint32_t));
             req1.post_reqs(scheduler_, qp);
             if (unlikely(qp->rc_need_poll())) {
               worker_->indirect_yield(yield);
@@ -1057,9 +302,7 @@ using namespace nocc::rtx::rwlock;
     // char* temp_val = (char *)malloc(it->len);
     // uint64_t seq;
     // auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
-    MemNode *node = local_lookup_op(it->tableid, it->key);
-    assert(node != NULL);
-    assert(node->value != NULL);
+
 
     // if (unlikely(node == NULL)) {
     //   free(temp_val);
@@ -1068,13 +311,15 @@ using namespace nocc::rtx::rwlock;
     //   return false;
     // }
 
-    it->node = node;
+    // it->node = node;
 
+    assert(it->node != NULL);
     while(true) {
       volatile uint64_t l = it->node->lock;
       if(l & 0x1 == W_LOCKED) {
         release_reads(yield);
         release_writes(yield);
+        P[0]++;
         return false;
       } else {
         if (EXPIRED(END_TIME(l))) {
@@ -1099,22 +344,25 @@ using namespace nocc::rtx::rwlock;
       continue;
 
     auto it = write_set_.begin() + i;
-    char* temp_val = (char *)malloc(it->len);
-    uint64_t seq;
-    auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
-    if (unlikely(node == NULL)) {
-      free(temp_val);
-      release_reads(yield);
-      release_writes(yield);
-      return false;
-    }
-    it->node = node;
+    assert (it->node != NULL);
+    // char* temp_val = (char *)malloc(it->len);
+    // uint64_t seq;
+    // auto node = local_get_op(it->tableid, it->key, temp_val, it->len, seq, db_->_schemas[it->tableid].meta_len);
+    // if (unlikely(node == NULL)) {
+    //   free(temp_val);
+    //   release_reads(yield);
+    //   release_writes(yield);
+    //   P[1]++;
+    //   return false;
+    // }
+    // it->node = node;
   
     while (true) {
       volatile uint64_t l = it->node->lock;
       if(l & 0x1 == W_LOCKED) {
         release_reads(yield);
         release_writes(yield);
+        P[2]++;
         return false;
       } else {
         if (EXPIRED(END_TIME(l))) {
@@ -1129,6 +377,7 @@ using namespace nocc::rtx::rwlock;
         } else { //read locked
           release_reads(yield);
           release_writes(yield);
+          P[3]++;
           return false;
         }
       }
@@ -1187,6 +436,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   char *reply = reply_msg + sizeof(ReplyHeader);
 
+  assert(static_cast<BenchWorker*>(worker_)->forwarded_values != NULL);
   std::map<uint64_t, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cid];
   
   // fprintf(stdout, "in calvin forward rpc handler.\n");

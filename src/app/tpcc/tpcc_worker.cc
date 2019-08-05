@@ -136,8 +136,13 @@ void TpccWorker::thread_local_init() {
     }
 #elif defined(CALVIN_TX)
     if (txs_[i] == NULL) {
+#if ONE_SIDED_READ
       new_txs_[i] = new rtx::CALVIN(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
                                    cm,rdma_sched_,total_partition);
+#else
+      new_txs_[i] = new rtx::CALVIN(this,store_,rpc_,current_partition,worker_id_,i,current_partition,
+                                   cm,rdma_sched_,total_partition);
+#endif
     }
 #elif defined(SI_TX)
     txs_[i] = new DBSI(store_,worker_id_,rpc_,i);

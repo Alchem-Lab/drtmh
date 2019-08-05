@@ -25,6 +25,11 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   // ASSERT(sizeof(ycsb_record::value) == 1000) << sizeof(ycsb_record::value);
   int index = -1;
   static const int func_size = 10;
+
+#ifdef CALVIN_TX
+  static_assert(func_size < MAX_CALVIN_SETS_SUPPORTED, "ycsb generating sets more than the support of CALVIN.\n");
+#endif
+  
   bool is_write[func_size];
   uint64_t ids[func_size];
   int indexes[func_size];
@@ -34,7 +39,6 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   rtx_->begin(yield);
 
 #ifdef CALVIN_TX
-
   const char* buf = req->req_info;
   struct ycsb_req_info_t {
   	uint64_t ids[func_size];
@@ -44,6 +48,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   for(int i = 0; i < func_size; ++i) {
   	ids[i] = ((ycsb_req_info_t*)buf)->ids[i];
   	is_write[i] = ((ycsb_req_info_t*)buf)->is_write[i];
+    // is_write[i] = true;
   }
 #else
   for(int i = 0; i < func_size; ++i) {
@@ -75,8 +80,9 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   if (!rtx_->request_locks(yield)) {
     return txn_result_t(false,73);
   }
-#endif
 
+  static_assert(sizeof(ycsb_record::value) <= MAX_VAL_LENGTH, "ycsb_record to large to fit to be forwarded.\n");
+  // fprintf(stdout, "show values before sync for request %d.\n", req->req_seq);
   ycsb_record::value* val = NULL;
   for(int i = 0; i < func_size; ++i) {
     if(is_write[i]) {
@@ -85,13 +91,23 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
     else {
       val = (ycsb_record::value*)rtx_->load_read(indexes[i], sizeof(ycsb_record::value), yield); 
     }
-    if(val == NULL) return txn_result_t(false, 73);
+    // fprintf(stdout, "index %d's value addr: %p\n", i, val);
   }
 
-#ifdef CALVIN_TX
   if(!rtx_->sync_reads(req->req_seq, yield))
     return txn_result_t(true, 73);
 
+  for(int i = 0; i < func_size; ++i) {
+    if(is_write[i]) {
+      val = (ycsb_record::value*)rtx_->load_write(indexes[i], sizeof(ycsb_record::value), yield);
+    }
+    else {
+      val = (ycsb_record::value*)rtx_->load_read(indexes[i], sizeof(ycsb_record::value), yield); 
+    }
+    assert(val != NULL);
+  }
+#else
+  ycsb_record::value* val = NULL;
   for(int i = 0; i < func_size; ++i) {
     if(is_write[i]) {
       val = (ycsb_record::value*)rtx_->load_write(indexes[i], sizeof(ycsb_record::value), yield);
@@ -118,6 +134,7 @@ void BankWorker::ycsb_gen_rwsets(char* buf, yield_func_t &yield) {
   int index = -1;
 
   static const int func_size = 10;
+  static_assert(func_size < MAX_CALVIN_SETS_SUPPORTED, "ycsb generating sets more than the support of CALVIN.\n");
   bool is_write[func_size];
   uint64_t ids[func_size];
   std::set<uint64_t> accounts;
@@ -292,23 +309,26 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
   if (!rtx_->request_locks(yield)) {
     return txn_result_t(false, 73);
   }
-#endif
 
-  float amount = 5.0; //from original code
   savings::value  *sv = (savings::value*)rtx_->load_read(0, sizeof(savings::value), yield);
-  if(sv == NULL) return txn_result_t(false,73);
   checking::value *cv = (checking::value*)rtx_->load_write(0, sizeof(checking::value), yield);
-  if(cv == NULL) return txn_result_t(false, 73);
 
-#ifdef CALVIN_TX
   if(!rtx_->sync_reads(req->req_seq, yield))
     return txn_result_t(true, 73);
 
   sv = (savings::value*)rtx_->load_read(0, sizeof(savings::value), yield);
-  cv = (checking::value*)rtx_->load_write(0, sizeof(checking::value), yield);  
+  cv = (checking::value*)rtx_->load_write(0, sizeof(checking::value), yield);
+  assert(sv != NULL && cv != NULL);
+#else
+  savings::value  *sv = (savings::value*)rtx_->load_read(0, sizeof(savings::value), yield);
+  //[chao] is the following 2 returns necessary?
+  if(sv == NULL) return txn_result_t(false,73);
+  checking::value *cv = (checking::value*)rtx_->load_write(0, sizeof(checking::value), yield);
+  if(cv == NULL) return txn_result_t(false, 73);
 #endif
 
   // transactional logic
+  float amount = 5.0; //from original code
   auto total = sv->s_balance + cv->c_balance;
   if(total < amount) {
     cv->c_balance -= (amount - 1);

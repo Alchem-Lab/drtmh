@@ -39,6 +39,7 @@
 
 #elif defined(CALVIN_TX)
 #include "rtx/calvin_rdma.h"
+#define OFFSETOF(TYPE, ELEMENT) ((size_t)&(((TYPE *)0)->ELEMENT)) 
 #endif
 
 #include <queue>          // std::queue
@@ -77,11 +78,6 @@ struct calvin_request {
   calvin_request(int req_idx, int req_initiator, timestamp_t timestamp) : 
           req_idx(req_idx), req_initiator(req_initiator), timestamp(timestamp) {}
 
-  // calvin_request(calvin_request* copy) :
-  //         req_idx(copy->req_idx), timestamp(copy->timestamp), n_reads(copy->n_reads), n_writes(copy->n_writes) {
-  //         memcpy((char*)read_set, (char*)copy->read_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
-  //         memcpy((char*)write_set, (char*)copy->write_set, sizeof(rtx::CALVIN::ReadSetItem)*MAX_SET_ITEMS);
-  // }
   calvin_request(calvin_request* copy) :
           req_idx(copy->req_idx), req_initiator(copy->req_initiator), timestamp(copy->timestamp) {
           memcpy(req_info, copy->req_info, CALVIN_REQ_INFO_SIZE);
@@ -97,10 +93,6 @@ struct calvin_request {
   timestamp_t timestamp;
 
   char req_info[CALVIN_REQ_INFO_SIZE];
-  // uint64_t n_reads;
-  // rtx::CALVIN::ReadSetItem read_set[MAX_SET_ITEMS];
-  // uint64_t n_writes;
-  // rtx::CALVIN::ReadSetItem write_set[MAX_SET_ITEMS];
 };
 
 struct calvin_header {

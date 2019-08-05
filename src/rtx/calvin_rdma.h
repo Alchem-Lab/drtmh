@@ -33,37 +33,23 @@ class CALVIN : public TXOpBase {
 protected:
   // return the last index in the read-set
   int local_read(int tableid,uint64_t key,int len,yield_func_t &yield) {
+    MemNode *node = local_lookup_op(tableid, key);
+    assert(node != NULL);
+    assert(node->value != NULL);
 
-    char *temp_val = (char *)malloc(len);
-    uint64_t seq;
-
-    auto node = local_get_op(tableid,key,temp_val,len,seq,db_->_schemas[tableid].meta_len);
-
-    if(unlikely(node == NULL)) {
-      free(temp_val);
-      return -1;
-    }
     // add to read-set
-    int idx = read_set_.size();
-    read_set_.emplace_back(tableid,key,node,temp_val,seq,len,node_id_);
-    return idx;
+    read_set_.emplace_back(tableid,key,(MemNode *)node,(char*)NULL,0,len,node_id_);
+    return read_set_.size() - 1;
   }
 
   // return the last index in the write-set
   int local_write(int tableid,uint64_t key,int len,yield_func_t &yield) {
-
-    char *temp_val = (char *)malloc(len);
-    uint64_t seq;
-
-    auto node = local_get_op(tableid,key,temp_val,len,seq,db_->_schemas[tableid].meta_len);
-
-    if(unlikely(node == NULL)) {
-      free(temp_val);
-      return -1;
-    }
+    MemNode *node = local_lookup_op(tableid, key);
+    assert(node != NULL);
+    assert(node->value != NULL);
 
     // add to write-set
-    write_set_.emplace_back(tableid,key,node,temp_val,seq,len,node_id_);
+    write_set_.emplace_back(tableid,key,(MemNode *)node,(char*)NULL,0,len,node_id_);
     return write_set_.size() - 1;
   }
 
@@ -77,10 +63,15 @@ protected:
     return -1;
   }
 
-#if ONE_SIDED_READ
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char*)NULL,
+    MemNode *node = NULL;
+    if (pid == response_node_) {
+      MemNode *node = local_lookup_op(tableid, key);
+      assert(node != NULL);
+      assert(node->value != NULL);
+    }
+    read_set_.emplace_back(tableid,key,(MemNode *)node,(char*)NULL,
                            0,
                            len,pid);
     return read_set_.size() - 1;
@@ -88,7 +79,13 @@ protected:
 
   // return the last index in the write-set
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char*)NULL,
+    MemNode *node = NULL;
+    if (pid == response_node_) {
+      node = local_lookup_op(tableid, key);
+      assert(node != NULL);
+      assert(node->value != NULL);
+    }
+    write_set_.emplace_back(tableid,key,(MemNode *)node,(char*)NULL,
                            0,
                            len,pid);
     return write_set_.size() - 1;
@@ -97,94 +94,6 @@ protected:
   int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     // remote insert for calvin is not needed: all insertions happen locally.
     return -1;
-  }
-
-#else
-
-  // return the last index in the read-set
-  int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return add_batch_read(tableid,key,pid,len);
-  }
-
-  // return the last index in the write-set
-  int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return add_batch_write(tableid,key,pid,len);
-  }
-
-  int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return add_batch_insert(tableid,key,pid,len);
-  }
-
-#endif
-
-
-
-  /** helper functions to batch rpc operations below
-    */
-  inline __attribute__((always_inline))
-  void start_batch_read() {
-    start_batch_rpc_op(read_batch_helper_);
-  }
-
-  inline __attribute__((always_inline))
-  int add_batch_read(int tableid,uint64_t key,int pid,int len) {
-    // add a batch read request
-    int idx = read_set_.size();
-    // add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-                                 // /* init RTXReadItem */ RTX_REQ_READ,pid,key,tableid,len,(idx<<1));
-    read_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
-    return idx;
-  }
-
-  inline __attribute__((always_inline))
-  int add_batch_write(int tableid,uint64_t key,int pid,int len) {
-    // add a batch read request
-    int idx = write_set_.size();
-    // add_batch_entry<RTXReadItem>(read_batch_helper_,pid,
-                                 // /* init RTXReadItem */ RTX_REQ_READ_LOCK,pid,key,tableid,len,(idx<<1)+1);
-    // fprintf(stdout, "write rpc batched: write_set idx = %d, payload = %d\n", idx, );
-    write_set_.emplace_back(tableid,key,(MemNode *)NULL,(char *)NULL,0,len,pid);
-    return idx;
-  }
-
-  inline __attribute__((always_inline))
-  int add_batch_insert(int tableid,uint64_t key,int pid,int len) {
-    // remote insert for calvin is not needed: all insertions happen locally.
-    return -1;
-  }
-
-  inline __attribute__((always_inline))
-  int send_batch_read(int rpc_id, int idx = 0) {
-    return send_batch_rpc_op(read_batch_helper_,cor_id_,rpc_id);
-  }
-
-  inline __attribute__((always_inline))
-  bool parse_batch_result(int num) {
-
-    char *ptr  = reply_buf_;
-    for(uint i = 0;i < num;++i) {
-      // parse a reply header
-      ReplyHeader *header = (ReplyHeader *)(ptr);
-      ptr += sizeof(ReplyHeader);
-      for(uint j = 0;j < header->num;++j) {
-        OCCResponse *item = (OCCResponse *)ptr;
-        if (item->idx & 1 == 0) { // an idx in read-set
-          // fprintf(stdout, "rpc response: read_set idx = %d, payload = %d\n", item->idx, item->payload);
-          item->idx >>= 1;
-          read_set_[item->idx].data_ptr = (char *)malloc(read_set_[item->idx].len);
-          memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),read_set_[item->idx].len);
-          read_set_[item->idx].seq      = item->seq;
-        } else {
-          // fprintf(stdout, "rpc response: write_set idx = %d, payload = %d\n", item->idx, item->payload);
-          item->idx >>= 1;
-          write_set_[item->idx].data_ptr = (char *)malloc(write_set_[item->idx].len);
-          memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),write_set_[item->idx].len);
-          write_set_[item->idx].seq      = item->seq;
-        }
-        ptr += (sizeof(OCCResponse) + item->payload);
-      }
-    }
-    return true;
   }
 
 #if 0
@@ -211,16 +120,11 @@ protected:
    */
   void gc_helper(std::vector<ReadSetItem> &set) {
     for(auto it = set.begin();it != set.end();++it) {
-      if(it->pid != node_id_) {
-#if INLINE_OVERWRITE
-        Rfree((*it).data_ptr - sizeof(MemNode));
-#else
-        Rfree((*it).data_ptr - sizeof(RdmaValHeader));
-#endif
-      }
-      else
+      if(it->pid == response_node_) {
+        Rfree((*it).data_ptr);
+      } else {
         free((*it).data_ptr);
-
+      }
     }
   }
 
@@ -240,27 +144,8 @@ protected:
     return true;
   }
 
-  bool try_lock_read_w_rdma(int index, yield_func_t &yield);
-  bool try_lock_write_w_rdma(int index, yield_func_t &yield);
-  bool try_lock_read_w_rwlock_rdma(int index, uint64_t txn_end_time, yield_func_t &yield);
-  bool try_lock_write_w_rwlock_rdma(int index, yield_func_t &yield);
-  bool try_lock_read_w_FA_rdma(int index, yield_func_t &yield);
-  bool try_lock_write_w_FA_rdma(int index, yield_func_t &yield);
-  bool try_lock_read_w_rwlock_rpc(int index, uint64_t txn_end_time, yield_func_t &yield);
-  bool try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield);
-
-  void release_reads_w_rdma(yield_func_t &yield);
-  void release_writes_w_rdma(yield_func_t &yield);
-  void release_reads_w_rwlock_rdma(yield_func_t &yield);
-  void release_writes_w_rwlock_rdma(yield_func_t &yield);
-  void release_reads_w_FA_rdma(yield_func_t &yield);
-  void release_writes_w_FA_rdma(yield_func_t &yield);
   void release_reads(yield_func_t &yield);
   void release_writes(yield_func_t &yield);
-
-  void write_back_w_rdma(yield_func_t &yield);
-  void write_back_w_rwlock_rdma(yield_func_t &yield);
-  void write_back_w_FA_rdma(yield_func_t &yield);
   void write_back(yield_func_t &yield);
 
 public:
@@ -356,23 +241,25 @@ public:
   // Actually load the data, can be done only after all locks are acquired.
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
+    // fprintf(stderr, "in load read.\n");
     std::vector<ReadSetItem> &set = read_set_;
+    // fprintf(stderr, "pid = %d\n", set[idx].pid);
     
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
 
-    if(set[idx].pid != response_node_) {
-        ;
-    } else {
+    if(set[idx].pid == response_node_) {
       if (set[idx].data_ptr == NULL) {
         // local actual read
-        char *temp_val = (char *)malloc(len);
+        char *temp_val = (char *)Rmalloc(len);
+        // fprintf(stdout, "load read Rmalloc %p\n", temp_val);
+
         uint64_t seq;
         auto node = local_get_op(set[idx].tableid,set[idx].key, temp_val, set[idx].len,seq,
                                  db_->_schemas[set[idx].tableid].meta_len);
         if(unlikely(node == NULL)) {
-          free(temp_val);
+          Rfree(temp_val);
           assert(false);
           return NULL;
         }
@@ -388,7 +275,9 @@ public:
   // Actually load the data, can be done only after all locks are acquired.
   inline __attribute__((always_inline))
   virtual char* load_write(int idx, size_t len, yield_func_t &yield) {
+    // fprintf(stderr, "in load write.\n");
     std::vector<ReadSetItem> &set = write_set_;
+    // fprintf(stderr, "pid = %d\n", set[idx].pid);
     
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
@@ -397,24 +286,23 @@ public:
     // note that we must use response_node_ here to indicate the actual
     // node id.
     // fprintf(stdout, "pid in load write %d = %d. my node id = %d\n", idx, set[idx].pid, response_node_);
-    if(set[idx].pid != response_node_) {
-        ;
-    } else {
+    if(set[idx].pid == response_node_) {
       // assert(set[idx].data_ptr == NULL);
       if (set[idx].data_ptr == NULL) {
-        // local actual read
-        char *temp_val = (char *)malloc(len);
+        // local actual write
+        char *temp_val = (char *)Rmalloc(len);
+        // fprintf(stdout, "load write Rmalloc %p\n", temp_val);
+
         uint64_t seq;
         auto node = local_get_op(set[idx].tableid,set[idx].key, temp_val, set[idx].len,seq, db_->_schemas[set[idx].tableid].meta_len);
         if(unlikely(node == NULL)) {
-          free(temp_val);
+          Rfree(temp_val);
           assert(false);
           return NULL;
         }
         
         set[idx].data_ptr = temp_val;
       }
-
       // fprintf(stdout, "in load write: %f@%p\n", *(float*)set[idx].data_ptr, set[idx].data_ptr);
     }
 
@@ -530,13 +418,10 @@ public:
     txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }
 
-#if ONE_SIDED_READ
   // commit a TX
   virtual bool commit(yield_func_t &yield) {
 
 #if TX_ONLY_EXE
-    gc_readset();
-    gc_writeset();    
     return dummy_commit();
 #endif
 
@@ -547,28 +432,10 @@ public:
 
     // write the modifications of records back
     write_back(yield);
+    gc_readset();
+    gc_writeset();
     return true;
   }
-  
-#else
-  
-  virtual bool commit(yield_func_t &yield) {
-  
-#if TX_ONLY_EXE
-  gc_readset();
-  gc_writeset();
-  return dummy_commit();
-#endif
-
-  // prepare_write_contents();
-  // log_remote(yield); // log remote using *logger_*
-
-  // write the modifications of records back
-  write_back(yield);
-  return true;
-}
-
-#endif
 
 public:
   std::vector<ReadSetItem>  read_set_;
