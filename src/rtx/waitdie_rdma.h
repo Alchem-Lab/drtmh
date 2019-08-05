@@ -82,7 +82,7 @@ protected:
 #if ONE_SIDED_READ
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-
+    START(read_lat);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
 
@@ -99,7 +99,7 @@ protected:
     data_ptr = data_ptr + sizeof(RdmaValHeader);
 #endif
     ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
-
+    END(read_lat);
     read_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
                            seq,
                            len,pid);

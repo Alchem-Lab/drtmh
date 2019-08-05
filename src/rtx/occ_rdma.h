@@ -83,7 +83,7 @@ class OCCR : public OCC {
   }
 
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-
+    START(read_lat);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
 
@@ -99,6 +99,7 @@ class OCCR : public OCC {
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
 #endif
+    END(read_lat);
     ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
 
     read_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,

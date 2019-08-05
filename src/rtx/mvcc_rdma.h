@@ -67,7 +67,7 @@ protected:
       return index;
     }
 
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1
     if(!try_read_rdma(index, yield)) {
       release_reads(yield);
       release_writes(yield);
