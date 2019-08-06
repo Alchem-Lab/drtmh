@@ -439,6 +439,7 @@ public:
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
       // do actual reads here
+      assert(false);
       START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
@@ -470,6 +471,7 @@ public:
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
       // do actual reads here
+      assert(false);
       START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);

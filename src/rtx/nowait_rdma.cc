@@ -244,7 +244,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
                                rpc_op_send_buf_,reply_buf_, 
                                /*init RTXLockRequestItem*/  
                                RTX_REQ_LOCK_READ,
-                               (*it).pid,(*it).tableid,(*it).key,(*it).seq, 
+                               (*it).pid,(*it).tableid,(*it).len,(*it).key,(*it).seq, 
                                txn_start_time
     );
 
@@ -253,8 +253,13 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
-    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
+    if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
+      if((*it).data_ptr == NULL) {
+        (*it).data_ptr = (char*)malloc((*it).len);
+      }
+      memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       return true;
+    }
     else if (resp_lock_status == LOCK_FAIL_MAGIC)
       return false;
     else {
@@ -305,7 +310,7 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
                                rpc_op_send_buf_,reply_buf_, 
                                /*init RTXLockRequestItem*/  
                                RTX_REQ_LOCK_WRITE,
-                               (*it).pid,(*it).tableid,(*it).key,(*it).seq, 
+                               (*it).pid,(*it).tableid,(*it).len,(*it).key,(*it).seq, 
                                txn_start_time
     );
 
@@ -314,8 +319,13 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
-    if(resp_lock_status == LOCK_SUCCESS_MAGIC)
+    if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
+      if((*it).data_ptr == NULL) {
+        (*it).data_ptr = (char*)malloc((*it).len);
+      }
+      memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       return true;
+    }
     else if (resp_lock_status == LOCK_FAIL_MAGIC)
       return false;
     else {
@@ -368,7 +378,7 @@ void NOWAIT::release_reads(yield_func_t &yield, bool release_all) {
     if(read_set_[i].pid != node_id_) { // remote case
       add_batch_entry<RTXLockRequestItem>(write_batch_helper_, read_set_[i].pid,
                                    /*init RTXLockRequestItem */ 
-        RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,
+        RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,read_set_[i].len,
         read_set_[i].key,read_set_[i].seq, txn_start_time);
     }
     else {
@@ -392,7 +402,8 @@ void NOWAIT::release_writes(yield_func_t &yield, bool release_all) {
     if(write_set_[i].pid != node_id_) { // remote case
       add_batch_entry<RTXLockRequestItem>(write_batch_helper_, write_set_[i].pid,
                                    /*init RTXLockRequestItem */ RTX_REQ_LOCK_WRITE,
-        write_set_[i].pid,write_set_[i].tableid,write_set_[i].key,write_set_[i].seq, txn_start_time);
+        write_set_[i].pid,write_set_[i].tableid,write_set_[i].len,
+        write_set_[i].key,write_set_[i].seq, txn_start_time);
     }
     else {
       auto res = local_try_release_op(write_set_[i].node,R_LEASE(txn_start_time) + 1);
@@ -488,6 +499,7 @@ void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
   uint8_t res = LOCK_SUCCESS_MAGIC; // success
 
   int request_item_parsed = 0;
+  size_t nodelen = 0;
 
   RTX_ITER_ITEM(msg,sizeof(RTXLockRequestItem)) {
 
@@ -544,7 +556,9 @@ void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
               continue;
             }
             else {
-              // LOG(3) << "succ" << R_LEASE(item->txn_starting_timestamp) << ' ' << l << ' ' << item->key;
+              char* reply_data= reply_msg + sizeof(uint8_t);
+              nodelen = item->len;
+              memcpy(reply_data, (char*)node->value + sizeof(RdmaValHeader), item->len);
               break;
             }
           }
@@ -562,7 +576,7 @@ NEXT_ITEM:
 END:
   if (res != LOCK_WAIT_MAGIC) {
     *((uint8_t *)reply_msg) = res;
-    rpc_->send_reply(reply_msg,sizeof(uint8_t),id,cid);
+    rpc_->send_reply(reply_msg,sizeof(uint8_t) + nodelen,id,cid);
   }
 }
 
