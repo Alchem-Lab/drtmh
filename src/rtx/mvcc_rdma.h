@@ -98,7 +98,7 @@ protected:
     }
     write_set_.emplace_back(tableid,key,(MemNode*)NULL,(char *)NULL,0,len,pid);
     index = write_set_.size() - 1;
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1
     int ret = try_lock_read_rdma(index, yield);
     if(ret == -1) {
       release_reads(yield);

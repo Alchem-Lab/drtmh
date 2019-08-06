@@ -821,10 +821,10 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
       write_req_->set_unlock_meta(item.off);
       write_req_->post_reqs(scheduler_, qp);
       need_yield = true;
-      // if(unlikely(qp->rc_need_poll())) {
+      if(unlikely(qp->rc_need_poll())) {
         worker_->indirect_yield(yield);
         need_yield = false;
-      // }
+      }
       // LOG(3) << "update remote release " << item.key;
     }
     else {

@@ -227,8 +227,8 @@ BenchWorker::worker_routine(yield_func_t &yield) {
 
 
   uint64_t retry_count(0);
-  // uint64_t max_count = 1000;
-  // while (max_count-- > 0) {
+   //uint64_t max_count = 2000;
+   //while (max_count-- > 0) {
   while(true) {
 #if CS == 0
     /* select the workload */

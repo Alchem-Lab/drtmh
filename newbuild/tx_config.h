@@ -58,7 +58,7 @@
 #define ENABLE_TXN_API 1
 #endif
 
-#define RDMA_STORE_SIZE 5000
+#define RDMA_STORE_SIZE 10000
 #ifndef RDMA_STORE_SIZE
 #define RDMA_STORE_SIZE 8
 #endif

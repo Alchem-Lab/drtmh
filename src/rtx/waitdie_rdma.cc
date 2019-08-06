@@ -319,7 +319,7 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
     else if (resp_lock_status == LOCK_FAIL_MAGIC)
       return false;
     else {
-      assert(false);  
+      ASSERT(false) << (int)resp_lock_status;
     }
   } else {
     while (true) {
