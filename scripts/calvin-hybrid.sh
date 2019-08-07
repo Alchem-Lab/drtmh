@@ -32,7 +32,7 @@ OUT="out/drtmh-$CC-$WL-2-onesided.log"
 
 echo "running $WL with $THREADS*$COROUTINES..."
 echo "./${CC}-hybrid --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>${OUT}_$1 2>&1"
- ./$CC --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>${OUT}_$1 2>&1
+ ./${CC}-hybrid --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>${OUT}_$1 2>&1
 
 if [ x"$1" == x"0" ]; then
     cp ${OUT}_0 $OUT

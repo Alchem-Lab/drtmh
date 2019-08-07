@@ -541,8 +541,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
   assert(send_buf != NULL);
 #endif
 
-  for (int iteration = 0; iteration < 10; iteration++)
-  // while(true)
+  // for (int iteration = 0; iteration < 10; iteration++)
+  for (int iteration = 0; ; iteration++)
   {
     fprintf(stderr, "%d %d starting for iteration %d.\n", worker_id_, cor_id_, iteration);
     char* req_buf_end = req_buf;
