@@ -13,7 +13,8 @@
 #include "rtx/logger.hpp"
 
 // #define MAX_CALVIN_REQ_CNTS (200*1000)
-#define MAX_CALVIN_REQ_CNTS (2000)
+// #define MAX_CALVIN_REQ_CNTS (2000)
+#define MAX_CALVIN_REQ_CNTS 1
 #define MAX_CALVIN_SETS_SUPPRTED_IN_BITS (5)
 #define MAX_CALVIN_SETS_SUPPORTED (1U<<(MAX_CALVIN_SETS_SUPPRTED_IN_BITS))  // 32 SETS
 #define CALVIN_REQ_INFO_SIZE 256
@@ -101,10 +102,10 @@ struct calvin_header {
   uint64_t epoch_id;
   volatile uint64_t batch_size; // the batch size
   // union {
-    uint64_t chunk_size; // the number of calvin_requests in this rpc call
-    volatile uint64_t received_size;
+  uint64_t chunk_size; // the number of calvin_requests in this rpc call
+  volatile uint64_t received_size;
   // };
-} __attribute__ ((aligned (8)));
+};
 
 class calvin_request_compare {
 public:
@@ -114,8 +115,8 @@ public:
   }
 };
 
-#define CALVIN_EPOCH_READY 0
-#define CALVIN_EPOCH_DONE  1
+#define CALVIN_EPOCH_READY 53
+#define CALVIN_EPOCH_DONE  59
 #endif
 
 #define MAX_VAL_LENGTH 128

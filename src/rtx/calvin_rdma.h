@@ -66,8 +66,9 @@ protected:
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     MemNode *node = NULL;
+    // fprintf(stderr, "response_node_ = %d, in remote read: pid = %d, tableid = %d, key = %d\n", response_node_, pid, tableid, key);
     if (pid == response_node_) {
-      MemNode *node = local_lookup_op(tableid, key);
+      node = local_lookup_op(tableid, key);
       assert(node != NULL);
       assert(node->value != NULL);
     }
@@ -80,6 +81,7 @@ protected:
   // return the last index in the write-set
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     MemNode *node = NULL;
+    // fprintf(stderr, "response_node_ = %d, in remote write: pid = %d, tableid = %d, key = %d\n", response_node_, pid, tableid, key);    
     if (pid == response_node_) {
       node = local_lookup_op(tableid, key);
       assert(node != NULL);
@@ -278,7 +280,7 @@ public:
     // fprintf(stderr, "in load write.\n");
     std::vector<ReadSetItem> &set = write_set_;
     // fprintf(stderr, "pid = %d\n", set[idx].pid);
-    
+
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
@@ -432,6 +434,8 @@ public:
 
     // write the modifications of records back
     write_back(yield);
+    release_reads(yield);
+    release_writes(yield);
     gc_readset();
     gc_writeset();
     return true;

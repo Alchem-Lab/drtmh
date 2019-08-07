@@ -199,7 +199,7 @@ void BenchWorker::init_calvin() {
   LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
 
   /*set up req_buffer and req offsets*/
-  req_buffers = new std::vector<char*>[1 + server_routine];
+  req_buffers = new std::vector<char*>[1+server_routine];
   int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
   char* req_base_ptr_ = oltp::calvin_request_buffer + 
                     per_thread_calvin_request_buffer_sz * worker_id_;
@@ -246,14 +246,16 @@ void BenchWorker::init_calvin() {
 #elif ONE_SIDED_READ == 2 // hybrid (onesided broadcast + rpc forward)
 
   const char *start_ptr = (char *)(cm_->conn_buf_);
-  LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
+  LOG(3) << "start_ptr = " << (void*)start_ptr;
 
   /*set up req_buffer and req offsets*/
   req_buffers = new std::vector<char*>[1 + server_routine];
   int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
   char* req_base_ptr_ = oltp::calvin_request_buffer + 
                     per_thread_calvin_request_buffer_sz * worker_id_;
-  // uint64_t req_base_offset_ = req_base_ptr_ - start_ptr;
+  uint64_t req_base_offset_ = req_base_ptr_ - start_ptr;
+  LOG (3) << "req_base_offset for thread " << worker_id_ << ": " << req_base_offset_;
+  LOG(3) << "addresses:";
   for (int i = 0; i < server_routine+1; i++) {
     LOG(3) << "routine " << i;
     for (int j = 0; j < cm_->get_num_nodes(); j++) {
@@ -539,8 +541,10 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
   assert(send_buf != NULL);
 #endif
 
-  while(true)
+  for (int iteration = 0; iteration < 10; iteration++)
+  // while(true)
   {
+    fprintf(stderr, "%d %d starting for iteration %d.\n", worker_id_, cor_id_, iteration);
     char* req_buf_end = req_buf;
 
 #if ONE_SIDED_READ == 0
@@ -549,7 +553,6 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
 #else
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       calvin_header* ch = (calvin_header*)req_buffers[cor_id_][i];
-      memset(ch, 0, sizeof(calvin_header));
       ch->epoch_status = CALVIN_EPOCH_READY;
     }
 #endif
@@ -608,7 +611,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
         int tx_idx = req.tx_id;
     #endif
 
-        uint64_t request_timestamp = nocc::util::get_now();
+        uint64_t request_timestamp = nocc::util::get_now_nano() << 3;
+        request_timestamp |= cm_->get_nodeid();
         // buffer for 10 milliseconds for one epoch
         if (batch_size_ < MAX_CALVIN_REQ_CNTS) {
         // if (request_timestamp - start < 10000) {
@@ -649,10 +653,11 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     // sequencer has bufferred one epoch of requests.
     // broadcast bufferred request through rpc call to other partitions
     // in the same replica.
-    fprintf(stdout, "batched %d @ epoch %lu. start broadcasting. at %lu.\n", 
+    fprintf(stderr, "batched %d @ epoch %lu. start broadcasting. at %lu for iteration %d.\n", 
                     ((calvin_header*)req_buf)->batch_size, 
                     ((calvin_header*)req_buf)->epoch_id,
-                    nocc::util::get_now());
+                    nocc::util::get_now(),
+                    iteration);
 
     int chunk_cnt = 0;
 
@@ -738,6 +743,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
 #endif
 #else
     rtx::RDMAWriteReq req1(cor_id_, PA);
+    // fprintf(stderr, "mac_set size = %d\n", mac_set_.size());
     for (auto mac : mac_set_) {
       assert(req_buf == req_buffers[cor_id_][cm_->get_nodeid()]);
       Qp *qp = get_qp(mac);
@@ -745,16 +751,22 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       uint64_t remote_off = offsets_[cor_id_][cm_->get_nodeid()];
       req1.set_write_meta_for<0>(remote_off + sizeof(calvin_header), 
                     req_buf + sizeof(calvin_header), req_buf_end-req_buf-sizeof(calvin_header));
+      
       // calvin_header h;
       // h.batch_size = ((calvin_header*)req_buf)->batch_size;
       // h.received_size = h.batch_size;
-      uint64_t received_size = ((calvin_header*)req_buf)->batch_size;
-      assert(received_size != 0);
+      uint64_t* received_size = new uint64_t;
+      *received_size = ((calvin_header*)req_buf)->batch_size;
+      assert(*received_size != 0);
       // fprintf(stdout, "offsetof received_size: %d\n", OFFSETOF(calvin_header, received_size));
       req1.set_write_meta_for<1>(remote_off + OFFSETOF(calvin_header, received_size),
-                                    (char*)&received_size, sizeof(uint64_t));
+                                    (char*)received_size, sizeof(uint64_t));
+                                    
       
-      LOG(3) << "sending batch size " << received_size << " to offset " << remote_off << "for mac " << mac;
+      // LOG(3) << worker_id_ << " " << cor_id_ << " sending batch size " << *received_size 
+                       // << " to offset " << remote_off + OFFSETOF(calvin_header, received_size)
+                       // << " a.k.a remote address: " << (void*)(qp->remote_attr_.memory_attr_.buf + remote_off + OFFSETOF(calvin_header, received_size))
+                       // << " for mac " << mac << " for iteration " << iteration;
       req1.post_reqs(rdma_sched_, qp);
 
       // avoid send queue from overflow
@@ -764,11 +776,17 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     }
     indirect_yield(yield);
 
+//check
+
+
+
+
     assert(req_buf == req_buffers[cor_id_][cm_->get_nodeid()]);
     chunk_cnt = ((calvin_header*)req_buf)->batch_size;
 #endif
 
-    fprintf(stdout, "done sending epoch w/ chunk_cnt = %d at %lu\n", chunk_cnt, nocc::util::get_now());
+    fprintf(stderr, "done sending epoch w/ chunk_cnt = %d at %lu for iteration %d.\n", 
+                      chunk_cnt, nocc::util::get_now(), iteration);
 
     // construct calvin_request to local buffer,
     // which which be used by the scheduler later to merge
@@ -795,10 +813,17 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       yield_next(yield);
       check_schedule_done(cor_id_);
     }
+    // while (true) {
+    //   if (((calvin_header*)req_buffers[cor_id_][1-cm_->get_nodeid()])->received_size != 0) {
+    //     epoch_done_schedule[cor_id_] = true;
+    //     break;
+    //   }
+    //   yield_next(yield);
+    // }
 #endif
 
     assert(epoch_done_schedule[cor_id_]);
-    fprintf(stdout, "done receiving epoch.\n");
+    fprintf(stderr, "done receiving epoch for iteration %d.\n", iteration);
 
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       calvin_header* h = (calvin_header*)req_buffers[cor_id_][i];
@@ -811,19 +836,19 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       }
     }
     std::sort(deterministic_requests[cor_id_].begin(), deterministic_requests[cor_id_].end(), calvin_request_compare());
-    fprintf(stdout, "done scheduling. det size = %u\n", deterministic_requests[cor_id_].size());
+    fprintf(stderr, "done scheduling. det size = %u for iteration %d.\n", 
+                      deterministic_requests[cor_id_].size(), iteration);
 
     mach_received[cor_id_].clear();
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       calvin_header* h = (calvin_header*)req_buffers[cor_id_][i];
       h->received_size = 0;
-    } 
+    }
 
-    // for (int i = 0; i < deterministic_requests.size(); i++) {
-    //     auto req = deterministic_requests[i];
-    //     int tx_idx = req->req_idx;
-    //     // fprintf(stdout, "%d %lu\n", req.req_idx, req.timestamp);
-    // }
+    for (int i = 0; i < deterministic_requests[cor_id_].size(); i++) {
+        auto req = deterministic_requests[cor_id_][i];
+        fprintf(stderr, "%d %d %d %lu\n", worker_id_, cor_id_, req->req_idx, req->timestamp);
+    }
 
     uint64_t retry_count(0);
     // serve as a deterministic transaction executor
@@ -869,7 +894,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       yield_next(yield);
 #endif
 
-    // LOG(3) << "sync epoch";
+    fprintf(stderr, "done execution for iteration %d.\n", iteration);
 
 #if ONE_SIDED_READ == 0
     epoch_status_[cor_id_][cm_->get_nodeid()] = CALVIN_EPOCH_DONE;
@@ -893,10 +918,11 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       
       // h.batch_size = ((calvin_header*)req_buf)->batch_size;
       // h.received_size = h.batch_size;
-      uint8_t epoch_status = CALVIN_EPOCH_DONE;
+      uint8_t* epoch_status = new uint8_t;
+      *epoch_status = CALVIN_EPOCH_DONE;
       // fprintf(stdout, "offsetof epoch_status: %d\n", OFFSETOF(calvin_header, epoch_status));
       req2.set_write_meta(remote_off + OFFSETOF(calvin_header, epoch_status), 
-                                  (char*)&epoch_status, sizeof(uint8_t));
+                                  (char*)epoch_status, sizeof(uint8_t));
       req2.post_reqs(rdma_sched_, qp);
 
       // avoid send queue from overflow
@@ -910,6 +936,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     while (!check_epoch_done()) {
       yield_next(yield);
     }
+
+    fprintf(stderr, "%d %d ending for iteration %d.\n", worker_id_, cor_id_, iteration);
   }
 
   // rpc_->free_static_buf(send_buf);
@@ -1205,9 +1233,15 @@ void BenchWorker::check_schedule_done(int cid) {
   for (; i < cm_->get_num_nodes(); i++) {
     calvin_header* h = (calvin_header*)req_buffers[cid][i];
     volatile uint64_t recv = h->received_size;
-    volatile uint64_t batch = h->batch_size;
+    // uint64_t batch = h->batch_size;
     // LOG(3) << "in check: " << recv << " out of " << batch << " received.";
     // if (recv == 0 || recv < batch)
+    // if (i != cm_->get_nodeid()) {
+      // LOG(3) << "in check address: " << (void*)&(h->received_size) << " val = " << recv;
+      // calvin_request* cr = (calvin_request*)((char*)req_buffers[cid][i] + sizeof(calvin_header));
+      // LOG(3) << "remote timestamp = " << cr->timestamp;
+    // }
+    // asm volatile("" ::: "memory");
     if (recv == 0)
       break;
   }

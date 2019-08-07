@@ -48,7 +48,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   for(int i = 0; i < func_size; ++i) {
   	ids[i] = ((ycsb_req_info_t*)buf)->ids[i];
   	is_write[i] = ((ycsb_req_info_t*)buf)->is_write[i];
-    // is_write[i] = true;
+    // is_write[i] = false;
   }
 #else
   for(int i = 0; i < func_size; ++i) {
@@ -187,8 +187,35 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
 #else
   uint64_t id0,id1;
   GetTwoAccount(random_generator[cor_id_],&id0,&id1);
-  // uint64_t id0 = 100, id1 = 101;
 #endif
+
+  // static ids overriding real ids for testing purpose
+  // id0 = 4722155; id1 = 2941571;
+  // id0 = 1850100; id1 = 3849882;
+  // id0 = 2254304; id1 = 462416;
+  // id0 = 2043856; id1 = 2634303;
+  // id0 = 3380114; id1 = 1746621;
+  // id0 = 43427; id1 = 10826;
+  // id0 = 1741204; id1 = 2757632;
+  // id0 = 672362; id1 = 2478470;
+  // id0 = 2745895; id1 = 4752523;
+  // id0 = 4028119; id1 = 2073906;
+  // id0 = 2203856; id1 = 4771642;
+  // id0 = 3105507; id1 = 4217067;
+  // id0 = 6032; id1 = 13672;
+  // id0 = 1101594; id1 = 1252123;
+  // id0 = 4282979; id1 = 1232897;
+  // id0 = 3912844; id1 = 3305893;
+  // id0 = 3228324; id1 = 3290183;
+  // id0 = 1088934; id1 = 4258699;
+  // id0 = 2674508; id1 = 4171672;
+  // id0 = 3762869; id1 = 4733674;
+  // id0 = 1821612; id1 = 2848824;
+  // id0 = 3030624; id1 = 3767453;
+  // id0 = 1188591; id1 = 219745;
+  // id0 = 852775; id1 = 4664234;
+  // id0 = 4097369; id1 = 1088084;
+  // id0 = 4722155; id1 = 2941571;
 
   // first account
   int pid = AcctToPid(id0);
