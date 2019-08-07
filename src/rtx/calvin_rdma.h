@@ -329,14 +329,14 @@ public:
       fprintf(stdout, "pid = %d", read_set_[i].pid);
       fprintf(stdout, " tableid = %d", read_set_[i].tableid);
       fprintf(stdout, " len = %d", read_set_[i].len);
-      fprintf(stdout, " key = %d\n", read_set_[i].key);      
+      fprintf(stdout, " key = %lu\n", read_set_[i].key);      
     }
     fprintf(stdout, "in write set: \n");
     for (int i = 0; i < write_set_.size(); i++) {
       fprintf(stdout, "pid = %d", write_set_[i].pid);
       fprintf(stdout, " tableid = %d", write_set_[i].tableid);
       fprintf(stdout, " len = %d", write_set_[i].len);
-      fprintf(stdout, " key = %d\n", write_set_[i].key);      
+      fprintf(stdout, " key = %lu\n", write_set_[i].key);      
     }
   }
 

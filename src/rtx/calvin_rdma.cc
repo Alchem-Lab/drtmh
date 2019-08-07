@@ -293,9 +293,9 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
     else {
       fprintf(stderr, "%d %d %d waiting for read/write set ready.\n", worker_->worker_id_, cor_id_, req_seq);
       for (int i = 0; i < read_set_.size(); ++i)
-        fprintf(stderr, "%d %d read %d key %d.\n", worker_->worker_id_, cor_id_, i, read_set_[i].key);        
+        fprintf(stderr, "%d %d read %d key %lu data_ptr = %p.\n", worker_->worker_id_, cor_id_, i, read_set_[i].key, read_set_[i].data_ptr);        
       for (int i = 0; i < write_set_.size(); ++i)
-        fprintf(stderr, "%d %d write %d key %d.\n", worker_->worker_id_, cor_id_, i, write_set_[i].key);
+        fprintf(stderr, "%d %d write %d key %lu data_ptr = %p.\n", worker_->worker_id_, cor_id_, i, write_set_[i].key, write_set_[i].data_ptr);
       worker_->yield_next(yield);
     }
   }
