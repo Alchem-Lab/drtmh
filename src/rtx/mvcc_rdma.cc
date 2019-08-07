@@ -422,11 +422,16 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
         }
         assert(pos != -1);
         char* reply = (char*)reply_msg + 1;
+#if ONE_SIDED_READ == 0
         *(uint64_t*)reply = (uint64_t)pos;
         assert((uint64_t)pos < MVCC_VERSION_NUM);
         char* raw_data = (char*)(node->value) + sizeof(MVCCHeader);
         memcpy(reply + sizeof(uint64_t), raw_data + maxpos * item->len, item->len);
         nodelen = sizeof(uint64_t) + item->len;
+#elif ONE_SIDED_READ == 2
+        memcpy(reply, (char*)node->value, sizeof(MVCCHeader) + item->len * MVCC_VERSION_NUM);
+        nodelen = sizeof(MVCCHeader) + item->len * MVCC_VERSION_NUM;
+#endif
         goto END;
       }
     }
@@ -468,6 +473,14 @@ void MVCC::update_rpc_handler(int id, int cid, char* msg, void* arg) {
     ASSERT(header->lock == item->txn_starting_timestamp) << "release lock: "
       << header->lock << "!=" << item->txn_starting_timestamp;
     int pos = (int)item->pos;
+    // uint64_t min_pos = 0xffffffffffffffff;
+    // int pos = -1;
+    // for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
+    //   if(header->wts[i] < min_pos) {
+    //     pos = i;
+    //     min_pos = header->wts[i];
+    //   }
+    // }
     assert(pos < MVCC_VERSION_NUM);
     header->wts[pos] = item->txn_starting_timestamp;
     // LOG(3) << item->txn_starting_timestamp;
