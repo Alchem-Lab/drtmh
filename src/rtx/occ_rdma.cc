@@ -186,6 +186,7 @@ bool OCCR::lock_writes_w_FA_rdma(yield_func_t &yield) {
 
 void OCCR::release_writes_w_rdma(yield_func_t &yield) {
   // can only work with lock_w_rdma
+  START(release_write);
   uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
 
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
@@ -209,6 +210,7 @@ void OCCR::release_writes_w_rdma(yield_func_t &yield) {
     } // check pid
   }   // for
   worker_->indirect_yield(yield);
+  END(release_write);
   return;
 }
 

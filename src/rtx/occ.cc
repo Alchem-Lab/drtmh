@@ -44,6 +44,7 @@ void OCC::begin(yield_func_t &yield) {
 
 bool OCC::commit(yield_func_t &yield) {
   // only execution phase
+  START(commit);
 #if TX_ONLY_EXE
   gc_readset();
   gc_writeset();
@@ -69,13 +70,15 @@ bool OCC::commit(yield_func_t &yield) {
   }
 
   prepare_write_contents();
-  log_remote(yield); // log remote using *logger_*
+  // log_remote(yield); // log remote using *logger_*
 
   // write the modifications of records back
   write_back_oneshot(yield);
+  END(commit);
   return true;
 ABORT:
   release_writes(yield);
+  END(commit);
   return false;
 }
 
@@ -281,6 +284,7 @@ void OCC::write_back_oneshot(yield_func_t &yield) {
 }
 
 bool OCC::release_writes(yield_func_t &yield) {
+  START(release_write);
   start_batch_rpc_op(write_batch_helper_);
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) { // remote case
@@ -293,6 +297,7 @@ bool OCC::release_writes(yield_func_t &yield) {
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   worker_->indirect_yield(yield);
+  END(release_write);
 }
 
 void OCC::log_remote(yield_func_t &yield) {

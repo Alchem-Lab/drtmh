@@ -141,11 +141,12 @@ struct RTXLockRequestItem {
   req_lock_type_t type;
   uint8_t  pid;
   uint8_t  tableid;
+  uint16_t len;
   uint64_t key;
   uint64_t seq;
   uint64_t txn_starting_timestamp;
-  inline RTXLockRequestItem(req_lock_type_t type,uint8_t pid,uint8_t tableid,uint64_t key,uint64_t seq,uint64_t txn_start_time)
-      :type(type),pid(pid),tableid(tableid),key(key),seq(seq),txn_starting_timestamp(txn_start_time)
+  inline RTXLockRequestItem(req_lock_type_t type,uint8_t pid,uint8_t tableid,uint16_t len,uint64_t key,uint64_t seq,uint64_t txn_start_time)
+      :type(type),pid(pid),tableid(tableid),len(len),key(key),seq(seq),txn_starting_timestamp(txn_start_time)
   {
   }
 } __attribute__ ((aligned (8)));

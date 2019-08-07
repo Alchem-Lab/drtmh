@@ -82,7 +82,7 @@ protected:
 #if ONE_SIDED_READ
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-
+    START(read_lat);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
 
@@ -93,13 +93,13 @@ protected:
     auto seq = node->seq;
     data_ptr = data_ptr + sizeof(MemNode);
 #else
-    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
+    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader),false);
     RdmaValHeader *header = (RdmaValHeader *)data_ptr;
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
 #endif
     ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
-
+    END(read_lat);
     read_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
                            seq,
                            len,pid);
@@ -133,7 +133,8 @@ protected:
   }
 
   int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    assert(false); // not implemented
+    assert(false);
+    return add_batch_insert(tableid,key,pid,len);
   }
 
 #else
@@ -154,12 +155,10 @@ protected:
 
 #endif
 
-
-
   /** helper functions to batch rpc operations below
     */
   inline __attribute__((always_inline))
-  void start_batch_read() {
+  virtual void start_batch_read() {
     start_batch_rpc_op(read_batch_helper_);
   }
 
@@ -209,21 +208,19 @@ protected:
       ReplyHeader *header = (ReplyHeader *)(ptr);
       ptr += sizeof(ReplyHeader);
       for(uint j = 0;j < header->num;++j) {
-        OCCResponse *item = (OCCResponse *)ptr;
+        WaitDieResponse *item = (WaitDieResponse *)ptr;
         if ((item->idx & 1) == 0) { // an idx in read-set
           // fprintf(stdout, "rpc response: read_set idx = %d, payload = %d\n", item->idx, item->payload);
           item->idx >>= 1;
           read_set_[item->idx].data_ptr = (char *)malloc(read_set_[item->idx].len);
-          memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),read_set_[item->idx].len);
-          read_set_[item->idx].seq      = item->seq;
+          memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(WaitDieResponse),read_set_[item->idx].len);
         } else {
           // fprintf(stdout, "rpc response: write_set idx = %d, payload = %d\n", item->idx, item->payload);
           item->idx >>= 1;
           write_set_[item->idx].data_ptr = (char *)malloc(write_set_[item->idx].len);
-          memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),write_set_[item->idx].len);
-          write_set_[item->idx].seq      = item->seq;
+          memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(WaitDieResponse),write_set_[item->idx].len);
         }
-        ptr += (sizeof(OCCResponse) + item->payload);
+        ptr += (sizeof(WaitDieResponse) + item->payload);
       }
     }
     return true;
@@ -235,7 +232,7 @@ protected:
 #if 0
   void prepare_write_contents() {
     // Notice that it should contain local records
-    // This function has to be called after lock + validation success
+    // This function has to be called after lock
     write_batch_helper_.clear_buf(); // only clean buf, not the mac_set
 
     for(auto it = write_set_.begin();it != write_set_.end();++it) {
@@ -248,7 +245,6 @@ protected:
       }
     }
   }
-
 #endif
   /**
    * GC the read/write set is a little complex using RDMA.
@@ -287,25 +283,15 @@ protected:
 
   bool try_lock_read_w_rdma(int index, yield_func_t &yield);
   bool try_lock_write_w_rdma(int index, yield_func_t &yield);
-  bool try_lock_read_w_rwlock_rdma(int index, uint64_t txn_end_time, yield_func_t &yield);
-  bool try_lock_write_w_rwlock_rdma(int index, yield_func_t &yield);
-  bool try_lock_read_w_FA_rdma(int index, yield_func_t &yield);
-  bool try_lock_write_w_FA_rdma(int index, yield_func_t &yield);
-  bool try_lock_read_w_rwlock_rpc(int index, uint64_t txn_end_time, yield_func_t &yield);
+  bool try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield);
   bool try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield);
 
   void release_reads_w_rdma(yield_func_t &yield);
   void release_writes_w_rdma(yield_func_t &yield);
-  void release_reads_w_rwlock_rdma(yield_func_t &yield);
-  void release_writes_w_rwlock_rdma(yield_func_t &yield);
-  void release_reads_w_FA_rdma(yield_func_t &yield);
-  void release_writes_w_FA_rdma(yield_func_t &yield);
-  void release_reads(yield_func_t &yield);
-  void release_writes(yield_func_t &yield);
+  void release_reads(yield_func_t &yield, bool all = true);
+  void release_writes(yield_func_t &yield, bool all = true);
 
   void write_back_w_rdma(yield_func_t &yield);
-  void write_back_w_rwlock_rdma(yield_func_t &yield);
-  void write_back_w_FA_rdma(yield_func_t &yield);
   void write_back(yield_func_t &yield);
 
 public:
@@ -338,7 +324,6 @@ public:
     read_req_ = new RDMAReadReq(cid);
     read_set_.clear();
     write_set_.clear();
-    memset(abort_cnt, 0, sizeof(int) * 40);
   }
 
   void set_logger(Logger *log) { logger_ = log; }
@@ -363,14 +348,14 @@ public:
 
 #if ONE_SIDED_READ
     // step 2: get the read lock. If fail, return false
-    if(!try_lock_read_w_rwlock_rdma(index, txn_end_time, yield)) {
-      // release_reads_w_rwlock_rdma(yield);
-      release_writes_w_rwlock_rdma(yield);
+    if(!try_lock_read_w_rdma(index, yield)) {
+      release_reads_w_rdma(yield);
+      release_writes_w_rdma(yield);
       return -1;
     }
 #else
-    if (!try_lock_read_w_rwlock_rpc(index, txn_end_time, yield)) {
-      // release_reads(yield);
+    if (!try_lock_read_w_rwlock_rpc(index, yield)) {
+      release_reads(yield, false);
       release_writes(yield);
       return -1;
     }
@@ -388,30 +373,12 @@ public:
   template <int tableid,typename V> // the value stored corresponding to tableid
   inline __attribute__((always_inline))
   int  read(int pid,uint64_t key,yield_func_t &yield) {
-    int index;
     if(pid == node_id_)
-      index = local_read(tableid,key,sizeof(V),yield);
+      return local_read(tableid,key,sizeof(V),yield);
     else {
       // remote case
-      index = remote_read(pid,tableid,key,sizeof(V),yield);
+      return remote_read(pid,tableid,key,sizeof(V),yield);
     }
-
-#if ONE_SIDED_READ
-    // step 2: get the read lock. If fail, return false
-    if(!try_lock_read_w_rwlock_rdma(index, txn_end_time, yield)) {
-      // release_reads_w_rwlock_rdma(yield);
-      release_writes_w_rwlock_rdma(yield);
-      return -1;
-    }
-#else
-    if (!try_lock_read_w_rwlock_rpc(index, txn_end_time, yield)) {
-      // release_reads(yield);
-      release_writes(yield);
-      return -1;
-    }
-#endif
-
-    return index;
   }
 #endif
 
@@ -430,15 +397,20 @@ public:
 
 #if ONE_SIDED_READ
     // step 3: get the write lock. If fail, return false
-    if(!try_lock_write_w_rwlock_rdma(index, yield)) {
-      // release_reads_w_rwlock_rdma(yield);
-      release_writes_w_rwlock_rdma(yield);
+    // if(!try_lock_write_w_rwlock_rdma(index, yield)) {
+    //   release_reads_w_rwlock_rdma(yield);
+    //   release_writes_w_rwlock_rdma(yield);
+    //   return -1;
+    // }
+    if(!try_lock_write_w_rdma(index, yield)) {
+      release_reads_w_rdma(yield);
+      release_writes_w_rdma(yield);
       return -1;
     }
 #else
     if(!try_lock_write_w_rwlock_rpc(index, yield)) {
-      // release_reads(yield);
-      release_writes(yield);
+      release_reads(yield);
+      release_writes(yield,false);
       return -1;
     }
 #endif
@@ -455,25 +427,31 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = read_set_;
-    
+
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
         "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
-    if(set[idx].tableid == 7) return (char*)malloc(set[idx].len);
+
+#if ONE_SIDED_READ
+    return set[idx].data_ptr;
+#else
 
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
-
       // do actual reads here
+      assert(false);
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
-
+#endif
+    assert(set[idx].data_ptr != NULL);
     return (set[idx].data_ptr);
   }
 
@@ -482,25 +460,30 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_write(int idx, size_t len, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = write_set_;
-    
+
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
-        "excepted size " << (int)(set[idx].len) << ' ' << (int)len  << " for table " 
-        << (int)(set[idx].tableid) << "; idx " << idx;
+        "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
 
+#if ONE_SIDED_READ
+      return set[idx].data_ptr;
+#else
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
-
       // do actual reads here
+      assert(false);
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
-
+#endif
+    assert(set[idx].data_ptr != NULL);
     return (set[idx].data_ptr);
   }
 
@@ -541,18 +524,36 @@ public:
        && set[idx].pid != node_id_) {
 
       // do actual reads here
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
 
     return (V*)(set[idx].data_ptr);
   }
 #endif
+  // return the last index in the write-set
+  inline __attribute__((always_inline))
+  int add_to_write(int idx) {
+    assert(idx >= 0 && idx < read_set_.size());
+    write_set_.emplace_back(read_set_[idx]);
+
+    // eliminate read-set
+    // FIXME: is it necessary to use std::swap to avoid memcpy?
+    read_set_.erase(read_set_.begin() + idx);
+    return write_set_.size() - 1;
+  }
+
+  inline __attribute__((always_inline))
+  int add_to_write() {
+    return add_to_write(read_set_.size() - 1);
+  }
 
   template <int tableid,typename V>
   V *get(int pid,uint64_t key,yield_func_t &yield) {
@@ -577,17 +578,16 @@ public:
 
   // start a TX
   virtual void begin(yield_func_t &yield) {
-    min_lease = 0xffffffffffffffff;
     read_set_.clear();
     write_set_.clear();
     #if ONE_SIDED_READ == 0
       start_batch_rpc_op(read_batch_helper_);
     #endif
-    
+
     #if USE_DSLR
       dslr_lock_manager->init();
     #endif
-    txn_start_time = rwlock::get_now();
+    txn_start_time = (rwlock::get_now()<<10) + response_node_ * 80 + worker_id_*10 + cor_id_ + 1;
     // the txn_end_time is approximated using the LEASE_TIME
     txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }
@@ -596,15 +596,9 @@ public:
   // commit a TX
   virtual bool commit(yield_func_t &yield) {
 
-    if(!check_lease()) {
-      // release_reads_w_rwlock_rdma(yield);
-      release_writes_w_rwlock_rdma(yield);
-      abort_cnt[22]++;
-      return false;
-    }
 #if TX_ONLY_EXE
     gc_readset();
-    gc_writeset();    
+    gc_writeset();
     return dummy_commit();
 #endif
 
@@ -617,10 +611,10 @@ public:
 
 #if 1
 #if USE_DSLR
-    // release_reads_w_FA_rdma(yield);
+    release_reads_w_FA_rdma(yield);
     write_back_w_FA_rdma(yield);    
 #else
-    // release_reads_w_rdma(yield);
+    release_reads_w_rdma(yield);
     write_back_w_rdma(yield);
 #endif
 #else
@@ -633,28 +627,14 @@ public:
 
     return true;
   }
-  
+
 #else
   virtual bool commit(yield_func_t &yield) {
-  // only execution phase
-#if TX_ONLY_EXE
-  gc_readset();
-  gc_writeset();
-  return dummy_commit();
-#endif
-  if(!check_lease()) {
-    abort_cnt[27]++;
-    release_writes(yield);
-    return false;
-  }
-
-  // prepare_write_contents();
-  // log_remote(yield); // log remote using *logger_*
-
-  // write the modifications of records back
   write_back(yield);
+  release_reads(yield);
   return true;
 }
+
 
 #endif
 
@@ -670,8 +650,6 @@ protected:
 
   const int cor_id_;
   const int response_node_;
-
-  uint64_t min_lease = 0xffffffffffffffff;
 
   Logger *logger_ = NULL;
 
@@ -695,19 +673,8 @@ public:
   // RPC handlers
   void read_write_rpc_handler(int id,int cid,char *msg,void *arg);
   void lock_rpc_handler(int id,int cid,char *msg,void *arg);
-  void release_rpc_handler(int id,int cid,char *msg,void *arg); 
+  void release_rpc_handler(int id,int cid,char *msg,void *arg);
   void commit_rpc_handler(int id,int cid,char *msg,void *arg);
-
-  bool check_lease() {
-    using namespace nocc::rtx::rwlock;
-    uint64_t now = END_TIME(R_LEASE(get_now_ntp()));
-    if(now > min_lease) {
-      // LOG(3) << min_lease << ' ' << now;
-      return false;
-    }
-    return true;
-  }
-
 };
 
 } // namespace rtx

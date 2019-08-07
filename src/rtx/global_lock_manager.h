@@ -15,6 +15,11 @@ namespace nocc {
 
 namespace rtx {
 
+struct RdmaValHeader {
+  uint64_t lock;
+  uint64_t seq;
+};
+
 struct lock_waiter_t {
 	req_lock_type_t type;
 	int pid;
@@ -64,7 +69,7 @@ public:
 								continue;
 							}
 							else {
-								// LOG(3) << "dengdao suo";
+								res = LOCK_SUCCESS_MAGIC;
 								goto SUCCESS;	
 							}
 						}
@@ -92,6 +97,8 @@ public:
 		    			else {
 		    				prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
 		    				more = first_waiter.item.len + sizeof(SundialResponse);
+		    				// LOG(3) << "dengdao suo";
+		    				res = LOCK_SUCCESS_MAGIC;
 		    				goto SUCCESS;
 		    			}
 		    			goto NEXT_ITEM;
@@ -101,6 +108,7 @@ public:
 		    		}
 		    		else {
 		    			res = LOCK_FAIL_MAGIC;
+		    			// LOG(3) << "dengbudao suo";
 		    			goto SUCCESS;
 		    		}
 		    	}
@@ -176,9 +184,14 @@ public:
 		uint64_t seq;
 		auto node = local_get_op(item->tableid, item->key, reply + sizeof(SundialResponse),
 			item->len, seq, db->_schemas[item->tableid].meta_len, db);
+
+		RdmaValHeader* header = (RdmaValHeader*)((char*)(node->value));
 		SundialResponse *reply_item = (SundialResponse*)reply;
-		reply_item->wts = WTS(node->read_lock);
-		reply_item->rts = RTS(node->read_lock);
+		// reply_item->wts = WTS(node->read_lock);
+		// reply_item->rts = RTS(node->read_lock);
+		reply_item->wts = WTS(header->seq);
+		reply_item->rts = RTS(header->seq);
+
 		*((uint8_t*)reply_msg) = LOCK_SUCCESS_MAGIC;
 		return true;
 	}
@@ -189,8 +202,11 @@ public:
 		auto node = local_get_op(tableid, key, reply + sizeof(SundialResponse),
 			len, seq, db->_schemas[tableid].meta_len, db);
 		SundialResponse *reply_item = (SundialResponse*)reply;
-		reply_item->wts = WTS(node->read_lock);
-		reply_item->rts = RTS(node->read_lock);
+		// reply_item->wts = WTS(node->read_lock);
+		// reply_item->rts = RTS(node->read_lock);
+		RdmaValHeader* header = (RdmaValHeader*)((char*)(node->value));
+		reply_item->wts = WTS(header->seq);
+		reply_item->rts = RTS(header->seq);
 		*((uint8_t*)reply_msg) = LOCK_SUCCESS_MAGIC;
 		return true;
 	}

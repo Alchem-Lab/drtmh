@@ -82,7 +82,7 @@ protected:
 #if ONE_SIDED_READ
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-
+    START(read_lat);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
 
@@ -99,7 +99,7 @@ protected:
     data_ptr = data_ptr + sizeof(RdmaValHeader);
 #endif
     ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
-
+    END(read_lat);
     read_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
                            seq,
                            len,pid);
@@ -439,12 +439,15 @@ public:
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
       // do actual reads here
+      assert(false);
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
 #endif
@@ -468,12 +471,15 @@ public:
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
       // do actual reads here
+      assert(false);
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
 #endif
@@ -518,12 +524,14 @@ public:
        && set[idx].pid != node_id_) {
 
       // do actual reads here
+      START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
       assert(set[idx].data_ptr != NULL);
+      END(read_lat);
       start_batch_rpc_op(read_batch_helper_);
     }
 
@@ -579,7 +587,7 @@ public:
     #if USE_DSLR
       dslr_lock_manager->init();
     #endif
-    txn_start_time = rwlock::get_now();
+    txn_start_time = (rwlock::get_now()<<10) + response_node_ * 80 + worker_id_*10 + cor_id_ + 1;
     // the txn_end_time is approximated using the LEASE_TIME
     txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }

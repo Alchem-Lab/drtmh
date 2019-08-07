@@ -12,10 +12,6 @@ namespace rtx {
 /**
  * New meta data for each record
  */
-struct RdmaValHeader {
-  uint64_t lock;
-  uint64_t seq;
-};
 
 struct MVCCHeader {
 	uint64_t lock;

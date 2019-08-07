@@ -68,7 +68,7 @@ protected:
     int index = read_set_.size() - 1;
 
 #if ONE_SIDED_READ
-    START(temp);
+    START(read_lat);
     uint64_t off = 0;
     if(pid != node_id_) {
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
@@ -80,6 +80,15 @@ protected:
       read_set_.back().data_ptr = data_ptr;
       read_set_.back().wts = WTS(header->seq);
       read_set_.back().rts = RTS(header->seq);
+      Qp *qp = get_qp(pid);
+      scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, data_ptr, 
+          sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
+      worker_->indirect_yield(yield);
+      if(WTS(header->seq) != read_set_.back().wts) {
+        release_reads(yield);
+        release_writes(yield);
+        return -1;
+      }
       assert(off != 0);
     }
     else {
@@ -98,7 +107,7 @@ protected:
       read_set_.back().value = value;
     }
     commit_id_ = std::max(commit_id_, read_set_.back().wts);
-    END(temp);
+    END(read_lat);
 #else
     if(!try_read_rpc(index, yield)) {
       // abort
@@ -131,9 +140,7 @@ protected:
       uint64_t off = 0;
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // LOG(3) << "before get off, key " << (int)key;
-      START(log);
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader), false);
-      END(log);
       // LOG(3) << "after get off";
       RdmaValHeader *header = (RdmaValHeader*)data_ptr;
       // auto seq = header->seq;
@@ -149,14 +156,25 @@ protected:
       char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
       write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
       write_set_.back().value = (char*)(node->value);
-      // memcpy(data_ptr, (char*)value, sizeof(RdmaValHeader) + len);
     }
+#if ONE_SIDED_READ == 2
+    if(!try_lock_read_rpc(index, yield)) {
+      release_reads(yield);
+      release_writes(yield, false);
+      return -1;
+    }
+    process_received_data(reply_buf_, write_set_.back(), true);
+#elif ONE_SIDED_READ == 1
     if(!try_lock_read_rdma(index, yield)) {
       // abort
       release_reads(yield);
       release_writes(yield, false);
       return -1;
     }
+#else
+    assert(false);
+#endif // end HYBRID
+
 #else
     if(!try_lock_read_rpc(index, yield)) {
       // abort
@@ -249,8 +267,8 @@ public:
     auto& item = read_set_[idx];
     //if(false) {
 #if ONE_SIDED_READ
-    // if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
-    if(false) {
+    if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
+    //if(false) {
 #else
     if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
 #endif
@@ -310,7 +328,7 @@ public:
   virtual void begin(yield_func_t &yield) {
     read_set_.clear();
     write_set_.clear();
-    txn_start_time = rwlock::get_now();
+    txn_start_time = (rwlock::get_now()<<10) + response_node_ * 80 + worker_id_*10 + cor_id_ + 1;;
   }
   bool prepare(yield_func_t &yield) {
     if(!try_renew_all_lease_rdma(commit_id_, yield)) {
