@@ -67,8 +67,9 @@ bool RRpc::poll_comp_callback(char *msg,int from,int from_t) {
     // This is a reply
     ASSERT(header->meta.cid != 0);
     if(unlikely(reply_counts_[header->meta.cid] <= 0)) {
-      LOG(7) << "receive a reply from cid" << header->meta.cid << " at worker " << worker_id_ << " @mac " << from
+      LOG(3) << "receive a reply from cid" << header->meta.cid << " at worker " << worker_id_ << " @mac " << from
              << " which is not required." << "Total " << processed_rpc_ << " processed.";
+      return true;
     }
 
     char *buf = reply_bufs_[header->meta.cid];

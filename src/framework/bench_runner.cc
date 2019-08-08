@@ -88,7 +88,7 @@ BenchRunner::BenchRunner(std::string &config_file)
   rtx::global_view = new rtx::SymmetricView(rep_factor,net_def_.size());
   //rtx::global_view->print();
 
-  rtx::global_lock_manager = new rtx::GlobalLockManager[20]; // hard coded
+  rtx::global_lock_manager = new rtx::GlobalLockManager[200]; // hard coded
   /* reset the barrier number */
   barrier_a_.n = nthreads;
 }

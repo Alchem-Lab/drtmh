@@ -44,7 +44,7 @@ __thread util::fast_random *random_generator = NULL;
 // A new event loop channel
 void  RWorker::new_master_routine(yield_func_t &yield,int cor_id) {
 
-  LOG(3) << "Worker " << worker_id_ << " on cpu " << sched_getcpu();
+  LOG(3) << "Worker " << worker_id_ << " on cpu " << sched_getcpu() << "with cor id " << cor_id;
 
   auto routine_meta = get_routine_meta(MASTER_ROUTINE_ID);
 
