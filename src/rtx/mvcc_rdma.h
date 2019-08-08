@@ -120,10 +120,15 @@ protected:
       release_writes(yield, false);
       return -1;
     }
+    
+    auto& item = write_set_.back();
+    char* local_buf = Rmempool[memptr++];
+    item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
+                 local_buf, yield, sizeof(MVCCHeader), false);
+    //LOG(3) << "get off" << item.off;
     if(pid != node_id_) {
       process_received_data_hybrid(reply_buf_, write_set_.back());
     }
-
 #else
     if(!try_lock_read_rpc(index, yield)) {
       // abort
@@ -359,6 +364,8 @@ private:
         pos = i;
       }
     }
+    assert(pos != -1);
+    assert(maxpos != -1);
     item.seq = (uint64_t)pos + (uint64_t)maxpos * MVCC_VERSION_NUM;
     item.data_ptr = (char*)item.data_ptr + sizeof(MVCCHeader) + maxpos * item.len;
   }

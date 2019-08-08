@@ -252,7 +252,7 @@ void TpccMainRunner::init_store(MemDB* &store){
                    NumItems() * scale_factor);
 #endif
 
-#if ONE_SIDED_READ == 1
+#if ONE_SIDED_READ
   store->EnableRemoteAccess(WARE,cm);
   store->EnableRemoteAccess(DIST,cm);
   store->EnableRemoteAccess(STOC,cm);

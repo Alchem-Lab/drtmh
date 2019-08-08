@@ -33,11 +33,20 @@ struct lock_waiter_t {
 class GlobalLockManager {
 public:
 
-	GlobalLockManager() {}
-
+	GlobalLockManager() {
+		waiters = new std::map<volatile uint64_t*, std::vector<lock_waiter_t> >();
+    }
+    int which_worker = -1;
 	inline __attribute__((always_inline))
 	void add_to_waitlist(volatile uint64_t* lock_addr, lock_waiter_t& waiter) {
+        if(which_worker == -1) which_worker = waiter.tid;
+        assert(waiter.tid == which_worker);
 		(*waiters)[lock_addr].push_back(waiter);
+        //auto it = waiters->find(lock_addr);
+        //if(it == waiters->end()) {
+        //   waiters->insert(std::pair<volatile uint64_t*, std::vector<lock_waiter_t> >(lock_addr, std::vector<lock_waiter_t>()));
+        //}
+		//(*waiters)[lock_addr].push_back(waiter);
 	}
 
 	inline __attribute__((always_inline))
@@ -47,7 +56,13 @@ public:
 		uint8_t res = LOCK_SUCCESS_MAGIC;
 		for (auto itr = waiters->begin(); itr != waiters->end(); ) {
 			volatile uint64_t* lockptr = itr->first;
-			assert(itr->second.size() > 0);
+			//assert(itr->second.size() > 0);
+            if(itr->second.size() == 0) {
+                itr++;
+                //waiters->erase(itr++);
+                //itr = waiters->erase(itr);
+                continue;
+            }
 			lock_waiter_t& first_waiter = *(itr->second.begin());
 			assert(first_waiter.tid == my_worker_id);
 
@@ -120,17 +135,19 @@ public:
 SUCCESS:
 	  		*((uint8_t *)reply_msg) = res;
 	  		rpc_->send_reply(reply_msg,sizeof(uint8_t) + more, first_waiter.pid, first_waiter.cid);
+            //LOG(3) << "back to " << first_waiter.pid << ' ' << first_waiter.cid << ' ' << first_waiter.
 			itr->second.erase(itr->second.begin());
 NEXT_ITEM:
-			if (itr->second.empty()) {
-				itr = waiters->erase(itr);
-			} else {
-				++itr;
-			}
+			//if (itr->second.empty()) {
+			//	itr = waiters->erase(itr);
+			//} else {
+			//	++itr;
+			//}
+            itr++;
 		}
 	}
 	void thread_local_init() {
-		waiters = new std::map<volatile uint64_t*, std::vector<lock_waiter_t> >();
+		//waiters = new std::map<volatile uint64_t*, std::vector<lock_waiter_t> >();
 
 	}
 #include "occ_internal_structure.h"
@@ -173,7 +190,7 @@ private:
 
 public:
 	// a map from the lock addr to a vector of waiters.
-	thread_local static std::map<volatile uint64_t*, std::vector<lock_waiter_t> >* waiters;
+	std::map<volatile uint64_t*, std::vector<lock_waiter_t> >* waiters = NULL;
 	// static std::mutex* mtx;
 
 	// the set of lock addresses each thread needs to keep an eye on.

@@ -809,7 +809,7 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
   for(auto& item : write_set_) {
     if(item.pid != -1) {
     // if(item.pid != node_id_) {
-      assert(item.seq < MVCC_VERSION_NUM * MVCC_VERSION_NUM);
+      ASSERT(item.seq < MVCC_VERSION_NUM * MVCC_VERSION_NUM) << item.seq;
       int pos = (int)(item.seq % MVCC_VERSION_NUM);
       int maxpos = (int)(item.seq / MVCC_VERSION_NUM);
       char* local_buf = item.data_ptr - sizeof(MVCCHeader) - maxpos * item.len;

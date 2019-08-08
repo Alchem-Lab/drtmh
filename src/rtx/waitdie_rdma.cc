@@ -535,7 +535,7 @@ void WAITDIE::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
                 .txn_start_time = item->txn_starting_timestamp
               };
               // LOG(3) << "add to wait";
-              global_lock_manager->add_to_waitlist(&(header->lock), waiter);
+              global_lock_manager[worker_id_].add_to_waitlist(&(header->lock), waiter);
               res = LOCK_WAIT_MAGIC;
               // res = LOCK_FAIL_MAGIC;
               goto END;

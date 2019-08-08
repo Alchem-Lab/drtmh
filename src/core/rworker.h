@@ -122,9 +122,9 @@ class RWorker : public ndb_thread {
 
 #if defined(WAITDIE_TX) && ONE_SIDED_READ == 0
     // handling locking events deligated by corountines
-    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
+    nocc::rtx::global_lock_manager[worker_id_].check_to_notify(worker_id_, rpc_);
 #elif defined(SUNDIAL_TX) && ONE_SIDED_READ != 1
-    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
+    nocc::rtx::global_lock_manager[worker_id_].check_to_notify(worker_id_, rpc_);
 #endif
 
     if(msg_handler_ != NULL){

@@ -347,13 +347,6 @@ void BenchWorker::events_handler() {
   LOG(3) << "in bench event handler";
   RWorker::events_handler();
 
-#if defined(WAITDIE_TX) && ONE_SIDED_READ == 0
-
-    // handling locking events deligated by corountines
-    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
-#elif defined(SUNDIAL_TX) && ONE_SIDED_READ == 0
-    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
-#endif
 }
 
 void BenchWorker::exit_handler() {

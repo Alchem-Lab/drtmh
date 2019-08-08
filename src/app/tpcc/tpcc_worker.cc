@@ -142,13 +142,13 @@ void TpccWorker::thread_local_init() {
     fprintf(stderr,"No transaction layer used!\n");
     assert(false);
 #endif
+  nocc::rtx::global_lock_manager[i].thread_local_init();
   }
   //routine_1_tx_ = txs_[1]; // used for report
   rtx_hook_ = new_txs_[1];
   /* init local tx so that it is not a null value */
   tx_ = txs_[cor_id_];
 
-  nocc::rtx::global_lock_manager->thread_local_init();
 }
 
 #if !ENABLE_TXN_API

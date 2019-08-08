@@ -75,7 +75,7 @@ void TpccWarehouseLoader::load() {
       int w_size = store_->_schemas[WARE].total_len; 
 #endif
 
-#if ONE_SIDED_READ == 1
+#if ONE_SIDED_READ
       char *wrapper = (char *)Rmalloc(w_size);
 #else
       char *wrapper = (char *)malloc(w_size);
@@ -146,7 +146,7 @@ void TpccDistrictLoader::load() {
 #endif
         
 
-#if ONE_SIDED_READ == 1
+#if ONE_SIDED_READ
         char *wrapper = (char *)Rmalloc(d_size);
 #else
         char *wrapper = (char *)malloc(d_size);

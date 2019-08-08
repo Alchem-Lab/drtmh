@@ -85,6 +85,7 @@ protected:
           sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
       worker_->indirect_yield(yield);
       if(WTS(header->seq) != read_set_.back().wts) {
+        abort_cnt[33]++;
         release_reads(yield);
         release_writes(yield);
         return -1;
@@ -265,17 +266,17 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     auto& item = read_set_[idx];
-    //if(false) {
+    if(item.rts < commit_id_) {
 #if ONE_SIDED_READ
-    if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
-    //if(false) {
+        if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
+        //if(false) {
 #else
-    if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+        if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
 #endif
-      // abort
-      release_reads(yield);
-      release_writes(yield);
-      return NULL; // to abort
+          release_reads(yield);
+          release_writes(yield);
+          return NULL; // to abort
+        }
     }
     assert(item.data_ptr != NULL);
     return item.data_ptr;
@@ -328,7 +329,7 @@ public:
   virtual void begin(yield_func_t &yield) {
     read_set_.clear();
     write_set_.clear();
-    txn_start_time = (rwlock::get_now()<<10) + response_node_ * 80 + worker_id_*10 + cor_id_ + 1;;
+    txn_start_time = (rwlock::get_now()<<10) + response_node_ * 100 + worker_id_*10 + cor_id_ + 1;;
   }
   bool prepare(yield_func_t &yield) {
     if(!try_renew_all_lease_rdma(commit_id_, yield)) {
