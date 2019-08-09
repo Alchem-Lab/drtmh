@@ -228,25 +228,25 @@ rtx_->begin(yield);
   std::vector<stock::value*> write_local, write_remote;
 
   for (uint ol_number = 1; ol_number <= num_local_stocks; ol_number++) {
-    const uint ol_i_id = local_item_ids[ol_number - 1];
-    auto idx = rtx_->read<ITEM,item::value>(WarehouseToPartition(warehouse_id),ol_i_id,yield);
-    if(idx == -1) return txn_result_t(false,73);
-    read_idx_local.push_back(idx);
+    // const uint ol_i_id = local_item_ids[ol_number - 1];
+    // auto idx = rtx_->read<ITEM,item::value>(WarehouseToPartition(warehouse_id),ol_i_id,yield);
+    // if(idx == -1) return txn_result_t(false,73);
+    // read_idx_local.push_back(idx);
 
     uint64_t s_key = local_stocks[ol_number  - 1];
-    idx = rtx_->write<STOC,stock::value>(WarehouseToPartition(stockKeyToWare(s_key)),s_key,yield);
+    auto idx = rtx_->write<STOC,stock::value>(WarehouseToPartition(stockKeyToWare(s_key)),s_key,yield);
     if(idx == -1) return txn_result_t(false,73);
     write_idx_local.push_back(idx);
   }
 
   for(uint i = 0;i < num_remote_stocks;++i) {
-    const uint ol_i_id = remote_item_ids[i];
-    auto idx = rtx_->read<ITEM,item::value>(WarehouseToPartition(warehouse_id),ol_i_id,yield);
-    if(idx == -1) return txn_result_t(false,73);
-    read_idx_remote.push_back(idx);
+    // const uint ol_i_id = remote_item_ids[i];
+    // auto idx = rtx_->read<ITEM,item::value>(WarehouseToPartition(warehouse_id),ol_i_id,yield);
+    // if(idx == -1) return txn_result_t(false,73);
+    // read_idx_remote.push_back(idx);
 
     uint64_t s_key = remote_stocks[i];
-    idx = rtx_->write<STOC,stock::value>(WarehouseToPartition(stockKeyToWare(s_key)),s_key,yield);
+    auto idx = rtx_->write<STOC,stock::value>(WarehouseToPartition(stockKeyToWare(s_key)),s_key,yield);
     if(idx == -1) return txn_result_t(false,73);
     write_idx_remote.push_back(idx);
   }
@@ -263,7 +263,8 @@ rtx_->begin(yield);
   // fprintf(stdout, "d_value addr %p\n", d_value);
   
   for (uint ol_number = 1; ol_number <= num_local_stocks; ol_number++) {
-    item::value *i_value = rtx_->get_readset<item::value>(read_idx_local[ol_number-1],yield);
+    // item::value *i_value = rtx_->get_readset<item::value>(read_idx_local[ol_number-1],yield);
+    item::value* i_value = new item::value;
     // fprintf(stdout, "i_value addr %p\n", i_value);
     read_local.push_back(i_value);
 
@@ -273,7 +274,8 @@ rtx_->begin(yield);
   }
 
   for(uint i = 0;i < num_remote_stocks;++i) {
-    item::value *i_value = rtx_->get_readset<item::value>(read_idx_remote[i],yield);
+    // item::value *i_value = rtx_->get_readset<item::value>(read_idx_remote[i],yield);
+    item::value* i_value = new item::value;
     // fprintf(stdout, "i_value addr %p\n", i_value);
     read_remote.push_back(i_value);
 
@@ -293,7 +295,8 @@ rtx_->begin(yield);
   assert(d_value != NULL);
 
   for (uint ol_number = 1; ol_number <= num_local_stocks; ol_number++) {
-    item::value *i_value = rtx_->get_readset<item::value>(read_idx_local[ol_number-1],yield);
+    // item::value *i_value = rtx_->get_readset<item::value>(read_idx_local[ol_number-1],yield);
+    item::value* i_value = new item::value;
     assert(i_value != NULL);
     read_local[ol_number-1] = i_value;
 
@@ -303,7 +306,8 @@ rtx_->begin(yield);
   }
 
   for(uint i = 0;i < num_remote_stocks;++i) {
-    item::value *i_value = rtx_->get_readset<item::value>(read_idx_remote[i],yield);
+    // item::value *i_value = rtx_->get_readset<item::value>(read_idx_remote[i],yield);
+    item::value* i_value = new item::value;
     assert(i_value != NULL);
     read_remote[i] = i_value;
     stock::value *s_value = rtx_->get_writeset<stock::value>(write_idx_remote[i],yield);

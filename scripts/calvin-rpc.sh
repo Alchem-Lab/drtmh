@@ -26,13 +26,22 @@ COROUTINES=1
 if [ x"$4" != "x" ]; then
 	COROUTINES=$4
 fi
+MACS=2
+if [ x"$5" != "x" ]; then
+	MACS=$5
+fi
 
 CC="nocccalvin"
-OUT="out/drtmh-$CC-$WL-2-rpc.log"
+OUT="out/drtmh-$CC-$WL-$MACS-rpc.log"
 
 echo "running $WL with $THREADS*$COROUTINES..."
-echo "./${CC}-rpc --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>${OUT}_$1 2>&1"
-./${CC}-rpc --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p 2 1>${OUT}_$1 2>&1
+
+if [ $WL == "ycsb" ];then
+    WL="bank"
+fi
+
+echo "./${CC}-rpc --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p $MACS 1>${OUT}_$1 2>&1"
+./${CC}-rpc --bench $WL --txn-flags 1  --verbose --config config.xml --id $1 -t $THREADS -c $COROUTINES -r 100 -p $MACS 1>${OUT}_$1 2>&1
 
 if [ x"$1" == x"0" ]; then
     cp ${OUT}_0 $OUT

@@ -541,10 +541,10 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
   assert(send_buf != NULL);
 #endif
 
-  // for (int iteration = 0; iteration < 10; iteration++)
+  // for (int iteration = 0; iteration < 100; iteration++)
   for (int iteration = 0; ; iteration++)
   {
-    fprintf(stderr, "%d %d starting for iteration %d.\n", worker_id_, cor_id_, iteration);
+    // fprintf(stderr, "%d %d starting for iteration %d.\n", worker_id_, cor_id_, iteration);
     char* req_buf_end = req_buf;
 
 #if ONE_SIDED_READ == 0
@@ -558,8 +558,6 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
 #endif
 
     epoch_done_schedule[cor_id_] = false;
-    // for (int i = 0; i < deterministic_requests[cor_id_].size(); i++)
-    //   free((char*)deterministic_requests[cor_id_][i]);
     deterministic_requests[cor_id_].clear();
 
 #if ONE_SIDED_READ == 0 || ONE_SIDED_READ == 2
@@ -653,11 +651,11 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     // sequencer has bufferred one epoch of requests.
     // broadcast bufferred request through rpc call to other partitions
     // in the same replica.
-    fprintf(stderr, "batched %d @ epoch %lu. start broadcasting. at %lu for iteration %d.\n", 
-                    ((calvin_header*)req_buf)->batch_size, 
-                    ((calvin_header*)req_buf)->epoch_id,
-                    nocc::util::get_now(),
-                    iteration);
+    // fprintf(stderr, "batched %d @ epoch %lu. start broadcasting. at %lu for iteration %d.\n", 
+    //                 ((calvin_header*)req_buf)->batch_size, 
+    //                 ((calvin_header*)req_buf)->epoch_id,
+    //                 nocc::util::get_now(),
+    //                 iteration);
 
     int chunk_cnt = 0;
 
@@ -785,8 +783,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     chunk_cnt = ((calvin_header*)req_buf)->batch_size;
 #endif
 
-    fprintf(stderr, "done sending epoch w/ chunk_cnt = %d at %lu for iteration %d.\n", 
-                      chunk_cnt, nocc::util::get_now(), iteration);
+    // fprintf(stderr, "done sending epoch w/ chunk_cnt = %d at %lu for iteration %d.\n", 
+    //                   chunk_cnt, nocc::util::get_now(), iteration);
 
     // construct calvin_request to local buffer,
     // which which be used by the scheduler later to merge
@@ -823,7 +821,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
 #endif
 
     assert(epoch_done_schedule[cor_id_]);
-    fprintf(stderr, "done receiving epoch for iteration %d.\n", iteration);
+    // fprintf(stderr, "done receiving epoch for iteration %d.\n", iteration);
 
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       calvin_header* h = (calvin_header*)req_buffers[cor_id_][i];
@@ -836,8 +834,8 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       }
     }
     std::sort(deterministic_requests[cor_id_].begin(), deterministic_requests[cor_id_].end(), calvin_request_compare());
-    fprintf(stderr, "done scheduling. det size = %u for iteration %d.\n", 
-                      deterministic_requests[cor_id_].size(), iteration);
+    // fprintf(stderr, "done scheduling. det size = %u for iteration %d.\n", 
+    //                   deterministic_requests[cor_id_].size(), iteration);
 
     mach_received[cor_id_].clear();
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
@@ -845,10 +843,10 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       h->received_size = 0;
     }
 
-    for (int i = 0; i < deterministic_requests[cor_id_].size(); i++) {
-        auto req = deterministic_requests[cor_id_][i];
-        fprintf(stderr, "%d %d %d %lu\n", worker_id_, cor_id_, req->req_idx, req->timestamp);
-    }
+    // for (int i = 0; i < deterministic_requests[cor_id_].size(); i++) {
+        // auto req = deterministic_requests[cor_id_][i];
+        // fprintf(stderr, "%d %d %d %lu\n", worker_id_, cor_id_, req->req_idx, req->timestamp);
+    // }
 
     uint64_t retry_count(0);
     // serve as a deterministic transaction executor
@@ -894,7 +892,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       yield_next(yield);
 #endif
 
-    fprintf(stderr, "done execution for iteration %d.\n", iteration);
+    // fprintf(stderr, "done execution for iteration %d.\n", iteration);
 
 #if ONE_SIDED_READ == 0
     epoch_status_[cor_id_][cm_->get_nodeid()] = CALVIN_EPOCH_DONE;
@@ -937,7 +935,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
       yield_next(yield);
     }
 
-    fprintf(stderr, "%d %d ending for iteration %d.\n", worker_id_, cor_id_, iteration);
+    // fprintf(stderr, "%d %d ending for iteration %d.\n", worker_id_, cor_id_, iteration);
   }
 
   // rpc_->free_static_buf(send_buf);
