@@ -101,6 +101,9 @@ class TXOpBase {
   template <typename REQ,typename... _Args>
   uint64_t rpc_op(int cor_id,int rpc_id,int pid,char *req_buf,char *res_buf,_Args&& ... args);
 
+  template <typename REQ,typename... _Args>
+  uint64_t rpc_op_with_data(int cor_id,int rpc_id,int pid,char *req_buf,char *res_buf,size_t data_size,char* real_data,_Args&& ... args);
+
   /**
    * lookup the MemNode(index), stored in val (MemNode), return is the offset
    */

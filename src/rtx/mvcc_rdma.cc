@@ -57,7 +57,6 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
       rpc_op<RTXMVCCUnlockItem>(cor_id_, RTX_RELEASE_RPC_ID, item.pid,
                                 rpc_op_send_buf_, reply_buf_,
                                 item.pid, item.key, item.tableid,txn_start_time);
-      worker_->indirect_yield(yield);
     }
     else {
       auto node = local_lookup_op(item.tableid, item.key);
@@ -67,6 +66,7 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
       header->lock = 0;
     }
   }
+  worker_->indirect_yield(yield);
   // if(need_send) {
   //   send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_RELEASE_RPC_ID);
   //   worker_->indirect_yield(yield);
@@ -245,20 +245,25 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
 }
 
 bool MVCC::try_update_rpc(yield_func_t &yield) {
-  start_batch_rpc_op(write_batch_helper_);
+  // start_batch_rpc_op(write_batch_helper_);
   bool need_send = false;
   START(commit);
   for(auto& item : write_set_) {
     if(item.pid != node_id_) {
       need_send = true;
       assert(item.seq < MVCC_VERSION_NUM);
-      add_batch_entry<RTXMVCCUpdateItem>(write_batch_helper_, item.pid,
+      // add_batch_entry<RTXMVCCUpdateItem>(write_batch_helper_, item.pid,
+      //   /* init RTXMVCCUpdateItem*/
+      //   item.pid, item.key, item.tableid, 
+      //   item.len, (uint16_t)item.seq, txn_start_time);
+      rpc_op_with_data<RTXMVCCUpdateItem>(cor_id_, RTX_UPDATE_RPC_ID, item.pid,
+        rpc_op_send_buf_, reply_buf_,item.len, item.data_ptr,
         /* init RTXMVCCUpdateItem*/
         item.pid, item.key, item.tableid, 
         item.len, (uint16_t)item.seq, txn_start_time);
       assert(item.data_ptr != NULL);
-      memcpy(write_batch_helper_.req_buf_end_, item.data_ptr, item.len);
-      write_batch_helper_.req_buf_end_ += item.len;
+      // memcpy(write_batch_helper_.req_buf_end_, item.data_ptr, item.len);
+      // write_batch_helper_.req_buf_end_ += item.len;
     }
     else {
       assert(item.data_ptr != NULL);
@@ -276,10 +281,10 @@ bool MVCC::try_update_rpc(yield_func_t &yield) {
       header->lock = 0;
     }
   }
-  if(need_send) {
-    send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
+  // if(need_send) {
+    // send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
     worker_->indirect_yield(yield);
-  }
+  // }
   END(commit);
   return true;
 }

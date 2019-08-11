@@ -52,17 +52,18 @@ bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
 }
 
 bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
-  start_batch_rpc_op(write_batch_helper_);
+  // start_batch_rpc_op(write_batch_helper_);
   bool need_send = false;
   START(commit);
   for(auto& item : write_set_){
     if(item.pid != node_id_) {//
     // if(item.pid != response_node_) {//
       need_send = true;
-      add_batch_entry<RTXUpdateItem>(write_batch_helper_, item.pid,
+      rpc_op_with_data<RTXUpdateItem>(cor_id_, RTX_UPDATE_RPC_ID, item.pid,
+        rpc_op_send_buf_, reply_buf_,item.len, item.data_ptr,
         /* init RTXUpdateItem*/item.pid, item.tableid, item.key, item.len, commit_id_);
-      memcpy(write_batch_helper_.req_buf_end_, item.data_ptr, item.len);
-      write_batch_helper_.req_buf_end_ += item.len;
+      // memcpy(write_batch_helper_.req_buf_end_, item.data_ptr, item.len);
+      // write_batch_helper_.req_buf_end_ += item.len;
     }
     else { // local
       auto node = inplace_write_op(item.tableid, item.key, item.data_ptr, item.len, commit_id_);
@@ -73,10 +74,10 @@ bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
       assert(__sync_bool_compare_and_swap(lockptr, l, 0)); // TODO
     }
   }
-  if(need_send) {
-    send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
+  // if(need_send) {
+  //   send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
     worker_->indirect_yield(yield);
-  }
+  // }
   END(commit);
   return true;
 }
@@ -654,13 +655,13 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
       rpc_op<RTXSundialUnlockItem>(cor_id_, RTX_RELEASE_RPC_ID, item.pid,
                                     rpc_op_send_buf_, reply_buf_,
                                     item.pid, item.key, item.tableid);
-      worker_->indirect_yield(yield);
       // need_send = true;
     }
     else {
       auto res = local_try_release_op(item.tableid, item.key, txn_start_time);
     }
   }
+  worker_->indirect_yield(yield);
   // if(need_send) {
   //   // LOG(3) << "release write once";
   //   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);

@@ -357,12 +357,12 @@ bool OCC::release_writes(yield_func_t &yield) {
       rpc_op<RtxLockItem>(cor_id_, RTX_RELEASE_RPC_ID, (*it).pid,
                                   rpc_op_send_buf_, reply_buf_, 
                                    /*init RTXLockItem */ (*it).pid,(*it).tableid,(*it).key,(*it).seq);
-      worker_->indirect_yield(yield);
     }
     else {
       auto res = local_try_release_op(it->node,ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1));
     }
   }
+  worker_->indirect_yield(yield);
   // send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   // worker_->indirect_yield(yield);
   END(release_write);

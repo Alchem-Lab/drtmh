@@ -384,12 +384,12 @@ void WAITDIE::release_reads(yield_func_t &yield, bool release_all) {
                                   rpc_op_send_buf_, reply_buf_, 
                                   RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,read_set_[i].len,
                                 read_set_[i].key,read_set_[i].seq, txn_start_time);
-      worker_->indirect_yield(yield);
     }
     else {
       auto res = local_try_release_op(read_set_[i].node,R_LEASE(txn_start_time));
     }
   }
+  worker_->indirect_yield(yield);
   // send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   // worker_->indirect_yield(yield);
   END(release_write);
@@ -413,12 +413,12 @@ void WAITDIE::release_writes(yield_func_t &yield, bool release_all) {
                                   rpc_op_send_buf_, reply_buf_, 
                                   RTX_REQ_LOCK_READ, write_set_[i].pid,write_set_[i].tableid,write_set_[i].len,
                                 write_set_[i].key,write_set_[i].seq, txn_start_time);
-      worker_->indirect_yield(yield);
     }
     else {
       auto res = local_try_release_op(write_set_[i].node,R_LEASE(txn_start_time) + 1);
     }
   }
+  worker_->indirect_yield(yield);
   // send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   // worker_->indirect_yield(yield);
   END(release_write);
@@ -427,24 +427,27 @@ void WAITDIE::release_writes(yield_func_t &yield, bool release_all) {
 
 void WAITDIE::write_back(yield_func_t &yield) {
   START(commit);
-  start_batch_rpc_op(write_batch_helper_);
+  // start_batch_rpc_op(write_batch_helper_);
   
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) { // remote case
 
       // fprintf(stdout, "write back to %d %d %d. my node_id_= %d.\n", it->pid, it->tableid, it->key, node_id_);      
-      add_batch_entry<RtxWriteItem>(write_batch_helper_, (*it).pid,
-                                   /*init RTXWriteItem */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+      // add_batch_entry<RtxWriteItem>(write_batch_helper_, (*it).pid,
+      //                              /*init RTXWriteItem */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+      rpc_op_with_data<RtxWriteItem>(cor_id_, RTX_COMMIT_RPC_ID, (*it).pid,
+        rpc_op_send_buf_, reply_buf_,(*it).len, (*it).data_ptr,
+        (*it).pid,(*it).tableid,(*it).key,(*it).len);
       
-      memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
-      write_batch_helper_.req_buf_end_ += (*it).len;
+      // memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
+      // write_batch_helper_.req_buf_end_ += (*it).len;
     }
     else {
       inplace_write_op(it->node,it->data_ptr,it->len);
     }
   }
 
-  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID);
+  // send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID);
   worker_->indirect_yield(yield);
   END(commit);
 }

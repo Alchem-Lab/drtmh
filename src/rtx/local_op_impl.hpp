@@ -153,6 +153,20 @@ uint64_t TXOpBase::rpc_op(int cid,int rpc_id,int pid,
   rpc_->append_req(req_buf,rpc_id,sizeof(RTXRequestHeader)+sizeof(REQ),cid,RRpc::REQ,pid);
 }
 
+template <typename REQ,typename... _Args>
+uint64_t TXOpBase::rpc_op_with_data(int cor_id,int rpc_id,int pid,char *req_buf,char *res_buf,size_t data_size,char* real_data,_Args&& ... args) {
+  char* req_buf_end = req_buf + sizeof(RTXRequestHeader);
+  ((RTXRequestHeader *)req_buf)->num = 1;
+
+  // prepare the arguments
+  *((REQ *)req_buf_end) = REQ(std::forward<_Args>(args)...);
+  req_buf_end += sizeof(REQ);
+  memcpy(req_buf_end, real_data, data_size);
+  // send the RPC
+  rpc_->prepare_multi_req(res_buf,1,cid);
+  rpc_->append_req(req_buf,rpc_id,sizeof(RTXRequestHeader)+sizeof(REQ) + data_size,cid,RRpc::REQ,pid); 
+}
+
 
 
 // } end class
