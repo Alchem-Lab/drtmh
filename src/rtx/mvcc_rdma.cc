@@ -44,16 +44,20 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
     worker_->indirect_yield(yield);
   }
 #else
-  start_batch_rpc_op(write_batch_helper_);
+  // start_batch_rpc_op(write_batch_helper_);
   bool need_send = false;
 
   for(int i = 0; i < release_num; ++i) {
     auto& item = write_set_[i];
     if(item.pid != node_id_) {
-      add_batch_entry<RTXMVCCUnlockItem>(write_batch_helper_, item.pid,
+      // add_batch_entry<RTXMVCCUnlockItem>(write_batch_helper_, item.pid,
                                    /*init RTXMVCCUnlockItem */
-                                   item.pid,item.key,item.tableid,txn_start_time);
-      need_send = true;
+                                   // item.pid,item.key,item.tableid,txn_start_time);
+      // need_send = true;
+      rpc_op<RTXMVCCUnlockItem>(cor_id_, RTX_RELEASE_RPC_ID, item.pid,
+                                rpc_op_send_buf_, reply_buf_,
+                                item.pid, item.key, item.tableid,txn_start_time);
+      worker_->indirect_yield(yield);
     }
     else {
       auto node = local_lookup_op(item.tableid, item.key);
@@ -63,10 +67,10 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
       header->lock = 0;
     }
   }
-  if(need_send) {
-    send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_RELEASE_RPC_ID);
-    worker_->indirect_yield(yield);
-  }
+  // if(need_send) {
+  //   send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_RELEASE_RPC_ID);
+  //   worker_->indirect_yield(yield);
+  // }
 #endif
   END(release_write);
 }

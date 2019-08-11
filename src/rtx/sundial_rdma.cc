@@ -639,7 +639,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
   }
 #else
   using namespace rwlock;
-  start_batch_rpc_op(write_batch_helper_);
+  // start_batch_rpc_op(write_batch_helper_);
   bool need_send = false;
 
   // for(auto it = write_set_.begin();it != write_set_.end();++it) {
@@ -648,20 +648,24 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
     if(item.pid != node_id_) { // remote case
     // if(item.pid != response_node_) { // remote case
        //LOG(3) << "rpc releasing"  << (item).key;
-      add_batch_entry<RTXSundialUnlockItem>(write_batch_helper_, item.pid,
+      // add_batch_entry<RTXSundialUnlockItem>(write_batch_helper_, item.pid,
                                    /*init RTXSundialUnlockItem */
-                                   item.pid,item.key,item.tableid);
-      need_send = true;
+                                   // item.pid,item.key,item.tableid);
+      rpc_op<RTXSundialUnlockItem>(cor_id_, RTX_RELEASE_RPC_ID, item.pid,
+                                    rpc_op_send_buf_, reply_buf_,
+                                    item.pid, item.key, item.tableid);
+      worker_->indirect_yield(yield);
+      // need_send = true;
     }
     else {
       auto res = local_try_release_op(item.tableid, item.key, txn_start_time);
     }
   }
-  if(need_send) {
-    // LOG(3) << "release write once";
-    send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
-    worker_->indirect_yield(yield);
-  }
+  // if(need_send) {
+  //   // LOG(3) << "release write once";
+  //   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+  //   worker_->indirect_yield(yield);
+  // }
 #endif
   END(release_write);
 }

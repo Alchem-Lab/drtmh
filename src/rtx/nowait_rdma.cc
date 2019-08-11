@@ -373,20 +373,25 @@ void NOWAIT::release_reads(yield_func_t &yield, bool release_all) {
   if(!release_all) {
     num -= 1;
   }
-  start_batch_rpc_op(write_batch_helper_);
+  // start_batch_rpc_op(write_batch_helper_);
   for(int i = 0; i < num; ++i) {
     if(read_set_[i].pid != node_id_) { // remote case
-      add_batch_entry<RTXLockRequestItem>(write_batch_helper_, read_set_[i].pid,
-                                   /*init RTXLockRequestItem */ 
-        RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,read_set_[i].len,
-        read_set_[i].key,read_set_[i].seq, txn_start_time);
+      // add_batch_entry<RTXLockRequestItem>(write_batch_helper_, read_set_[i].pid,
+      //                              /*init RTXLockRequestItem */ 
+      //   RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,read_set_[i].len,
+      //   read_set_[i].key,read_set_[i].seq, txn_start_time);
+      rpc_op<RTXLockRequestItem>(cor_id_, RTX_RELEASE_RPC_ID, read_set_[i].pid,
+                                  rpc_op_send_buf_, reply_buf_, 
+                                  RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,read_set_[i].len,
+                                read_set_[i].key,read_set_[i].seq, txn_start_time);
+      worker_->indirect_yield(yield);
     }
     else {
       auto res = local_try_release_op(read_set_[i].node,R_LEASE(txn_start_time));
     }
   }
-  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
-  worker_->indirect_yield(yield);
+  // send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+  // worker_->indirect_yield(yield);
   END(release_write);
 }
 
@@ -397,20 +402,25 @@ void NOWAIT::release_writes(yield_func_t &yield, bool release_all) {
   if(!release_all) {
     num -= 1;
   }
-  start_batch_rpc_op(write_batch_helper_);
+  // start_batch_rpc_op(write_batch_helper_);
   for(int i = 0; i < num; ++i) {
     if(write_set_[i].pid != node_id_) { // remote case
-      add_batch_entry<RTXLockRequestItem>(write_batch_helper_, write_set_[i].pid,
-                                   /*init RTXLockRequestItem */ RTX_REQ_LOCK_WRITE,
-        write_set_[i].pid,write_set_[i].tableid,write_set_[i].len,
-        write_set_[i].key,write_set_[i].seq, txn_start_time);
+      // add_batch_entry<RTXLockRequestItem>(write_batch_helper_, write_set_[i].pid,
+      //                              /*init RTXLockRequestItem */ RTX_REQ_LOCK_WRITE,
+      //   write_set_[i].pid,write_set_[i].tableid,write_set_[i].len,
+      //   write_set_[i].key,write_set_[i].seq, txn_start_time);
+      rpc_op<RTXLockRequestItem>(cor_id_, RTX_RELEASE_RPC_ID, write_set_[i].pid,
+                                  rpc_op_send_buf_, reply_buf_, 
+                                  RTX_REQ_LOCK_WRITE, write_set_[i].pid,write_set_[i].tableid,write_set_[i].len,
+                                write_set_[i].key,write_set_[i].seq, txn_start_time);
+      worker_->indirect_yield(yield);
     }
     else {
       auto res = local_try_release_op(write_set_[i].node,R_LEASE(txn_start_time) + 1);
     }
   }
-  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
-  worker_->indirect_yield(yield);
+  // send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+  // worker_->indirect_yield(yield);
   END(release_write);
 }
 
