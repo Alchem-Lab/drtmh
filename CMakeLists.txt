@@ -72,6 +72,15 @@ target_compile_options(noccocc-hybrid PRIVATE "-DOCC_TX")
 add_executable(noccnowait ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccnowait PRIVATE "-DNOWAIT_TX")
 
+add_executable(noccnowait-rpc ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccnowait-rpc PRIVATE "-DNOWAIT_TX")
+
+add_executable(noccnowait-onesided ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccnowait-onesided PRIVATE "-DNOWAIT_TX")
+
+add_executable(noccnowait-hybrid ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccnowait-hybrid PRIVATE "-DNOWAIT_TX")
+
 # add_executable(noccwaitdie ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
 add_executable(noccwaitdie ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccwaitdie PRIVATE "-DWAITDIE_TX")
@@ -133,7 +142,7 @@ include(cmake/Dependencies.cmake)
 #
 # Configure binary linking
 #
-set( apps noccrad noccocc noccocc-rpc noccocc-onesided noccocc-hybrid noccsi noccfarm noccnowait noccsundial-rpc noccsundial-onesided noccsundial-hybrid noccsundial noccmvcc noccmvcc-rpc noccmvcc-onesided noccmvcc-hybrid noccwaitdie noccwaitdie-rpc noccwaitdie-onesided noccwaitdie-hybrid nn nr )
+set( apps noccrad noccocc noccocc-rpc noccocc-onesided noccocc-hybrid noccsi noccfarm noccnowait noccnowait-rpc noccnowait-onesided noccnowait-hybrid noccsundial-rpc noccsundial-onesided noccsundial-hybrid noccsundial noccmvcc noccmvcc-rpc noccmvcc-onesided noccmvcc-hybrid noccwaitdie noccwaitdie-rpc noccwaitdie-onesided noccwaitdie-hybrid nn nr )
 foreach( prog ${apps} )
   if( LINK_STATIC_LIB )
     target_link_libraries( ${prog}
@@ -162,6 +171,9 @@ install(TARGETS noccocc-hybrid  	DESTINATION scripts)
 install(TARGETS noccfarm 	DESTINATION scripts)
 install(TARGETS noccsi   	DESTINATION scripts)
 install(TARGETS noccnowait 	DESTINATION scripts)
+install(TARGETS noccnowait-rpc 	DESTINATION scripts)
+install(TARGETS noccnowait-onesided 	DESTINATION scripts)
+install(TARGETS noccnowait-hybrid 	DESTINATION scripts)
 install(TARGETS noccwaitdie   	DESTINATION scripts)
 install(TARGETS noccwaitdie-rpc   	DESTINATION scripts)
 install(TARGETS noccwaitdie-onesided   	DESTINATION scripts)
