@@ -1,16 +1,19 @@
 // implementations of smallbank on revised codebase
 
 #include "bank_worker.h"
+#include "rtx/global_vars.h"
 #include "tx_config.h"
 
 #include "core/logging.h"
+extern int ycsb_set_length;
+extern int ycsb_write_num;
+
 
 namespace nocc {
 
 namespace oltp {
 
 extern __thread util::fast_random   *random_generator;
-
 namespace bank {
 
 #if ENABLE_TXN_API
@@ -20,7 +23,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   // LOG(3) << "ycsb" << sizeof(ycsb_record::value);
   // ASSERT(sizeof(ycsb_record::value) == 1000) << sizeof(ycsb_record::value);
   int index = -1;
-  const int func_size = 10;
+  const int func_size = ycsb_set_length;
   bool is_write[func_size];
   uint64_t ids[func_size];
   int indexes[func_size];
@@ -28,7 +31,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   assert(rtx_ != NULL);
   rtx_->begin(yield);
   for(int i = 0; i < func_size; ++i) {
-    is_write[i] = (random_generator[cor_id_].next() % 2);
+    is_write[i] = (random_generator[cor_id_].next() % ycsb_set_length) < ycsb_write_num;
     uint64_t id;
     GetAccount(random_generator[cor_id_],&id);
     while(accounts.find(id) != accounts.end()) {
@@ -62,6 +65,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
 #endif
   // int dummy_ret = rtx_->dummy_work(10000, indexes[3]); 
   // LOG(3) << dummy_ret;
+  usleep(100);
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret, 73);
 }

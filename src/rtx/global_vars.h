@@ -23,6 +23,10 @@ struct MVCCHeader {
 extern SymmetricView *global_view;
 extern GlobalLockManager *global_lock_manager;
 
+//extern int ycsb_set_length;
+//extern int ycsb_write_num;
+
+
 } // namespace rtx
 } // namespace nocc
 

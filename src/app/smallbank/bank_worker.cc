@@ -22,6 +22,7 @@
 #define unlikely(x) __builtin_expect(!!(x), 0)
 
 extern nocc::db::TSManager *ts_manager;
+extern int tx_hot;
 
 extern __thread RemoteHelper *remote_helper;
 
@@ -45,7 +46,7 @@ extern unsigned g_txn_workload_mix[7];
 /* input generation */
 void GetAccount(util::fast_random &r, uint64_t *acct_id) {
   uint64_t nums_global;
-  if(r.next() % 100 < TX_HOT) {
+  if(r.next() % 100 < tx_hot) {
     nums_global = NumAccounts();
   } else {
     nums_global = NumHotAccounts();
@@ -56,7 +57,7 @@ void GetAccount(util::fast_random &r, uint64_t *acct_id) {
 void GetTwoAccount(util::fast_random &r,
                    uint64_t *acct_id_0, uint64_t *acct_id_1)  {
   uint64_t nums_global;
-  if(r.next() % 100 < TX_HOT) {
+  if(r.next() % 100 < tx_hot) {
     nums_global = NumAccounts();
   } else {
     nums_global = NumHotAccounts();

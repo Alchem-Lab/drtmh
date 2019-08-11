@@ -72,6 +72,13 @@ extern std::string config_file;
 std::string exe_name;       // the executable's name
 string bench_type = "tpcc"; // app name
 
+
+int ycsb_set_length;
+int ycsb_write_num;
+int num_hot;
+int num_accounts;
+int tx_hot;
+
 int verbose = 0;
 uint64_t txn_flags = 0;
 uint64_t ops_per_worker = 0;

@@ -329,7 +329,7 @@ public:
   virtual void begin(yield_func_t &yield) {
     read_set_.clear();
     write_set_.clear();
-    txn_start_time = (rwlock::get_now()<<10) + response_node_ * 100 + worker_id_*10 + cor_id_ + 1;;
+    txn_start_time = (rwlock::get_now()<<11) + response_node_ * 200 + worker_id_*20 + cor_id_ + 1;;
   }
   bool prepare(yield_func_t &yield) {
     if(!try_renew_all_lease_rdma(commit_id_, yield)) {

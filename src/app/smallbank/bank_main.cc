@@ -14,6 +14,7 @@
 #include "framework/bench_runner.h"
 
 #include "rdmaio.h"
+#include "rtx/global_vars.h"
 using namespace rdmaio;
 
 #include <boost/foreach.hpp>
@@ -31,8 +32,12 @@ extern size_t nclients;
 extern size_t current_partition;
 extern size_t total_partition;
 extern int verbose;
-
 extern uint64_t ops_per_worker;
+extern int ycsb_set_length;
+extern int ycsb_write_num;
+extern int num_hot;
+extern int num_accounts;
+extern int tx_hot;
 
 namespace nocc {
 
@@ -118,7 +123,14 @@ BankMainRunner::BankMainRunner(std::string &config_file) : BenchRunner(config_fi
     int wc = pt.get<int> ("bench.bank.wc");
     int aml = pt.get<int> ("bench.bank.aml");
     int ycsb = pt.get<int> ("bench.bank.ycsb");
-
+    ycsb_set_length = pt.get<int>("bench.ycsb.set_len");
+    ycsb_write_num = pt.get<int>("bench.ycsb.write_num");
+    
+    tx_hot = pt.get<int>("bench.ycsb.tx_hot");
+    num_hot = pt.get<int>("bench.ycsb.num_hot");
+    num_accounts = pt.get<int>("bench.ycsb.num_accounts");
+    LOG(3)<< "ycsb param:" << "set len=" << ycsb_set_length << " write num=" << 
+        ycsb_write_num << "tx hot" << tx_hot << "num_hot" << num_hot << "num_accounts " << num_accounts;
     g_txn_workload_mix[0] = sp;
     g_txn_workload_mix[1] = dc;
     g_txn_workload_mix[2] = payment;
@@ -479,18 +491,18 @@ void BankMainRunner::populate_cache() {
 
 
 uint64_t NumAccounts(){
-  return (uint64_t)(DEFAULT_NUM_ACCOUNTS * total_partition * scale_factor);
+  return (uint64_t)(num_accounts * total_partition * scale_factor);
 }
 uint64_t NumHotAccounts(){
-  return (uint64_t)(DEFAULT_NUM_HOT * total_partition * scale_factor);
+  return (uint64_t)(num_hot * total_partition * scale_factor);
 }
 
 uint64_t GetStartAcct() {
-  return current_partition * DEFAULT_NUM_ACCOUNTS * scale_factor;
+  return current_partition * num_accounts * scale_factor;
 }
 
 uint64_t GetEndAcct() {
-  return (current_partition + 1) * DEFAULT_NUM_ACCOUNTS * scale_factor - 1;
+  return (current_partition + 1) * num_accounts * scale_factor - 1;
 }
 
 }; // end namespace bank
