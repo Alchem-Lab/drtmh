@@ -535,7 +535,7 @@ void WAITDIE::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
                 .txn_start_time = item->txn_starting_timestamp
               };
               // LOG(3) << "add to wait";
-              global_lock_manager->add_to_waitlist(&(header->lock), waiter);
+              global_lock_manager[worker_id_].add_to_waitlist(&(header->lock), waiter);
               res = LOCK_WAIT_MAGIC;
               // res = LOCK_FAIL_MAGIC;
               goto END;
@@ -595,8 +595,8 @@ void WAITDIE::release_rpc_handler(int id,int cid,char *msg,void *arg) {
       //                                 R_LEASE(item->txn_starting_timestamp));
       auto node = local_lookup_op(item->tableid, item->key);
       RdmaValHeader* header = (RdmaValHeader*)node->value;
-      ASSERT(header->lock == R_LEASE(item->txn_starting_timestamp)) << header->lock << ' '
-        << R_LEASE(item->txn_starting_timestamp);
+      //ASSERT(header->lock == R_LEASE(item->txn_starting_timestamp)) << header->lock << ' '
+      //  << R_LEASE(item->txn_starting_timestamp);
       header->lock = 0;
       // LOG(3) << "read release " << item->key << R_LEASE(item->txn_starting_timestamp);
     }
@@ -605,8 +605,8 @@ void WAITDIE::release_rpc_handler(int id,int cid,char *msg,void *arg) {
       //                               R_LEASE(item->txn_starting_timestamp) + 1);  
       auto node = local_lookup_op(item->tableid, item->key);
       RdmaValHeader* header = (RdmaValHeader*)node->value;
-      ASSERT(header->lock == R_LEASE(item->txn_starting_timestamp) + 1) << header->lock << ' '
-        << R_LEASE(item->txn_starting_timestamp) + 1;
+      //ASSERT(header->lock == R_LEASE(item->txn_starting_timestamp) + 1) << header->lock << ' '
+      //  << R_LEASE(item->txn_starting_timestamp) + 1;
       header->lock = 0;
       // LOG(3) << "write release " << item->key << R_LEASE(item->txn_starting_timestamp);
     }

@@ -19,6 +19,7 @@ OCC::OCC(oltp::RWorker *worker,MemDB *db,RRpc *rpc_handler,int nid,int cid,int r
 #endif
     read_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
     write_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
+    rpc_op_send_buf_(rpc_->get_static_buf(MAX_MSG_SIZE)),
     read_set_(),
     write_set_(),
     cor_id_(cid),response_node_(nid)
@@ -126,11 +127,75 @@ int OCC::local_insert(int tableid,uint64_t key,char *val,int len,yield_func_t &y
 }
 
 int OCC::remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-  return add_batch_read(tableid,key,pid,len);
+  //int ret =  add_batch_read(tableid,key,pid,len);
+  //load_read(ret, len, yield);
+  //return ret;
+  int index = read_set_.size();
+  read_set_.emplace_back(tableid, key, (MemNode*)NULL, (char*)NULL, 0, len, pid);
+  std::vector<ReadSetItem> &set = read_set_;
+  auto it = set.begin() + index;
+  START(read_lat);
+  rpc_op<RTXReadItem>(cor_id_, RTX_RW_RPC_ID, (*it).pid,
+                        rpc_op_send_buf_,reply_buf_,
+                        RTX_REQ_READ,pid,key,tableid,len,(index<<1));
+  worker_->indirect_yield(yield);
+  END(read_lat);
+  uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
+  if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
+    char* reply = (char*)reply_buf_ + sizeof(uint8_t);
+    OCCResponse* header = (OCCResponse*)reply;
+    if((*it).data_ptr == NULL) {
+      (*it).data_ptr = (char*)malloc((*it).len);
+    }
+    memcpy((*it).data_ptr, reply + sizeof(OCCResponse), (*it).len);
+    (*it).seq = header->seq;
+    if(header->seq == CONFLICT_WRITE_FLAG) {
+      return -1;
+    }
+    return index;
+  }
+  else if (resp_lock_status == LOCK_FAIL_MAGIC)
+    return -1;
+  else {
+    assert(false);
+  }
+  return -1;
 }
 
 int OCC::remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-  return add_batch_write(tableid,key,pid,len);
+  //int ret = add_batch_write(tableid,key,pid,len);
+  //load_write(ret, len, yield);
+  //return ret;
+  int index = write_set_.size();
+  write_set_.emplace_back(tableid, key, (MemNode*)NULL, (char*)NULL, 0, len, pid);
+  std::vector<ReadSetItem> &set = write_set_;
+  START(read_lat);
+  auto it = set.begin() + index;
+  rpc_op<RTXReadItem>(cor_id_, RTX_RW_RPC_ID, (*it).pid,
+                        rpc_op_send_buf_,reply_buf_,
+                        RTX_REQ_READ,pid,key,tableid,len,(index<<1) + 1);
+  worker_->indirect_yield(yield);
+  END(read_lat);
+  uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
+  if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
+    char* reply = (char*)reply_buf_ + sizeof(uint8_t);
+    OCCResponse* header = (OCCResponse*)reply;
+    if((*it).data_ptr == NULL) {
+      (*it).data_ptr = (char*)malloc((*it).len);
+    }
+    memcpy((*it).data_ptr, reply + sizeof(OCCResponse), (*it).len);
+    (*it).seq = header->seq;
+    if(header->seq == CONFLICT_WRITE_FLAG) {
+      return -1;
+    }
+    return index;
+  }
+  else if (resp_lock_status == LOCK_FAIL_MAGIC)
+    return -1;
+  else {
+    assert(false);
+  }
+  return -1;
 }
 
 int OCC::remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
@@ -419,7 +484,9 @@ bool OCC::lock_writes(yield_func_t &yield) {
 /* RPC handlers */
 void OCC::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
-  char *reply = reply_msg + sizeof(ReplyHeader);
+  //char *reply = reply_msg + sizeof(ReplyHeader);
+  char *reply = reply_msg + sizeof(uint8_t);
+  *(uint8_t*)reply_msg = LOCK_SUCCESS_MAGIC;
   int num_returned(0);
 
   RTX_ITER_ITEM(msg,sizeof(RTXReadItem)) {
@@ -463,7 +530,8 @@ void OCC::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
     num_returned += 1;
   } // end for
 
-  ((ReplyHeader *)reply_msg)->num = num_returned;
+  //((ReplyHeader *)reply_msg)->num = num_returned;
+  assert(num_returned <= 1);
   assert(num_returned > 0);
   rpc_->send_reply(reply_msg,reply - reply_msg,id,cid);
   // send reply

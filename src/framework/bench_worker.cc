@@ -952,13 +952,6 @@ void BenchWorker::events_handler() {
   LOG(3) << "in bench event handler";
   RWorker::events_handler();
 
-#if defined(WAITDIE_TX) && ONE_SIDED_READ == 0
-
-    // handling locking events deligated by corountines
-    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
-#elif defined(SUNDIAL_TX) && ONE_SIDED_READ == 0
-    nocc::rtx::global_lock_manager->check_to_notify(worker_id_, rpc_);
-#endif
 }
 
 void BenchWorker::exit_handler() {
@@ -993,7 +986,7 @@ void BenchWorker::exit_handler() {
     int temp[40];
     for(int i = 0; i < 40; ++i)
         temp[i] = 0;
-    for(int i = 1; i < 11; ++i)
+    for(int i = 0; i < coroutine_num; ++i)
     for(int j = 0; j < 40; ++j)
         temp[j] += dynamic_cast<rtx::TXOpBase *>(new_txs_[i])->abort_cnt[j];
     for(int j = 0; j < 40; ++j) 

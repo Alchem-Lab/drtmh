@@ -30,26 +30,59 @@ struct lock_waiter_t {
 	MemDB* db;
 };
 
+struct wait_list_node {
+    volatile uint64_t* lock_ptr;
+    lock_waiter_t waiter;
+    wait_list_node* next = NULL;
+    wait_list_node* prev = NULL;
+    wait_list_node(volatile uint64_t* ptr, lock_waiter_t wait):lock_ptr(ptr),waiter(wait){}
+};
+
 class GlobalLockManager {
 public:
 
-	GlobalLockManager() {}
+	GlobalLockManager() {
+		waiters = new std::map<volatile uint64_t*, std::vector<lock_waiter_t> >[20];
+    }
+    int which_worker = -1;
+    wait_list_node* head = NULL;
+    int cnt = 0;
+    inline __attribute__((always_inline))
+	void add_to_waitlist(volatile uint64_t* lock_addr, lock_waiter_t waiter) {
 
-	inline __attribute__((always_inline))
-	void add_to_waitlist(volatile uint64_t* lock_addr, lock_waiter_t& waiter) {
-		(*waiters)[lock_addr].push_back(waiter);
-	}
-
+        //LOG(3) << "start at " << waiter.pid << ' ' << waiter.cid << ' ' << waiter.txn_start_time;
+        if(head == NULL) head = new wait_list_node(lock_addr, waiter);
+        else {
+            head->prev = new wait_list_node(lock_addr, waiter);
+            head->prev->next = head;
+            head = head->prev;
+        }
+        cnt++;
+    }
+	//inline __attribute__((always_inline))
+	//void add_to_waitlist(volatile uint64_t* lock_addr, lock_waiter_t waiter) {
+    //    if(which_worker == -1) which_worker = waiter.tid;
+    //    assert(waiter.tid == which_worker);
+	//	(waiters[waiter.cid])[lock_addr].push_back(waiter);
+    //    //auto it = waiters->find(lock_addr);
+    //    //if(it == waiters->end()) {
+    //    //   waiters->insert(std::pair<volatile uint64_t*, std::vector<lock_waiter_t> >(lock_addr, std::vector<lock_waiter_t>()));
+    //    //}
+	//	//(*waiters)[lock_addr].push_back(waiter);
+	//}
+    
 	inline __attribute__((always_inline))
 	void check_to_notify(int my_worker_id, oltp::RRpc *rpc_) {
-	using namespace rwlock_4_waitdie;
-		if(waiters == NULL) return;
+        using namespace rwlock_4_waitdie;
+        if(head == NULL) return;
+        auto iter = head;
+        while(iter != NULL) {
+        //if(waiters[i].size() == 0) continue;
 		uint8_t res = LOCK_SUCCESS_MAGIC;
-		for (auto itr = waiters->begin(); itr != waiters->end(); ) {
-			volatile uint64_t* lockptr = itr->first;
-			assert(itr->second.size() > 0);
-			lock_waiter_t& first_waiter = *(itr->second.begin());
-			assert(first_waiter.tid == my_worker_id);
+			volatile uint64_t* lockptr = iter->lock_ptr;
+            
+			lock_waiter_t& first_waiter = iter->waiter;
+			ASSERT(first_waiter.tid == my_worker_id) << first_waiter.tid << ' ' << my_worker_id;
 
 			char* reply_msg = rpc_->get_reply_buf();
 			size_t more = 0;
@@ -92,7 +125,8 @@ public:
 		    		if(l == 0) {
 		    			if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, first_waiter.txn_start_time))){
 							LOG(3) << "fail change lock";
-		    				continue;
+		    				//continue;
+                            goto NEXT_ITEM;
 						}
 		    			else {
 		    				prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
@@ -113,6 +147,7 @@ public:
 		    		}
 		    	}
 		    }
+            break;
 		      default:
 		        assert(false);
 		    }
@@ -120,17 +155,132 @@ public:
 SUCCESS:
 	  		*((uint8_t *)reply_msg) = res;
 	  		rpc_->send_reply(reply_msg,sizeof(uint8_t) + more, first_waiter.pid, first_waiter.cid);
-			itr->second.erase(itr->second.begin());
+            //LOG(3) << "back to " << first_waiter.pid << ' ' << first_waiter.cid << ' ' << first_waiter.txn_start_time;
+            if(iter->prev != NULL) {
+                iter->prev->next = iter->next;
+                if(iter->next != NULL)
+                    iter->next->prev = iter->prev;
+            }
+            else {
+                assert(iter == head);
+                head = head->next;
+                if(head != NULL)
+                    head->prev = NULL;
+            }
+            --cnt;
+            assert(cnt >=0);
 NEXT_ITEM:
-			if (itr->second.empty()) {
-				itr = waiters->erase(itr);
-			} else {
-				++itr;
-			}
-		}
-	}
+            iter = iter->next;
+    }
+    }
+
+	//inline __attribute__((always_inline))
+	//void check_to_notify(int my_worker_id, oltp::RRpc *rpc_) {
+	//using namespace rwlock_4_waitdie;
+	//if(waiters == NULL) return;
+    //for(int i = 0; i < 20; ++i){
+    //    if(waiters[i].size() == 0) continue;
+	//	uint8_t res = LOCK_SUCCESS_MAGIC;
+	//	for (auto itr = waiters[i].begin(); itr != waiters[i].end(); ) {
+	//		volatile uint64_t* lockptr = itr->first;
+	//		//assert(itr->second.size() > 0);
+    //        //LOG(3)<<waiters->size();
+    //        if(itr->second.size() == 0) {
+    //            //itr++;
+    //            //waiters->erase(itr++);
+    //            itr = waiters[i].erase(itr);
+    //            //continue;
+    //            break;
+    //        }
+	//		lock_waiter_t& first_waiter = *(itr->second.begin());
+	//		ASSERT(first_waiter.tid == my_worker_id) << first_waiter.tid << ' ' << my_worker_id;
+
+	//		char* reply_msg = rpc_->get_reply_buf();
+	//		size_t more = 0;
+	//	    switch(first_waiter.type) {
+	//	      case RTX_REQ_LOCK_READ:
+	//	      case RTX_REQ_LOCK_WRITE:
+	//	       	{
+	//		       	uint64_t my_ts = R_LEASE(first_waiter.txn_start_time);
+	//		       	if(first_waiter.type == RTX_REQ_LOCK_WRITE) {
+	//		       		my_ts += 1;
+	//		       	}
+	//		        while (true) {
+	//					volatile uint64_t l = *lockptr;
+	//					if(l == 0) {
+	//						if(unlikely(!__sync_bool_compare_and_swap(lockptr, l,
+	//							my_ts))) {
+	//							continue;
+	//						}
+	//						else {
+	//							res = LOCK_SUCCESS_MAGIC;
+	//							goto SUCCESS;	
+	//						}
+	//					}
+	//					else if(my_ts < l) {
+	//						// goon waiting
+	//						goto NEXT_ITEM;
+	//					}
+	//					else {
+	//						// LOG(3) << "dengbudao suo";
+	//						res = LOCK_FAIL_MAGIC;
+	//						goto SUCCESS;
+	//					}
+	//	          	}
+	//	      	}
+	//	        break;
+	//	    case SUNDIAL_REQ_LOCK_READ: { // sundial lock and read
+	//	    	auto node = local_lookup_op(first_waiter.item.tableid, first_waiter.item.key, first_waiter.db);
+	//	    	while(true) {
+	//	    		volatile uint64_t l = *lockptr;
+	//	    		if(l == 0) {
+	//	    			if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, first_waiter.txn_start_time))){
+	//						LOG(3) << "fail change lock";
+	//	    				//continue;
+    //                        goto NEXT_ITEM;
+	//					}
+	//	    			else {
+	//	    				prepare_buf(reply_msg, &first_waiter.item, first_waiter.db);
+	//	    				more = first_waiter.item.len + sizeof(SundialResponse);
+	//	    				// LOG(3) << "dengdao suo";
+	//	    				res = LOCK_SUCCESS_MAGIC;
+	//	    				goto SUCCESS;
+	//	    			}
+	//	    			goto NEXT_ITEM;
+	//	    		}
+	//	    		else if(first_waiter.txn_start_time < l) {
+	//	    			goto NEXT_ITEM;
+	//	    		}
+	//	    		else {
+	//	    			res = LOCK_FAIL_MAGIC;
+	//	    			// LOG(3) << "dengbudao suo";
+	//	    			goto SUCCESS;
+	//	    		}
+	//	    	}
+	//	    }
+    //        break;
+	//	      default:
+	//	        assert(false);
+	//	    }
+
+//SUCCESS:
+	//  		*((uint8_t *)reply_msg) = res;
+	//  		rpc_->send_reply(reply_msg,sizeof(uint8_t) + more, first_waiter.pid, first_waiter.cid);
+    //        //LOG(3) << "back to " << first_waiter.pid << ' ' << first_waiter.cid << ' ' << first_waiter.
+    //        itr->second.begin()->pid = -1;
+	//		itr->second.erase(itr->second.begin());
+//NEXT_ITEM:
+	//		//if (itr->second.empty()) {
+	//		//	itr = waiters->erase(itr);
+	//		//} else {
+	//		//	++itr;
+	//		//}
+    //        itr++;
+	//	}
+	//}
+    //}
 	void thread_local_init() {
-		waiters = new std::map<volatile uint64_t*, std::vector<lock_waiter_t> >();
+		//waiters = new std::map<volatile uint64_t*, std::vector<lock_waiter_t> >();
 
 	}
 #include "occ_internal_structure.h"
@@ -173,7 +323,7 @@ private:
 
 public:
 	// a map from the lock addr to a vector of waiters.
-	thread_local static std::map<volatile uint64_t*, std::vector<lock_waiter_t> >* waiters;
+	std::map<volatile uint64_t*, std::vector<lock_waiter_t> >* waiters = NULL;
 	// static std::mutex* mtx;
 
 	// the set of lock addresses each thread needs to keep an eye on.

@@ -316,7 +316,7 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
     assert(false);
   }
   else {
-    global_lock_manager->prepare_buf(reply_buf_, (*it).tableid, (*it).key,
+    global_lock_manager[0].prepare_buf(reply_buf_, (*it).tableid, (*it).key,
       (*it).len, db_);
     return true;
   }
@@ -339,7 +339,7 @@ void SUNDIAL::read_rpc_handler(int id,int cid,char *msg,void *arg) {
     if(item->pid != response_node_)
       continue;
 
-    global_lock_manager->prepare_buf(reply_msg, item, db_);
+    global_lock_manager[0].prepare_buf(reply_msg, item, db_);
     nodelen = item->len + sizeof(SundialResponse);
     goto NEXT_ITEM;
   }
@@ -506,7 +506,7 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
         else {
           END(lock);
           // get local data
-          global_lock_manager->prepare_buf(reply_buf_, (*it).tableid, (*it).key,
+          global_lock_manager[0].prepare_buf(reply_buf_, (*it).tableid, (*it).key,
             (*it).len, db_);
           return true;
         }
@@ -557,7 +557,7 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
               .item = *item,
               .db = db_,
             };
-          global_lock_manager->add_to_waitlist(&header->lock, waiter);
+          global_lock_manager[worker_id_].add_to_waitlist(&header->lock, waiter);
           //LOG(3) << "add to wait" << l << ' ' << item->key;
           goto NO_REPLY;  
         } 
@@ -581,7 +581,7 @@ void SUNDIAL::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
           //LOG(3) << "lock " << item->timestamp << ' ' << item->key;
           volatile uint64_t *lockptr = &(header->lock);
           assert((*lockptr) == item->timestamp);
-          global_lock_manager->prepare_buf(reply_msg, item, db_);
+          global_lock_manager[0].prepare_buf(reply_msg, item, db_);
           nodelen = item->len + sizeof(SundialResponse);
           goto NEXT_ITEM;
         }

@@ -1,0 +1,10 @@
+#./run1.sh $1  1
+./run1.sh $1  3
+./run1.sh $1  5
+./run1.sh $1  7
+./run1.sh $1  9
+./run1.sh $1  11
+./run1.sh $1  13
+./run1.sh $1  15
+./run1.sh $1  17
+./run1.sh $1  20

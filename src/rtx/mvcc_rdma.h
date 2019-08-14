@@ -113,7 +113,22 @@ protected:
     else if(ret != 0) {
       assert(false);
     }
-
+#elif ONE_SIDED_READ == 2
+    if(!try_lock_read_rpc(index, yield)) {
+      // abort
+      release_reads(yield);
+      release_writes(yield, false);
+      return -1;
+    }
+    
+    auto& item = write_set_.back();
+    char* local_buf = Rmempool[memptr++];
+    item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
+                 local_buf, yield, sizeof(MVCCHeader), false);
+    //LOG(3) << "get off" << item.off;
+    if(pid != node_id_) {
+      process_received_data_hybrid(reply_buf_, write_set_.back());
+    }
 #else
     if(!try_lock_read_rpc(index, yield)) {
       // abort
@@ -328,6 +343,31 @@ private:
     if(item.data_ptr == NULL)
       item.data_ptr = (char*)malloc(item.len);
     memcpy(item.data_ptr, reply, item.len);
+  }
+
+  void process_received_data_hybrid(char* ptr, ReadSetItem& item) {
+    char* reply = ptr + 1;
+    if(item.data_ptr == NULL) {
+      item.data_ptr = Rmempool[memptr++];;
+    }
+    memcpy(item.data_ptr, reply, sizeof(MVCCHeader) + MVCC_VERSION_NUM * item.len);
+    MVCCHeader* header = (MVCCHeader*)item.data_ptr;
+    uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
+    int pos = -1, maxpos = -1;
+    for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
+      if(header->wts[i] > max_wts) {
+        max_wts = header->wts[i];
+        maxpos = i;
+      }
+      if(header->wts[i] < min_wts) {
+        min_wts = header->wts[i];
+        pos = i;
+      }
+    }
+    assert(pos != -1);
+    assert(maxpos != -1);
+    item.seq = (uint64_t)pos + (uint64_t)maxpos * MVCC_VERSION_NUM;
+    item.data_ptr = (char*)item.data_ptr + sizeof(MVCCHeader) + maxpos * item.len;
   }
 
   // void unlock(ReadSetItem& item, yield_func_t &yield) {

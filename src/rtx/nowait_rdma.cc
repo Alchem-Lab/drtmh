@@ -525,19 +525,6 @@ void NOWAIT::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
           // if(l & 0x1 == W_LOCKED) {
           if(l != 0) {
             if (false) { // nowait
-            //if (R_LEASE(item->txn_starting_timestamp) < l) {
-              // wait for the lock
-              lock_waiter_t waiter = {
-                .type = item->type,
-                .pid = id,
-                .tid = worker_id_,
-                .cid = cid,
-                .txn_start_time = item->txn_starting_timestamp
-              };
-              // LOG(3) << "add to wait";
-              global_lock_manager->add_to_waitlist(&(header->lock), waiter);
-              res = LOCK_WAIT_MAGIC;
-              // res = LOCK_FAIL_MAGIC;
               goto END;
             } else {
               res = LOCK_FAIL_MAGIC;

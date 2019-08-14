@@ -247,7 +247,7 @@ void RdmaCtrl::register_connect_mr(int dev_id) {
     }
     rdma_device->conn_buf_mr = ibv_reg_mr(rdma_device->pd,(char *)conn_buf_, conn_buf_size_,
                                           DEFAULT_PROTECTION_FLAG);
-    
+    fprintf(stderr, "registerring %lld", conn_buf_size_); 
     CE_2(!rdma_device->conn_buf_mr,
          "[librdma]: Connect Memory Region failed at dev %d, err %s\n",dev_id,strerror(errno));
 }
