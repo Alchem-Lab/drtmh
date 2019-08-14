@@ -37,6 +37,7 @@ extern int ycsb_set_length;
 extern int ycsb_write_num;
 extern int num_hot;
 extern int num_accounts;
+extern int sleep_time;
 extern int tx_hot;
 
 namespace nocc {
@@ -129,6 +130,7 @@ BankMainRunner::BankMainRunner(std::string &config_file) : BenchRunner(config_fi
     tx_hot = pt.get<int>("bench.ycsb.tx_hot");
     num_hot = pt.get<int>("bench.ycsb.num_hot");
     num_accounts = pt.get<int>("bench.ycsb.num_accounts");
+    sleep_time = pt.get<int>("bench.ycsb.sleep_time");
     LOG(3)<< "ycsb param:" << "set len=" << ycsb_set_length << " write num=" << 
         ycsb_write_num << "tx hot" << tx_hot << "num_hot" << num_hot << "num_accounts " << num_accounts;
     g_txn_workload_mix[0] = sp;
@@ -228,7 +230,10 @@ class BankLoader : public BenchLoader {
     if(is_primary_)
       RThreadLocalInit();
 #endif
-
+    uint64_t acc;
+    util::fast_random tempr;
+    GetAccountZipfian(tempr, &acc);
+    LOG(3) << "finish loading zipfian " << acc;
     fprintf(stdout,"[Bank], total %lu accounts loaded\n", NumAccounts());
     int meta_size = store_->_schemas[CHECK].meta_len;
 

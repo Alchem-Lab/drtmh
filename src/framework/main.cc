@@ -78,6 +78,7 @@ int ycsb_write_num;
 int num_hot;
 int num_accounts;
 int tx_hot;
+int sleep_time;
 
 int verbose = 0;
 uint64_t txn_flags = 0;
