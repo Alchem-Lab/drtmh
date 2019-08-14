@@ -7,6 +7,7 @@
 #include "core/logging.h"
 extern int ycsb_set_length;
 extern int ycsb_write_num;
+extern int sleep_time;
 
 namespace nocc {
 
@@ -56,7 +57,9 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   for(int i = 0; i < func_size; ++i) {
     is_write[i] = (random_generator[cor_id_].next() % ycsb_set_length) < ycsb_write_num;
     uint64_t id;
+      //LOG(3) << "begin";
     GetAccount(random_generator[cor_id_],&id);
+      //LOG(3) << id;
     while(accounts.find(id) != accounts.end()) {
       GetAccount(random_generator[cor_id_], &id);
     }
@@ -127,7 +130,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
 #endif
   // int dummy_ret = rtx_->dummy_work(10000, indexes[3]); 
   // LOG(3) << dummy_ret;
-  usleep(100);
+  usleep(sleep_time);
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret, 73);
 }
