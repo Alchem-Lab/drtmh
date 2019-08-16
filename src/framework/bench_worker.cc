@@ -381,7 +381,7 @@ void BenchWorker::exit_handler() {
     int temp[40];
     for(int i = 0; i < 40; ++i)
         temp[i] = 0;
-    for(int i = 0; i < coroutine_num; ++i)
+    for(int i = 0; i < coroutine_num + 1; ++i)
     for(int j = 0; j < 40; ++j)
         temp[j] += dynamic_cast<rtx::TXOpBase *>(new_txs_[i])->abort_cnt[j];
     for(int j = 0; j < 40; ++j) 

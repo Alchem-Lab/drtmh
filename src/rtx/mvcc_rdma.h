@@ -322,7 +322,7 @@ private:
     // earlier write is processing
     if(header->lock != 0 && header->lock < timestamp) return -1;
     uint64_t max_wts = 0;
-    int pos = -1;
+    int pos = -2;
     for(int i = 0; i < MVCC_VERSION_NUM; ++i) {
       if(header->wts[i] < timestamp && header->wts[i] > max_wts) {
         max_wts = header->wts[i];

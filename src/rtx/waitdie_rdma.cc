@@ -10,6 +10,7 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = read_set_;
     auto it = set.begin() + index;
     START(lock);
+    RDMALockReq req(cor_id_ /* whether to use passive ack*/);
     //TODO: currently READ lock is implemented the same as WRITE lock.
     //      which is too strict, thus limiting concurrency. 
     //      We need to implement the read-lock-compatible read-lock. 
@@ -26,11 +27,12 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       RdmaValHeader *h = (RdmaValHeader *)local_buf;
 
       while(true) {
-        lock_req_->set_lock_meta(off,0,lock_content,local_buf);
-        lock_req_->post_reqs(scheduler_,qp);
-        worker_->indirect_yield(yield);
-        
-        if (h->lock != 0) {
+                  req.set_lock_meta(off,0,lock_content,local_buf);
+                          req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader),(*it).len);
+                                  req.post_reqs(scheduler_,qp);
+                                          worker_->indirect_yield(yield);
+
+                if (h->lock != 0) {
           if(lock_content < h->lock) {
             worker_->yield_next(yield);
             // old_state = h->lock;
@@ -47,9 +49,9 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
         else {
           // LOG(3) << "succ:"<<lock_content << ' ' << h->lock << ' ' << old_state;
           // LOG(3) << "succ:" << index << ' ' << (*it).key;
-          scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
-              (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
-          worker_->indirect_yield(yield);
+          //scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
+          //    (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
+          //worker_->indirect_yield(yield);
           END(lock);
           h->lock = 333; // success get the lock
           return true;
@@ -75,6 +77,7 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = write_set_;
     auto it = set.begin() + index;
     START(lock);
+    RDMALockReq req(cor_id_ /* whether to use passive ack*/);
     //TODO: currently READ lock is implemented the same as WRITE lock.
     //      which is too strict, thus limiting concurrency. 
     //      We need to implement the read-lock-compatible read-lock. 
@@ -92,9 +95,10 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       RdmaValHeader *h = (RdmaValHeader *)local_buf;
 
       while(true) {
-        lock_req_->set_lock_meta(off,0,lock_content,local_buf);
-        lock_req_->post_reqs(scheduler_,qp);
-        worker_->indirect_yield(yield);
+        req.set_lock_meta(off,0,lock_content,local_buf);
+                req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader), (*it).len);
+                        req.post_reqs(scheduler_,qp);
+                                worker_->indirect_yield(yield);
 
         if(h->lock != 0) {
           if(lock_content < h->lock) {
@@ -110,9 +114,9 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
           }
         }
         else {
-          scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
-              (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
-          worker_->indirect_yield(yield);
+          //scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
+          //    (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
+          //worker_->indirect_yield(yield);
           h->lock = 333; // success get the lock
           END(lock);
           return true;

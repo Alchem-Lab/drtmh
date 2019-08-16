@@ -357,6 +357,7 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
   std::vector<SundialReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
   START(lock);
+  RDMALockReq req(cor_id_ /* whether to use passive ack*/);
   if((*it).pid != node_id_) {
   // if((*it).pid != response_node_) {
     auto off = (*it).off;
@@ -368,9 +369,14 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
     while(true) {
       // LOG(3) << "lock with " << (int)off;
       // debug
-      lock_req_->set_lock_meta(off, 0, txn_start_time, local_buf);
-      lock_req_->post_reqs(scheduler_, qp);
-      worker_->indirect_yield(yield);
+      //lock_req_->set_lock_meta(off, 0, txn_start_time, local_buf);
+      //lock_req_->post_reqs(scheduler_, qp);
+      //worker_->indirect_yield(yield);
+              req.set_lock_meta(off,0,txn_start_time,local_buf);
+                      req.set_read_meta(off + sizeof(uint64_t), local_buf + sizeof(uint64_t),(*it).len + sizeof(RdmaValHeader)- sizeof(uint64_t));
+                              req.post_reqs(scheduler_,qp);
+                                      worker_->indirect_yield(yield);
+
       // if(false) {
       volatile uint64_t newlock = *(uint64_t*)local_buf;
       if(newlock != 0) {
@@ -400,11 +406,11 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
       else {
         Qp *qp = get_qp((*it).pid);
         auto off = (*it).off;
-        scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
-          (*it).len + sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
-        worker_->indirect_yield(yield);
-        volatile uint64_t l = *((uint64_t*)local_buf);
-        ASSERT(l == txn_start_time) << l << ' ' << txn_start_time;
+        //scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
+        //  (*it).len + sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
+        //worker_->indirect_yield(yield);
+        //volatile uint64_t l = *((uint64_t*)local_buf);
+        //ASSERT(l == txn_start_time) << l << ' ' << txn_start_time;
         uint64_t tss = h->seq;
         (*it).wts = WTS(tss);
         (*it).rts = RTS(tss);

@@ -96,7 +96,7 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
     }
     MVCCHeader* header = (MVCCHeader*)((*it).node->value);
     int pos = -1;
-    if((pos = check_read(header, txn_start_time)) == -1) {
+    if((pos = check_read(header, txn_start_time)) < 0) {
       abort_cnt[13]++;
       abort_reason = 13;
       END(read_lat);
@@ -297,9 +297,12 @@ void MVCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
     assert(node != NULL && node->value != NULL);
     MVCCHeader* header = (MVCCHeader*)(node->value);
     int pos = -1;
-    if((pos = check_read(header, item->txn_starting_timestamp)) == -1) {
+    if((pos = check_read(header, item->txn_starting_timestamp)) < 0) {
       res = LOCK_FAIL_MAGIC;
+      if(pos == -1)
       abort_cnt[25]++;
+      else
+          abort_cnt[28]++;
       abort_reason = 25;
       goto END;
     }
@@ -496,6 +499,7 @@ void MVCC::update_rpc_handler(int id, int cid, char* msg, void* arg) {
 
 int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
   START(lock);
+  RDMALockReq req(cor_id_ /* whether to use passive ack*/);
   auto& item = write_set_[index];
   if(item.pid != -1) {
   // if(item.pid != node_id_) {
@@ -528,9 +532,14 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     }
     // step 2: lock remote
     while(true) {
-      lock_req_->set_lock_meta(off, 0, txn_start_time, local_buf);
-      lock_req_->post_reqs(scheduler_, qp);
-      worker_->indirect_yield(yield);
+      //lock_req_->set_lock_meta(off, 0, txn_start_time, local_buf);
+      //lock_req_->post_reqs(scheduler_, qp);
+      //worker_->indirect_yield(yield);
+              req.set_lock_meta(off,0,txn_start_time,local_buf);
+                      req.set_read_meta(off+ sizeof(uint64_t), local_buf+ sizeof(uint64_t) , item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader)- sizeof(uint64_t));
+                              req.post_reqs(scheduler_,qp);
+                                      worker_->indirect_yield(yield);
+
       if(header->lock > txn_start_time) { // a newer write is processing
         END(lock);
         cnt_timer = header->lock >> 10;
@@ -556,11 +565,11 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     }
 
     // step 3: get remote meta and data, check
-    scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
-      item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader), off, IBV_SEND_SIGNALED);
-    worker_->indirect_yield(yield);
-    volatile uint64_t l = *((uint64_t*)local_buf);
-    ASSERT(l == txn_start_time) << l << ' ' << txn_start_time;
+    //scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
+    //  item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader), off, IBV_SEND_SIGNALED);
+    //worker_->indirect_yield(yield);
+    //volatile uint64_t l = *((uint64_t*)local_buf);
+    //ASSERT(l == txn_start_time) << l << ' ' << txn_start_time;
     // if(item.pid == node_id_) {
     //   auto node = local_lookup_op(item.tableid, item.key);
     //   uint64_t local_lock = *(uint64_t*)node->value;
@@ -718,8 +727,11 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
       sizeof(MVCCHeader) + MVCC_VERSION_NUM * item.len, off, IBV_SEND_SIGNALED);
     worker_->indirect_yield(yield);
     int pos = -1;
-    if((pos = check_read(header, txn_start_time)) == -1) {
+    if((pos = check_read(header, txn_start_time)) < 0) {
+        if(pos == -1)
       abort_cnt[9]++;
+        else
+            abort_cnt[10]++;
       abort_reason = 9;
       END(read_lat);
       return false;
@@ -761,7 +773,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     assert(node != NULL);
     MVCCHeader* header = (MVCCHeader*)node->value;
     int pos = -1;
-    if((pos = check_read(header, txn_start_time)) == -1){
+    if((pos = check_read(header, txn_start_time)) < 0){
       abort_cnt[11]++;
       abort_reason = 11;
       END(read_lat);
@@ -814,7 +826,7 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
       int maxpos = (int)(item.seq / MVCC_VERSION_NUM);
       char* local_buf = item.data_ptr - sizeof(MVCCHeader) - maxpos * item.len;
       MVCCHeader* header = (MVCCHeader*)local_buf;
-      ASSERT(header->lock == txn_start_time) << header->lock << ' ' << txn_start_time;
+      //ASSERT(header->lock == txn_start_time) << header->lock << ' ' << txn_start_time;
       header->wts[pos] = txn_start_time;
       char* raw_data = local_buf + sizeof(MVCCHeader);
       memcpy(raw_data + pos * item.len, item.data_ptr, item.len);
