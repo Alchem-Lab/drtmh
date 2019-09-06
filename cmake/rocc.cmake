@@ -1,5 +1,5 @@
 function(load_global_config) 
-  configure_file("src/rocc_config.h.in" "src/rocc_config.h")
+  configure_file("${CMAKE_SOURCE_DIR}/src/rocc_config.h.in" "${CMAKE_SOURCE_DIR}/src/rocc_config.h")
 endfunction()
 
 function(load_tx_config)
@@ -52,5 +52,5 @@ function(load_tx_config)
   endif()            
   
 
-  configure_file("src/tx_config.h.in" "src/tx_config.h")
+  configure_file("${CMAKE_SOURCE_DIR}/src/tx_config.h.in" "${CMAKE_SOURCE_DIR}/src/tx_config.h")
 endfunction()
