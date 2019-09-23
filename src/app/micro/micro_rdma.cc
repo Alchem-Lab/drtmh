@@ -94,6 +94,194 @@ txn_result_t MicroWorker::micro_rdma_read(yield_func_t &yield) {
 
   return txn_result_t(true,1);
 }
+
+const static uint VECTOR_SIZE_MAX = 16;
+struct vector_buffer_t {
+  uint vector_1[VECTOR_SIZE_MAX];
+  uint vector_2[VECTOR_SIZE_MAX];
+  enum {
+    INIT = 0,
+    INPUT_READY = 57,
+    RESULT_READY = 59
+  } status;
+  union {
+    uint vector_inner_product_result;
+    uint vector_add_result[VECTOR_SIZE_MAX];
+  };
+};
+
+#define OFFSETOF(TYPE, ELEMENT) ((size_t)&(((TYPE *)0)->ELEMENT)) 
+
+txn_result_t MicroWorker::micro_rdma_vector_add(yield_func_t &yield) {
+
+  auto size = sizeof(vector_buffer_t);
+
+  uint64_t off = worker_id_ * 4096 + cor_id_ * sizeof(vector_buffer_t);
+  char *local_buf = rdma_buffer + off;
+
+retry:
+  int      pid  = random_generator[cor_id_].next() % total_partition;
+  if(unlikely(pid == current_partition))
+       goto retry;
+
+  vector_buffer_t* lbuf = (vector_buffer_t*)local_buf;
+  lbuf->status = vector_buffer_t::INIT;
+  //prepare input vectors
+  LOG(2) << "vector_1: ";
+  for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
+    lbuf->vector_1[i] = random_generator[cor_id_].next() % 1000;
+    fprintf(stderr, "%u,", lbuf->vector_1[i]);
+  }
+  fprintf(stderr, "\n");
+
+  LOG(2) << "and vector_2: ";
+  for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
+    lbuf->vector_2[i] = random_generator[cor_id_].next() % 1000;
+    fprintf(stderr, "%u,", lbuf->vector_2[i]);   
+  }
+  fprintf(stderr, "\n");  
+  lbuf->status = vector_buffer_t::INPUT_READY;
+
+  char *temp_buf = (char *)Rmalloc(size);
+  vector_buffer_t* tbuf = (vector_buffer_t*)temp_buf;
+  while (true) {
+    // read remote vector buffer
+    {
+      auto off_ = off;
+      auto size_ = OFFSETOF(vector_buffer_t, vector_add_result);
+      auto rc = rdma_sched_->post_send(qp_vec_[pid],cor_id_,
+                                       IBV_WR_RDMA_READ,temp_buf,size,off,
+                                       IBV_SEND_SIGNALED);
+      ASSERT(rc == SUCC) << "post error " << strerror(errno);
+    }
+    indirect_yield(yield);
+    // got the remote vector in local buffer
+    LOG(2) << "After RDMA_READ";
+
+    if (tbuf->status == vector_buffer_t::INPUT_READY)
+      break;
+    yield_next(yield);
+  }
+
+  // actual calculation
+    for(int i = 0; i < VECTOR_SIZE_MAX; i++)
+      tbuf->vector_add_result[i] = tbuf->vector_1[i] + tbuf->vector_2[i];
+    tbuf->status = vector_buffer_t::RESULT_READY;
+  LOG(2) << "After Calculation.";
+  
+  // write back the vector to remote buffer
+  {
+    auto off_ = off + OFFSETOF(vector_buffer_t, status);
+    auto size_ = size - OFFSETOF(vector_buffer_t, status);
+    auto rc = rdma_sched_->post_send(qp_vec_[pid],cor_id_,
+                                     IBV_WR_RDMA_WRITE,
+                                     temp_buf + OFFSETOF(vector_buffer_t, status),
+                                     size_,
+                                     off_,
+                                     IBV_SEND_SIGNALED);
+    ASSERT(rc == SUCC) << "post error " << strerror(errno);
+  }
+  indirect_yield(yield);
+  LOG(2) << "After RDMA_WRITE";
+
+  // wait until the result of my local vector add is done
+  while(lbuf->status != vector_buffer_t::RESULT_READY) {
+    yield_next(yield);
+  }
+
+  LOG(2) << "The result of vector addition of length " << VECTOR_SIZE_MAX;
+  for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
+    fprintf(stderr, "%u,", lbuf->vector_add_result[i]);
+  }
+  fprintf(stderr, "\n");
+  return txn_result_t(true,1);
+}
+
+txn_result_t MicroWorker::micro_rdma_vector_inner_product(yield_func_t &yield) {
+
+  auto size = sizeof(vector_buffer_t);
+
+  uint64_t off = worker_id_ * 4096 + cor_id_ * sizeof(vector_buffer_t);
+  char *local_buf = rdma_buffer + off;
+
+retry:
+  int      pid  = random_generator[cor_id_].next() % total_partition;
+  if(unlikely(pid == current_partition))
+       goto retry;
+
+  vector_buffer_t* lbuf = (vector_buffer_t*)local_buf;
+  lbuf->status = vector_buffer_t::INIT;
+  //prepare input vectors
+  LOG(2) << "vector_1: ";
+  for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
+    lbuf->vector_1[i] = random_generator[cor_id_].next() % 1000;
+    fprintf(stderr, "%u,", lbuf->vector_1[i]);
+  }
+  fprintf(stderr, "\n");
+
+  LOG(2) << "and vector_2: ";
+  for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
+    lbuf->vector_2[i] = random_generator[cor_id_].next() % 1000;
+    fprintf(stderr, "%u,", lbuf->vector_2[i]);   
+  }
+  fprintf(stderr, "\n");  
+  lbuf->status = vector_buffer_t::INPUT_READY;
+
+  char *temp_buf = (char *)Rmalloc(size);
+  vector_buffer_t* tbuf = (vector_buffer_t*)temp_buf;
+  while (true) {
+    // read remote vector buffer
+    {
+      auto off_ = off;
+      auto size_ = OFFSETOF(vector_buffer_t, vector_add_result);
+      auto rc = rdma_sched_->post_send(qp_vec_[pid],cor_id_,
+                                       IBV_WR_RDMA_READ,temp_buf,size,off,
+                                       IBV_SEND_SIGNALED);
+      ASSERT(rc == SUCC) << "post error " << strerror(errno);
+    }
+    indirect_yield(yield);
+    // got the remote vector in local buffer
+    LOG(2) << "After RDMA_READ";
+
+    if (tbuf->status == vector_buffer_t::INPUT_READY)
+      break;
+    yield_next(yield);
+  }
+
+  // actual calculation
+  tbuf->vector_inner_product_result = 0;
+  for(int i = 0; i < VECTOR_SIZE_MAX; i++)
+    tbuf->vector_inner_product_result += tbuf->vector_1[i] * tbuf->vector_2[i];
+  tbuf->status = vector_buffer_t::RESULT_READY;
+  LOG(2) << "After Calculation.";
+  
+  // write back the vector to remote buffer
+  {
+    auto off_ = off + OFFSETOF(vector_buffer_t, status);
+    auto size_ = size - OFFSETOF(vector_buffer_t, status);
+    auto rc = rdma_sched_->post_send(qp_vec_[pid],cor_id_,
+                                     IBV_WR_RDMA_WRITE,
+                                     temp_buf + OFFSETOF(vector_buffer_t, status),
+                                     size_,
+                                     off_,
+                                     IBV_SEND_SIGNALED);
+    ASSERT(rc == SUCC) << "post error " << strerror(errno);
+  }
+  indirect_yield(yield);
+  LOG(2) << "After RDMA_WRITE";
+
+  // wait until the result of my local vector add is done
+  while(lbuf->status != vector_buffer_t::RESULT_READY) {
+    yield_next(yield);
+  }
+
+  LOG(2) << "The result of vector inner product is " 
+         << lbuf->vector_inner_product_result;
+  return txn_result_t(true,1);
+}
+
+
+
 } // namespace micro
 
 }

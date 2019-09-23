@@ -212,7 +212,8 @@ BenchWorker::worker_routine(yield_func_t &yield) {
 
 
   uint64_t retry_count(0);
-  while(true) {
+  for (int i = 0; i < 1; i++) {
+  // while(true) {
 #if CS == 0
     /* select the workload */
     double d = random_generator[cor_id_].next_uniform();
@@ -314,6 +315,12 @@ BenchWorker::worker_routine(yield_func_t &yield) {
     yield_next(yield);
     // end worker main loop
   }
+
+  //this yield must be there to allow current finished coroutine
+  //not to block the scheduling of following coroutines in the
+  //coroutine schedule list, a.k.a, the the routineMeta list.
+  indirect_must_yield(yield);
+  fprintf(stdout, "%d: ends.\n", cor_id_); 
 }
 
 void BenchWorker::exit_handler() {

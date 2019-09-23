@@ -113,6 +113,7 @@ void BenchReporter::report_data(uint64_t epoch,std::ofstream &log_file) {
   auto sum = 0.0;
   for(auto i = 0;i < throughputs.size();++i) {
     sum += throughputs[i];
+    
   }
 
   double abort_ratio = calculate_abort_ratio(prev_abort_ratio_);

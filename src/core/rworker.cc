@@ -46,6 +46,7 @@ void  RWorker::new_master_routine(yield_func_t &yield,int cor_id) {
 
   auto routine_meta = get_routine_meta(MASTER_ROUTINE_ID);
 
+  // bool about_to_exit = false;
   while( true ) {
     if(unlikely(!running_status())) {
       return exit_handler();
@@ -88,6 +89,7 @@ int RWorker::choose_rnic_port() {
     use_port_ = 0;
   }
 #endif
+  LOG(2) << "use_port_ = " << use_port_;
   return use_port_;
 }
 
@@ -99,7 +101,7 @@ void RWorker::init_rdma(char *rbuffer,uint64_t rbuf_size) {
   choose_rnic_port();
 
   RdmaCtrl::DevIdx idx = cm_->convert_port_idx(use_port_);
-  LOG(0) << "worker " << worker_id_ << " uses " << "["
+  LOG(2) << "worker " << worker_id_ << " uses " << "["
          << idx.dev_id << "," << idx.port_id << "]";
 
   // open the device handler

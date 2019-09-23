@@ -114,14 +114,34 @@ workload_desc_vec_t MicroWorker::_get_workload() {
         name_m = "RDMA WRITE"; fn = MicroRdmaWrite;
       }
       break;
-    default: {
-      LOG(LOG_WARNING) << "unknown micro type: " << micro_type;
-    }
     case RDMA_CAS:
       {
         name_m = "RDMA ATOMICs"; fn = MicroRdmaAtomic;
       }
       break;
+    case RPC_VECTOR_ADD:
+      {
+        name_m = "Rpc Vector Add"; fn = MicroRpcVectorAdd;
+      }
+      break;
+    case RPC_VECTOR_INNER_PRODUCT:
+      {
+        name_m = "Rpc Vector Inner Product"; fn = MicroRpcVectorInnerProduct;
+      }
+      break;
+    case RDMA_VECTOR_ADD:
+      {
+        name_m = "RDMA Vector Add"; fn = MicroRdmaVectorAdd;
+      }
+      break;
+    case RDMA_VECTOR_INNER_PRODUCT:
+      {
+        name_m = "RDMA Vector Inner Product"; fn = MicroRdmaVectorInnerProduct;
+      }
+      break;
+    default: {
+      LOG(LOG_WARNING) << "unknown micro type: " << micro_type;
+    }
   }
   w.push_back(workload_desc(name_m,double(g_txn_workload_mix[0]) / 100.0,fn));
   return w;

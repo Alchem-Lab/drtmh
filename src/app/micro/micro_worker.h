@@ -12,8 +12,13 @@ namespace micro {
 enum MICRO_TYPE {
   RPC        = 0,
   RDMA_READ  = 1,
-  RDMA_WRITE = 15,
-  RDMA_CAS   = 3
+  RDMA_WRITE = 2,
+  RDMA_CAS   = 3,
+  // the following two micro benchmarks should be completed
+  RPC_VECTOR_ADD   = 4,
+  RPC_VECTOR_INNER_PRODUCT = 5,
+  RDMA_VECTOR_ADD  = 6,
+  RDMA_VECTOR_INNER_PRODUCT = 7,
 };
 
 void MicroTest(int argc,char **argv); // main hook function
@@ -39,12 +44,15 @@ class MicroWorker : public BenchWorker {
   txn_result_t micro_rdma_read(yield_func_t &yield);
   txn_result_t micro_rdma_write(yield_func_t &yield);
   txn_result_t micro_rdma_atomic(yield_func_t &yield);
-  //
-
+  txn_result_t micro_rpc_vector_add(yield_func_t &yield);
+  txn_result_t micro_rpc_vector_inner_product(yield_func_t &yield);
+  txn_result_t micro_rdma_vector_add(yield_func_t &yield);
+  txn_result_t micro_rdma_vector_inner_product(yield_func_t &yield);
   /**
    * RPC handlers
    */
   void nop_rpc_handler(int id,int cid,char *msg,void *arg);
+  void vector_rpc_handler(int id,int cid,char *msg,void *arg);
   //
 
  private:
@@ -66,6 +74,21 @@ class MicroWorker : public BenchWorker {
     return static_cast<MicroWorker *>(w)->micro_rdma_atomic(yield);
   }
 
+  static txn_result_t MicroRpcVectorAdd(BenchWorker *w,yield_func_t &yield) {
+    return static_cast<MicroWorker *>(w)->micro_rpc_vector_add(yield);
+  }
+
+  static txn_result_t MicroRpcVectorInnerProduct(BenchWorker *w,yield_func_t &yield) {
+    return static_cast<MicroWorker *>(w)->micro_rpc_vector_inner_product(yield);
+  }
+
+  static txn_result_t MicroRdmaVectorAdd(BenchWorker *w,yield_func_t &yield) {
+    return static_cast<MicroWorker *>(w)->micro_rdma_vector_add(yield);
+  }
+
+  static txn_result_t MicroRdmaVectorInnerProduct(BenchWorker *w,yield_func_t &yield) {
+    return static_cast<MicroWorker *>(w)->micro_rdma_vector_inner_product(yield);
+  }
   std::vector<RCQP *> qp_vec_;
 
   // some performance counters

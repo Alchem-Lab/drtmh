@@ -33,7 +33,7 @@ bool RRpc::poll_comp_callback(char *msg,int from,int from_t) {
     // normal rpcs
     try {
       callbacks_[header->meta.rpc_id](from,header->meta.cid,msg + sizeof(rrpc_header),
-                                      (void *)(header->meta.payload));
+                                      (void *)(intptr_t)(header->meta.payload));
     } catch (...) {
       LOG(7) << "rpc called failed at " << worker_id_ << ";With rpc id "
              << header->meta.rpc_id;
@@ -52,6 +52,7 @@ bool RRpc::poll_comp_callback(char *msg,int from,int from_t) {
              << " which is not required.";
     }
 
+    // LOG(2) << "reply received from " << header->meta.cid << "@mac " << from;
     char *buf = reply_bufs_[header->meta.cid];
     assert(header->meta.payload < 1024 - rpc_padding());
     memcpy(buf,msg + sizeof(rrpc_header),header->meta.payload);
@@ -62,6 +63,7 @@ bool RRpc::poll_comp_callback(char *msg,int from,int from_t) {
     if(reply_counts_[header->meta.cid] == 0
        && RScheduler::pending_counts_[header->meta.cid] == 0) { // avoid the chain from being added twice
 
+      // LOG(2) << header->meta.cid << "added back to routine list.";
       reply_bufs_[header->meta.cid] = NULL;
       add_to_routine_list(header->meta.cid);
     }
