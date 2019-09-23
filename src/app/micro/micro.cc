@@ -139,6 +139,16 @@ workload_desc_vec_t MicroWorker::_get_workload() {
         name_m = "RDMA Vector Inner Product"; fn = MicroRdmaVectorInnerProduct;
       }
       break;
+    case RPC_MATRIX_MULTIPLICATION:
+      {
+        name_m = "Rpc Matrix Multiplication"; fn = MicroRpcMatrixMultiplication;
+      }
+      break;
+    case RDMA_MATRIX_MULTIPLICATION:
+      {
+        name_m = "RDMA Matrix Multiplication"; fn = MicroRdmaMatrixMultiplication;
+      }
+      break;
     default: {
       LOG(LOG_WARNING) << "unknown micro type: " << micro_type;
     }

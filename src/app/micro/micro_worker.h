@@ -19,6 +19,8 @@ enum MICRO_TYPE {
   RPC_VECTOR_INNER_PRODUCT = 5,
   RDMA_VECTOR_ADD  = 6,
   RDMA_VECTOR_INNER_PRODUCT = 7,
+  RPC_MATRIX_MULTIPLICATION = 8,
+  RDMA_MATRIX_MULTIPLICATION = 9
 };
 
 void MicroTest(int argc,char **argv); // main hook function
@@ -48,11 +50,14 @@ class MicroWorker : public BenchWorker {
   txn_result_t micro_rpc_vector_inner_product(yield_func_t &yield);
   txn_result_t micro_rdma_vector_add(yield_func_t &yield);
   txn_result_t micro_rdma_vector_inner_product(yield_func_t &yield);
+  txn_result_t micro_rpc_matrix_multiplication(yield_func_t &yield);
+  txn_result_t micro_rdma_matrix_multiplication(yield_func_t &yield);
   /**
    * RPC handlers
    */
   void nop_rpc_handler(int id,int cid,char *msg,void *arg);
   void vector_rpc_handler(int id,int cid,char *msg,void *arg);
+  void matrix_rpc_handler(int id,int cid,char *msg,void *arg);
   //
 
  private:
@@ -89,6 +94,15 @@ class MicroWorker : public BenchWorker {
   static txn_result_t MicroRdmaVectorInnerProduct(BenchWorker *w,yield_func_t &yield) {
     return static_cast<MicroWorker *>(w)->micro_rdma_vector_inner_product(yield);
   }
+
+  static txn_result_t MicroRpcMatrixMultiplication(BenchWorker *w,yield_func_t &yield) {
+    return static_cast<MicroWorker *>(w)->micro_rpc_matrix_multiplication(yield);
+  }
+
+  static txn_result_t MicroRdmaMatrixMultiplication(BenchWorker *w,yield_func_t &yield) {
+    return static_cast<MicroWorker *>(w)->micro_rdma_matrix_multiplication(yield);
+  }
+
   std::vector<RCQP *> qp_vec_;
 
   // some performance counters

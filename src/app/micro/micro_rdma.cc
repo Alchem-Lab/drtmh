@@ -110,6 +110,23 @@ struct vector_buffer_t {
   };
 };
 
+const static uint MATRIX_ROW_MAX = 8;
+const static uint MATRIX_COLUMN_MAX = 8;
+struct matrix_buffer_t {
+  uint matrix_1[MATRIX_ROW_MAX][MATRIX_COLUMN_MAX];
+  uint matrix_2[MATRIX_ROW_MAX][MATRIX_COLUMN_MAX];
+  enum {
+    INIT = 0,
+    INPUT_READY = 57,
+    RESULT_READY = 59
+  } status;
+  union {
+    uint matrix_multiplication_result[MATRIX_ROW_MAX][MATRIX_COLUMN_MAX];
+  };
+};
+
+static_assert(MATRIX_ROW_MAX == MATRIX_COLUMN_MAX, "Only square matrix multiplication is supported for RDMA mode.");
+
 #define OFFSETOF(TYPE, ELEMENT) ((size_t)&(((TYPE *)0)->ELEMENT)) 
 
 txn_result_t MicroWorker::micro_rdma_vector_add(yield_func_t &yield) {
@@ -280,7 +297,141 @@ retry:
   return txn_result_t(true,1);
 }
 
+txn_result_t MicroWorker::micro_rdma_matrix_multiplication(yield_func_t &yield) {
 
+  auto size = sizeof(matrix_buffer_t);
+
+  uint64_t off = worker_id_ * 4096 + cor_id_ * sizeof(matrix_buffer_t);
+  char *local_buf = rdma_buffer + off;
+
+retry:
+  int      pid  = random_generator[cor_id_].next() % total_partition;
+  if(unlikely(pid == current_partition))
+       goto retry;
+
+  matrix_buffer_t* lbuf = (matrix_buffer_t*)local_buf;
+  lbuf->status = matrix_buffer_t::INIT;
+
+  {
+    //prepare input vectors
+    LOG(2) << "matrix_1: ";
+    for (int i = 0; i < MATRIX_ROW_MAX; i++) {
+      for (int j = 0; j < MATRIX_COLUMN_MAX; j++) {
+        lbuf->matrix_1[i][j] = random_generator[cor_id_].next() % 1000;
+        fprintf(stderr, "%u,", lbuf->matrix_1[i][j]);
+      }
+      fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+
+    LOG(2) << "matrix_2: ";
+    for (int i = 0; i < MATRIX_ROW_MAX; i++) {
+      for (int j = 0; j < MATRIX_COLUMN_MAX; j++) {
+        lbuf->matrix_2[i][j] = random_generator[cor_id_].next() % 1000;
+        fprintf(stderr, "%u,", lbuf->matrix_2[i][j]);
+      }
+      fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+    lbuf->status = matrix_buffer_t::INPUT_READY;
+  }
+
+  char *temp_buf = (char *)Rmalloc(size);
+  matrix_buffer_t* tbuf = (matrix_buffer_t*)temp_buf;
+
+  {
+    /**
+      * read the remote matrix buffer to temp_buf and
+      * check if the two input matrices are ready by checking the status
+      * if not, yield to the next co-routine
+      * Retry after come back frome yield.
+      **/
+
+    // EE559 student: put your code here.
+    while (true) {
+      // read remote matrix buffer
+      auto off_ = off;
+      auto size_ = OFFSETOF(matrix_buffer_t, matrix_multiplication_result);
+      auto rc = rdma_sched_->post_send(qp_vec_[pid],cor_id_,
+                                       IBV_WR_RDMA_READ,
+                                       temp_buf,
+                                       size_,
+                                       off_,
+                                       IBV_SEND_SIGNALED);
+      ASSERT(rc == SUCC) << "post error " << strerror(errno);
+      indirect_yield(yield);
+      // got the remote buffers
+
+      // yield to the next co-routine 
+      // until the the input of the remote matrix buffer is ready.
+      if (tbuf->status == matrix_buffer_t::INPUT_READY)
+        break;
+      yield_next(yield);
+    }
+  }
+
+  {
+    /**
+       * actual matrix multiplication for the remote matrix buffer
+       * and update the status of the remote matrix buffer to RESULT_READY
+       * HINT: the remote matrix buffer is pointed by the tbuf variable.
+       **/
+
+    // EE559 student: put your code here.
+    ASSERT(MATRIX_ROW_MAX == MATRIX_COLUMN_MAX);
+    for(int i = 0; i < MATRIX_ROW_MAX; i++) {
+      for (int j = 0; j < MATRIX_COLUMN_MAX; j++) {
+        tbuf->matrix_multiplication_result[i][j] = 0;
+        for (int k = 0; k < MATRIX_ROW_MAX; k++)
+          tbuf->matrix_multiplication_result[i][j] += tbuf->matrix_1[i][k]*tbuf->matrix_2[k][j];
+      }
+    }
+    tbuf->status = matrix_buffer_t::RESULT_READY;
+  }
+
+  {
+    /**
+      * write back the multiplication result and updated status 
+      * of remote matrix buffer to its original offset where it was RDMA_READ
+      * at the remote machine.
+      **/
+
+    // EE559 student: put your code here.
+    auto off_ = off + OFFSETOF(matrix_buffer_t, status);
+    auto size_ = size - OFFSETOF(matrix_buffer_t, status);
+    auto rc = rdma_sched_->post_send(qp_vec_[pid],cor_id_,
+                                     IBV_WR_RDMA_WRITE,
+                                     temp_buf + OFFSETOF(matrix_buffer_t, status),
+                                     size_,
+                                     off_,
+                                     IBV_SEND_SIGNALED);
+    ASSERT(rc == SUCC) << "post error " << strerror(errno);
+    indirect_yield(yield);
+  }
+
+  {
+    // yield until the result of my local matrix buffer is ready
+    while(lbuf->status != matrix_buffer_t::RESULT_READY) {
+      yield_next(yield);
+    }
+  }
+
+  // print the result and verify the result locally.
+  LOG(2) << "The result of local matrix multiplication is ";
+  for (int i = 0; i < MATRIX_ROW_MAX; i++) {
+    for (int j = 0; j < MATRIX_COLUMN_MAX; j++) {
+      int sum = 0;
+      for (int k = 0; k < MATRIX_ROW_MAX; k++)
+        sum += lbuf->matrix_1[i][k]*lbuf->matrix_2[k][j];
+      ASSERT(sum == lbuf->matrix_multiplication_result[i][j]) << "MATRIX MULTIPLICATION via RDMA is NOT correct.";
+      fprintf(stderr, "%u,", lbuf->matrix_multiplication_result[i][j]);
+    }
+    fprintf(stderr, "\n");
+  }
+  fprintf(stderr, "\n");
+  LOG(2) << "MATRIX MULTIPLICATION via RDMA is correct.";
+  return txn_result_t(true,1);
+}
 
 } // namespace micro
 
