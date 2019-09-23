@@ -348,26 +348,7 @@ retry:
       **/
 
     // EE559 student: put your code here.
-    while (true) {
-      // read remote matrix buffer
-      auto off_ = off;
-      auto size_ = OFFSETOF(matrix_buffer_t, matrix_multiplication_result);
-      auto rc = rdma_sched_->post_send(qp_vec_[pid],cor_id_,
-                                       IBV_WR_RDMA_READ,
-                                       temp_buf,
-                                       size_,
-                                       off_,
-                                       IBV_SEND_SIGNALED);
-      ASSERT(rc == SUCC) << "post error " << strerror(errno);
-      indirect_yield(yield);
-      // got the remote buffers
-
-      // yield to the next co-routine 
-      // until the the input of the remote matrix buffer is ready.
-      if (tbuf->status == matrix_buffer_t::INPUT_READY)
-        break;
-      yield_next(yield);
-    }
+    
   }
 
   {
@@ -377,16 +358,9 @@ retry:
        * HINT: the remote matrix buffer is pointed by the tbuf variable.
        **/
 
-    // EE559 student: put your code here.
     ASSERT(MATRIX_ROW_MAX == MATRIX_COLUMN_MAX);
-    for(int i = 0; i < MATRIX_ROW_MAX; i++) {
-      for (int j = 0; j < MATRIX_COLUMN_MAX; j++) {
-        tbuf->matrix_multiplication_result[i][j] = 0;
-        for (int k = 0; k < MATRIX_ROW_MAX; k++)
-          tbuf->matrix_multiplication_result[i][j] += tbuf->matrix_1[i][k]*tbuf->matrix_2[k][j];
-      }
-    }
-    tbuf->status = matrix_buffer_t::RESULT_READY;
+    // EE559 student: put your code here.
+
   }
 
   {
@@ -397,16 +371,7 @@ retry:
       **/
 
     // EE559 student: put your code here.
-    auto off_ = off + OFFSETOF(matrix_buffer_t, status);
-    auto size_ = size - OFFSETOF(matrix_buffer_t, status);
-    auto rc = rdma_sched_->post_send(qp_vec_[pid],cor_id_,
-                                     IBV_WR_RDMA_WRITE,
-                                     temp_buf + OFFSETOF(matrix_buffer_t, status),
-                                     size_,
-                                     off_,
-                                     IBV_SEND_SIGNALED);
-    ASSERT(rc == SUCC) << "post error " << strerror(errno);
-    indirect_yield(yield);
+
   }
 
   {

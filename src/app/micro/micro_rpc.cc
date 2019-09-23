@@ -297,13 +297,7 @@ txn_result_t MicroWorker::micro_rpc_matrix_multiplication(yield_func_t &yield) {
       * Send the RPC Request for matrix multiplication
       **/
     // EE559 student: put your code here.
-    // append RPC request
-    rpc_->append_pending_req((char *)req,MATRIX_OP_REQ_ID,sizeof(MatrixOpReq),cor_id_,RRpc::REQ,pid);
-    // actually send an RPC request
-    rpc_->flush_pending();
-    // yield until the reply is received.
-    indirect_yield(yield);
-    // got the result back
+    
   }
 
   {
@@ -392,22 +386,11 @@ void MicroWorker::matrix_rpc_handler(int id,int cid,char *msg, void *arg) {
           * fill out the rest of the fields of the reply message
           **/
         // EE559 student: put your code here.
-        reply->row = req->row_1;
-        reply->col = req->col_2;
-        for (int i = 0; i < reply->row; ++i) {
-          for (int j = 0; j < reply->col; ++j) {
-            reply->result[i][j] = 0;
-            for (int k = 0; k < req->row_2; ++k) {
-              reply->result[i][j] += req->matrix_1[i][k]*req->matrix_2[k][j];
-            }
-          }
-        }
 
         /**
           * send the reply back to the RPC requester.
           **/
         // EE559 student: put your code here.
-        rpc_->send_reply(reply_msg,sizeof(MatrixMultiplicationReply),id,worker_id_,cid);
       }
       break;
     default:
