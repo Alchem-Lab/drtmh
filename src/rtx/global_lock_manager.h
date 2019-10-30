@@ -124,7 +124,7 @@ public:
 		    		volatile uint64_t l = *lockptr;
 		    		if(l == 0) {
 		    			if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, first_waiter.txn_start_time))){
-							LOG(3) << "fail change lock";
+							//LOG(3) << "fail change lock";
 		    				//continue;
                             goto NEXT_ITEM;
 						}

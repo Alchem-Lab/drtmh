@@ -50,7 +50,6 @@ class OCC : public TXOpBase {
 #endif
       read_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
       write_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
-      rpc_op_send_buf_(rpc_->get_static_buf(MAX_MSG_SIZE)),
       read_set_(),write_set_(),
       cor_id_(cid),response_node_(nid)
   {
@@ -288,7 +287,6 @@ class OCC : public TXOpBase {
   Logger *logger_       = NULL;
 
   bool abort_ = false;
-  char* rpc_op_send_buf_;
   char reply_buf_[MAX_MSG_SIZE];
 
   // helper functions

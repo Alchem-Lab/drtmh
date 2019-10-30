@@ -230,6 +230,7 @@ class OCCR : public OCC {
     gc_readset();
     gc_writeset();
     END(commit);
+    abort_cnt[10]++;
     return true;
 
 ABORT:

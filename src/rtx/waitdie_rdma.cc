@@ -264,8 +264,10 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       return true;
     }
-    else if (resp_lock_status == LOCK_FAIL_MAGIC)
+    else if (resp_lock_status == LOCK_FAIL_MAGIC){
+      abort_cnt[1]++;
       return false;
+    }
     else {
       assert(false);
     }
@@ -330,8 +332,10 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       return true;
     }
-    else if (resp_lock_status == LOCK_FAIL_MAGIC)
+    else if (resp_lock_status == LOCK_FAIL_MAGIC){
+      abort_cnt[2]++;
       return false;
+    }
     else {
       ASSERT(false) << (int)resp_lock_status;
     }

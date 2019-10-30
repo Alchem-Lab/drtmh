@@ -112,6 +112,7 @@ protected:
 #else
     if(!try_read_rpc(index, yield)) {
       // abort
+      abort_cnt[14]++;
       release_reads(yield);
       release_writes(yield);
       return -1;
@@ -179,6 +180,7 @@ protected:
 #else
     if(!try_lock_read_rpc(index, yield)) {
       // abort
+      abort_cnt[11]++;
       release_reads(yield);
       release_writes(yield, false);
       return -1;
@@ -272,6 +274,7 @@ public:
         //if(false) {
 #else
         if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+          abort_cnt[12]++;
 #endif
           release_reads(yield);
           release_writes(yield);
@@ -334,6 +337,7 @@ public:
   bool prepare(yield_func_t &yield) {
     if(!try_renew_all_lease_rdma(commit_id_, yield)) {
     //if(false) {
+      abort_cnt[13]++;
       release_writes(yield);
       release_reads(yield);
       return false;
@@ -342,8 +346,10 @@ public:
   }
   virtual bool commit(yield_func_t &yield) {
     #if ONE_SIDED_READ
+    abort_cnt[15]++;
     return try_update_rdma(yield);
 #else
+    abort_cnt[16]++;
     return try_update_rpc(yield);
 #endif
   }
