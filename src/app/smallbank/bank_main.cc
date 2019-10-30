@@ -230,10 +230,10 @@ class BankLoader : public BenchLoader {
     if(is_primary_)
       RThreadLocalInit();
 #endif
-    uint64_t acc;
-    util::fast_random tempr;
-    GetAccountZipfian(tempr, &acc);
-    LOG(3) << "finish loading zipfian " << acc;
+    // uint64_t acc;
+    // util::fast_random tempr;
+    // GetAccountZipfian(tempr, &acc);
+    // LOG(3) << "finish loading zipfian " << acc;
     fprintf(stdout,"[Bank], total %lu accounts loaded\n", NumAccounts());
     int meta_size = store_->_schemas[CHECK].meta_len;
 
