@@ -59,6 +59,9 @@ include(cmake/tpce.cmake)
 add_executable(noccocc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccocc PRIVATE "-DOCC_TX")
 
+add_executable(noccocc-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccocc-tcp PRIVATE "-DOCC_TX")
+
 add_executable(noccocc-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccocc-rpc PRIVATE "-DOCC_TX")
 
@@ -69,8 +72,12 @@ add_executable(noccocc-hybrid ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccocc-hybrid PRIVATE "-DOCC_TX")
 
 # add_executable(noccnowait ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+
 add_executable(noccnowait ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccnowait PRIVATE "-DNOWAIT_TX")
+
+add_executable(noccnowait-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccnowait-tcp PRIVATE "-DNOWAIT_TX")
 
 add_executable(noccnowait-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccnowait-rpc PRIVATE "-DNOWAIT_TX")
@@ -85,6 +92,9 @@ target_compile_options(noccnowait-hybrid PRIVATE "-DNOWAIT_TX")
 add_executable(noccwaitdie ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccwaitdie PRIVATE "-DWAITDIE_TX")
 
+add_executable(noccwaitdie-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccwaitdie-tcp PRIVATE "-DWAITDIE_TX")
+
 add_executable(noccwaitdie-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccwaitdie-rpc PRIVATE "-DWAITDIE_TX")
 
@@ -96,6 +106,9 @@ target_compile_options(noccwaitdie-hybrid PRIVATE "-DWAITDIE_TX")
 
 add_executable(noccsundial ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsundial PRIVATE "-DSUNDIAL_TX")
+
+add_executable(noccsundial-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccsundial-tcp PRIVATE "-DSUNDIAL_TX")
 
 add_executable(noccsundial-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsundial-rpc PRIVATE "-DSUNDIAL_TX")
@@ -109,6 +122,9 @@ target_compile_options(noccsundial-hybrid PRIVATE "-DSUNDIAL_TX")
 
 add_executable(noccmvcc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccmvcc PRIVATE "-DMVCC_TX")
+
+add_executable(noccmvcc-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccmvcc-tcp PRIVATE "-DMVCC_TX")
 
 add_executable(noccmvcc-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccmvcc-rpc PRIVATE "-DMVCC_TX")
