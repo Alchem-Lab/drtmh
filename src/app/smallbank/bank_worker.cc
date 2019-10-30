@@ -43,6 +43,57 @@ BreakdownTimer send_timer;
 
 extern unsigned g_txn_workload_mix[7];
 
+
+void GetAccountZipfian(util::fast_random &r, uint64_t *acct_id) {
+    static int first = 33;      // Static first time flag
+    static double c = 0;          // Normalization constant
+    static double *sum_probs;     // Pre-calculated sum of probabilities
+    double z;                     // Uniform random number (0 < z < 1)
+    int zipf_value;               // Computed exponential value to be returned
+    int    i;                     // Loop counter
+    int low, high, mid;           // Binary-search bounds
+    double alpha = 0.8;
+    int n = NumAccounts();
+    if (first == 33)
+    {
+        //fprintf(stderr, "init\n");
+        for (i=1; i<=n; i++)
+        c = c + (1.0 / pow((double) i, alpha));
+        c = 1.0 / c;
+
+        sum_probs = (double*)malloc((n+1)*sizeof(*sum_probs));
+        sum_probs[0] = 0;
+        for (i=1; i<=n; i++) {
+            sum_probs[i] = sum_probs[i-1] + c / pow((double) i, alpha);
+        }
+        first = 44;
+        *acct_id = 0;
+        return;
+    }
+
+    do
+    {
+        z = (r.next() % 1000000)*1.0 / 1000000;
+    }
+    while ((z == 0) || (z == 1));
+
+    low = 1, high = n, mid;
+    int cnt = 0;
+    do {
+        mid = floor((low+high)/2);
+        if (sum_probs[mid] >= z && sum_probs[mid-1] < z) {
+            zipf_value = mid;
+            break;
+        } else if (sum_probs[mid] >= z) {
+            high = mid-1;
+        } else {
+            low = mid+1;
+        }
+        //fprintf(stderr, "%d\n", ++cnt);
+    } while (low <= high);
+    assert((zipf_value >=1) && (zipf_value <= n));
+    *acct_id = zipf_value - 1;
+}
 /* input generation */
 void GetAccount(util::fast_random &r, uint64_t *acct_id) {
   uint64_t nums_global;

@@ -47,6 +47,7 @@ void BankTest(int argc,char **argv);
 
 void GetAccount(util::fast_random &r, uint64_t *acct_id);
 void GetTwoAccount(util::fast_random &r, uint64_t *acct_id_0, uint64_t *acct_id_1);
+void GetAccountZipfian(util::fast_random &r, uint64_t *acct_id);
 inline ALWAYS_INLINE int  AcctToPid(uint64_t id) {
   return mica::util::hash(&id, sizeof(uint64_t)) % total_partition;
 }

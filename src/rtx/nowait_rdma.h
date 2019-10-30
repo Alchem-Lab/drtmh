@@ -624,7 +624,7 @@ public:
      */
     write_back_oneshot(yield);
 #endif
-
+    abort_cnt[26]++;
     return true;
   }
 
@@ -632,6 +632,7 @@ public:
   virtual bool commit(yield_func_t &yield) {
   write_back(yield);
   release_reads(yield);
+  abort_cnt[27]++;
   return true;
 }
 

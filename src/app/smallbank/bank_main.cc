@@ -146,7 +146,7 @@ BankMainRunner::BankMainRunner(std::string &config_file) : BenchRunner(config_fi
     //pass
   }
 
-  fprintf(stdout,"[Bank]: check workload %u, %u, %u, %u, %u, %u\n",
+  fprintf(stdout,"[Bank]: check workload %u, %u, %u, %u, %u, %u, %u\n",
           g_txn_workload_mix[0],g_txn_workload_mix[1],g_txn_workload_mix[2],g_txn_workload_mix[3],
           g_txn_workload_mix[4],g_txn_workload_mix[5],g_txn_workload_mix[6]);
 }
@@ -482,8 +482,8 @@ void BankMainRunner::populate_cache() {
                                            cm->get_rc_qp(nthreads + nthreads + 1,pid,0),temp);
     assert(off != 0);
 
-    if(i % (total_partition * 10000) == 0)
-      PrintProgress((double)i / NumAccounts());
+    //if(i % (total_partition * 10000) == 0)
+    //  PrintProgress((double)i / NumAccounts());
 
   }
   Rfree(temp);

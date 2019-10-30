@@ -237,8 +237,10 @@ public:
   virtual bool commit(yield_func_t &yield) {
 #if ONE_SIDED_READ
     try_update_rdma(yield);
+    abort_cnt[35]++;
 #else
     try_update_rpc(yield);
+    abort_cnt[36]++;
 #endif
   	return true;
   }
@@ -370,15 +372,6 @@ private:
     item.data_ptr = (char*)item.data_ptr + sizeof(MVCCHeader) + maxpos * item.len;
   }
 
-  // void unlock(ReadSetItem& item, yield_func_t &yield) {
-  //   Qp* qp = get_qp(item.pid);
-  //   unlock_req_->set_unlock_meta(item.off);
-  //   unlock_req_->post_reqs(scheduler_, qp);
-  //   if(unlikely(qp->rc_need_poll())) {
-  //     worker_->indirect_yield(yield);
-  //   }
-  // }
-// rpc handlers
 };
 }
 }
