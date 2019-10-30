@@ -20,4 +20,5 @@ fi
 cat config.xml | grep "port"
 cat config.xml | grep "ycsb"
 date
+echo "./nocc$protocol-$version --bench bank --txn-flags 1  --verbose --config config.xml --id $id -t 10 -c $cornum -r 100 -p 4 1>out/cor$cornum/drtmh-nocc$protocol-ycsb-4-$version.log_$id 2>&1"
 ./nocc$protocol-$version --bench bank --txn-flags 1  --verbose --config config.xml --id $id -t 10 -c $cornum -r 100 -p 4 1>out/cor$cornum/drtmh-nocc$protocol-ycsb-4-$version.log_$id 2>&1

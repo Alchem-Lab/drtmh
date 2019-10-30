@@ -1,17 +1,18 @@
 <bench>
-  <port>8815</port>
+  <port>8822</port>
   <scale>3</scale>
   <rep_factor>0</rep_factor>
 
   <micro>14</micro>
   
   <bank>
-    <sp> 17 </sp>
-    <dc> 17 </dc>
-    <payment> 17 </payment>
-    <ts> 16 </ts>
-    <wc> 17 </wc> 
-    <aml> 16 </aml>
+    <sp> 0 </sp>
+    <dc> 0 </dc>
+    <payment> 0 </payment>
+    <ts> 0 </ts>
+    <wc> 0 </wc> 
+    <aml> 0 </aml>
+    <ycsb> 100 </ycsb>
   </bank>
 
   <tpcc>
@@ -25,4 +26,13 @@
   <paxos>
     <pv>100</pv>
   </paxos>
+
+  <ycsb>
+    <set_len>10</set_len>
+    <write_num>2</write_num>
+    <tx_hot>100</tx_hot>
+    <num_hot>100</num_hot>
+    <num_accounts>100000</num_accounts>
+    <sleep_time>5</sleep_time>
+  </ycsb>
 </bench>
