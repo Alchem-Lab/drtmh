@@ -348,8 +348,10 @@ void BenchWorker::run() {
   ROCC_BIND_STUB(rpc_, &BenchWorker::calvin_epoch_status_rpc_handler, this, RPC_CALVIN_EPOCH_STATUS);
 #endif
 
+#if USE_TCP_MSG == 0
   // fetch QPs
   fill_qp_vec(cm_,worker_id_);
+#endif
 
   // waiting for master to start workers
   this->inited = true;
