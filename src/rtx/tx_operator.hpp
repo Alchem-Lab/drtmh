@@ -70,8 +70,10 @@ class TXOpBase {
       :worker_(w),
        db_(db),
        cm_(cm),scheduler_(rdma_sched),node_id_(nid),worker_id_(tid),rpc_(rpc_handler),qp_vec_() {
+#if USE_TCP_MSG == 0
     // fetch QPs
     fill_qp_vec(cm,worker_id_);
+#endif
   }
 
   // get ops

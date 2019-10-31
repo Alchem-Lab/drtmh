@@ -155,6 +155,7 @@ void BenchWorker::run() {
 #endif
 #if USE_TCP_MSG == 1
   assert(local_comm_queues.size() > 0);
+  assert(local_comm_queues.size() > worker_id_);
   create_tcp_connections(local_comm_queues[worker_id_],tcp_port,send_context);
 #else
   MSGER_TYPE type;

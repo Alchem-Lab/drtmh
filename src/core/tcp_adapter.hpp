@@ -63,8 +63,9 @@ class AdapterPoller : public oltp::RWorker {
       zmq::message_t *msg = new zmq::message_t();
       if(recv_socket->recv(msg,ZMQ_NOBLOCK)) {
         int tid = *((char *)msg->data());
-        int nid = *((char *)msg->data() + sizeof(int));
+        int nid = *((char *)msg->data() + sizeof(char));
         assert(tid >= 0 && tid < local_queues.size());
+        // fprintf(stdout, "[NOCC] received message from node = %d, thread = %d\n", nid, tid);
         local_queues[tid]->enqueue((char *)(&msg),sizeof(zmq::message_t *));
       } // end dispatch one message
     }
@@ -86,12 +87,25 @@ class Adapter : public MsgHandler {
  public:
   static void create_shared_sockets(const std::vector<std::string> &network,int tcp_port,
                                     zmq::context_t &context) {
-
+    
     assert(sockets.size() == 0 && locks.size() == 0);
+    
+    std::unordered_map<std::string, std::string> host2ip({
+            {"gorgon1", "172.23.33.31"}, 
+            {"gorgon2", "172.23.33.32"},
+            {"gorgon3", "172.23.33.33"},
+            {"gorgon4", "172.23.33.34"},
+            {"gorgon5", "172.23.33.35"},
+            {"gorgon6", "172.23.33.36"},
+            {"gorgon7", "172.23.33.37"},
+            {"gorgon8", "172.23.33.38"}});
+
     for(uint i = 0;i < network.size();++i) {
       auto s = new zmq::socket_t(context, ZMQ_PUSH);
       char address[32] = "";
-      snprintf(address, 32, "tcp://%s:%d", network[i].c_str(), tcp_port);
+      snprintf(address, 32, "tcp://%s:%d", host2ip[network[i]].c_str(), tcp_port);
+      // snprintf(address, 32, "tcp://%s:%d", network[i].c_str(), tcp_port);
+      fprintf(stdout, "[TCP] creating shared sockets for %s\n", address);
       s->connect(address);
       sockets.push_back(s);
       locks.push_back(new std::mutex());
@@ -123,6 +137,8 @@ class Adapter : public MsgHandler {
   Qp::IOStatus send_to(int node_id,char *msg,int len) { return send_to(node_id,thread_id_,msg,len);}
 
   Qp::IOStatus send_to(int node_id,int tid,char *msg,int len) {
+    // fprintf(stdout, "send using tcp adapter to node = %d, thread = %d\n", node_id, tid);
+      
     zmq::message_t m(len + sizeof(char) + sizeof(char));
     *((char *)(m.data())) = tid;
     *((char *)(m.data()) + sizeof(char)) = node_id_;
@@ -172,12 +188,19 @@ class Adapter : public MsgHandler {
   void  poll_comps() {
     zmq::message_t *msg;
     while(queue_->front((char *)(&msg))) {
-      int tid = *((char *)(msg->data())); int nid = *( (char *)(msg->data()) + sizeof(char));
-      callback_((char *)(msg->data()) + sizeof(char) + sizeof(char), nid,tid);
+      int tid = *((char *)(msg->data())); 
+      int nid = *((char *)(msg->data()) + sizeof(char));
+      // fprintf(stdout, "tcp message handler poll.\n"); 
+      callback_((char *)(msg->data()) + sizeof(char) + sizeof(char), nid, tid);
       free(msg);
       queue_->pop();
     }
   }
+
+  void poll_comps(bool prepared) {
+    return poll_comps();
+  }
+
  private:
   /* a set of send sockets, if each adapter use dedicated sockets
    * which is used if DEDICATED == 1
