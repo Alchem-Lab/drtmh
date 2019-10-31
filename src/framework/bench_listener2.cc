@@ -1,11 +1,14 @@
+#include <vector>
+#include <fstream>
+#include <signal.h>
+#include <zmq.hpp>
+
 #include "config.h"
 #include "rocc_config.h"
 #include "bench_listener.h"
 
 #include "core/logging.h"
-
-#include <fstream>
-#include <signal.h>
+#include "core/commun_queue.hpp"
 
 /* global config constants */
 extern size_t nthreads;
@@ -14,6 +17,7 @@ extern size_t current_partition;
 extern size_t total_partition;
 extern size_t coroutine_num;
 extern size_t distributed_ratio;
+extern int tcp_port;
 
 extern std::string exe_name;
 extern std::string bench_type;
@@ -28,6 +32,8 @@ extern oltp::Scheduler* scheduler;
 namespace nocc {
 
 extern RdmaCtrl *cm;
+extern zmq::context_t send_context;
+extern std::vector<SingleQueue *> local_comm_queues;
 
 namespace oltp {
 
@@ -91,8 +97,13 @@ void BenchLocalListener::run() {
   wait_worker_barrier(workers_);
   inited = true;
 
+#if USE_TCP_MSG == 1
+  assert(local_comm_queues.size() > worker_id_);
+  create_tcp_connections(local_comm_queues[worker_id_],tcp_port, send_context);
+#else
   // currently, listener use UD for communication
   create_rdma_ud_connections(1);
+#endif
 
   // register RPC handlers, then
   ROCC_BIND_STUB(rpc_,&BenchLocalListener::init_rpc_handler,this,INIT_RPC_ID);
@@ -127,10 +138,13 @@ WAIT_RETRY:
 }
 
 void BenchLocalListener::worker_routine(yield_func_t &yield) {
-  if(current_partition == 0)
+  if(current_partition == 0) {
+    LOG(2) << "Starting Master Listener.";
     worker_routine_master(yield);
-  else
+  } else {
+    LOG(2) << "Starting Slave Listener.";
     worker_routine_slave(yield);
+  }
 }
 
 void BenchLocalListener::worker_routine_master(yield_func_t &yield) {
@@ -186,7 +200,8 @@ void BenchLocalListener::worker_routine_slave(yield_func_t &yield) {
 #if 1
   char *dummy = rpc_->get_static_buf(64);
   *((int *)dummy) = current_partition;
-  rpc_->append_req(dummy,INIT_RPC_ID,sizeof(char),1 /* cor_id */,RRpc::REQ,0 /* master id */);
+  // LOG(2) << "sending init rpc request.";
+  rpc_->append_req(dummy,INIT_RPC_ID,sizeof(int),1 /* cor_id */,RRpc::REQ,0 /* master id */);
 
   // wait for master's start RPC
   while(!global_inited)
@@ -215,7 +230,8 @@ void BenchLocalListener::sigint_handler(int) {
 }
 
 void BenchLocalListener::init_rpc_handler(int id,int cid,char *msg,void *arg) {
-  assert(*((int *)msg) == id);
+  // LOG(2) << "handling init rpc request from id: " << id << " cid:" << cid;
+  assert(*((int*)msg) == id);
   nresult_returned_ += 1;
 }
 
