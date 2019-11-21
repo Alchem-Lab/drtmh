@@ -378,6 +378,7 @@ using namespace nocc::rtx::rwlock;
   // }
 
 
+  START(lock);
   // local local reads
   for (auto i = 0; i < read_set_.size(); i++) {
     if (read_set_[i].pid != response_node_)  // skip remote read
@@ -435,6 +436,7 @@ using namespace nocc::rtx::rwlock;
       }
     }
   }
+  END(lock);
 
   return true;
 }
@@ -442,6 +444,7 @@ using namespace nocc::rtx::rwlock;
 void CALVIN::release_reads(yield_func_t &yield) {
   using namespace rwlock;
 
+  // START(release);
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
     if((*it).pid != response_node_)  // remote case
       continue;
@@ -457,11 +460,14 @@ void CALVIN::release_reads(yield_func_t &yield) {
       }
     }
   }
+
+  // END(release);
 }
 
 void CALVIN::release_writes(yield_func_t &yield) {
   using namespace rwlock;
 
+  // START(release);
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != response_node_)  // remote case
       continue;
@@ -475,12 +481,15 @@ void CALVIN::release_writes(yield_func_t &yield) {
       }
     }
   }
+
+  // END(release);
 }
 
 void CALVIN::write_back(yield_func_t &yield) {
   // step 5: applying writes
   // ignore remote writes since they will be viewed as local writes
   // at some apropriate node.
+  START(commit);
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != response_node_) { // ignore remote write
     }
@@ -491,12 +500,15 @@ void CALVIN::write_back(yield_func_t &yield) {
       inplace_write_op(it->node,it->data_ptr,it->len, db_->_schemas[it->tableid].meta_len);
     }
   }
+  END(commit);
 }
 
 /* RPC handlers */
 void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   char *reply = reply_msg + sizeof(ReplyHeader);
+
+  // START(forward);
 
   assert(static_cast<BenchWorker*>(worker_)->forwarded_values != NULL);
   std::map<uint64_t, read_val_t>& fv = static_cast<BenchWorker*>(worker_)->forwarded_values[cid];
@@ -559,6 +571,8 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
   // fprintf(stdout, "forward handler reply.\n");
   rpc_->send_reply(reply_msg,reply - reply_msg,id,cid);
   // send reply
+  //
+  // END(forward);
 }
 
 void CALVIN::register_default_rpc_handlers() {
