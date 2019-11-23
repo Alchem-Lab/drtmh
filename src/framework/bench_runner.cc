@@ -154,6 +154,7 @@ BenchRunner::run() {
 
   // create sender sockets
 #if DEDICATED == 0
+  LOG(3) << "[TCP] creating shared sockets";
   Adapter::create_shared_sockets(cm->network_,tcp_port,send_context);
 #endif // end if create dedicated send sockets
 #endif // end if USE_RDMA
@@ -246,6 +247,9 @@ BenchRunner::run() {
 
 #if USE_RDMA
   cm->start_server(); // listening server for receive QP connection requests
+  cout << "[Runner] Started server for receiving QP connection requests." <<endl;
+#else
+  cout << "[Runner] DID NOT start server for receiving QP connection requests." <<endl;
 #endif
 
 #if 1

@@ -1,12 +1,12 @@
 #ifndef NOCC_FRAMEWORK_CONFIG_H_
 #define NOCC_FRAMEWORK_CONFIG_H_
 
-#define MASTER_EPOCH 10 // runtime of test
+#define MASTER_EPOCH 2 // runtime of test
 
 // rdma related stuffs
 #define HUGE_PAGE  1
 #define USE_UD_MSG 1
-#define USE_TCP_MSG 0
+#define USE_TCP_MSG 1
 #define SINGLE_MR  0
 #define BUF_SIZE   10480 // RDMA buffer size registered, in a small setting
 //#define BUF_SIZE 512

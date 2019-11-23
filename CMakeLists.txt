@@ -59,6 +59,9 @@ include(cmake/tpce.cmake)
 add_executable(noccocc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccocc PRIVATE "-DOCC_TX")
 
+add_executable(noccocc-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccocc-tcp PRIVATE "-DOCC_TX")
+
 add_executable(noccocc-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccocc-rpc PRIVATE "-DOCC_TX")
 
@@ -69,8 +72,12 @@ add_executable(noccocc-hybrid ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccocc-hybrid PRIVATE "-DOCC_TX")
 
 # add_executable(noccnowait ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+
 add_executable(noccnowait ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccnowait PRIVATE "-DNOWAIT_TX")
+
+add_executable(noccnowait-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccnowait-tcp PRIVATE "-DNOWAIT_TX")
 
 add_executable(noccnowait-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccnowait-rpc PRIVATE "-DNOWAIT_TX")
@@ -85,6 +92,9 @@ target_compile_options(noccnowait-hybrid PRIVATE "-DNOWAIT_TX")
 add_executable(noccwaitdie ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccwaitdie PRIVATE "-DWAITDIE_TX")
 
+add_executable(noccwaitdie-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccwaitdie-tcp PRIVATE "-DWAITDIE_TX")
+
 add_executable(noccwaitdie-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccwaitdie-rpc PRIVATE "-DWAITDIE_TX")
 
@@ -96,6 +106,9 @@ target_compile_options(noccwaitdie-hybrid PRIVATE "-DWAITDIE_TX")
 
 add_executable(noccsundial ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsundial PRIVATE "-DSUNDIAL_TX")
+
+add_executable(noccsundial-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccsundial-tcp PRIVATE "-DSUNDIAL_TX")
 
 add_executable(noccsundial-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccsundial-rpc PRIVATE "-DSUNDIAL_TX")
@@ -110,6 +123,9 @@ target_compile_options(noccsundial-hybrid PRIVATE "-DSUNDIAL_TX")
 add_executable(noccmvcc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccmvcc PRIVATE "-DMVCC_TX")
 
+add_executable(noccmvcc-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(noccmvcc-tcp PRIVATE "-DMVCC_TX")
+
 add_executable(noccmvcc-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(noccmvcc-rpc PRIVATE "-DMVCC_TX")
 
@@ -123,6 +139,9 @@ target_compile_options(noccmvcc-hybrid PRIVATE "-DMVCC_TX")
 # add_executable(nocccalvin ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
 add_executable(nocccalvin ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(nocccalvin PRIVATE "-DCALVIN_TX")
+
+add_executable(nocccalvin-tcp ${SOURCES} ${RDMA_SOURCES})
+target_compile_options(nocccalvin-tcp PRIVATE "-DCALVIN_TX")
 
 add_executable(nocccalvin-rpc ${SOURCES} ${RDMA_SOURCES})
 target_compile_options(nocccalvin-rpc PRIVATE "-DCALVIN_TX")
@@ -156,7 +175,7 @@ include(cmake/Dependencies.cmake)
 #
 # Configure binary linking
 #
-set( apps noccrad noccocc noccocc-rpc noccocc-onesided noccocc-hybrid noccsi noccfarm noccnowait noccnowait-rpc noccnowait-onesided noccnowait-hybrid noccsundial-rpc noccsundial-onesided noccsundial-hybrid noccsundial noccmvcc noccmvcc-rpc noccmvcc-onesided noccmvcc-hybrid noccwaitdie noccwaitdie-rpc noccwaitdie-onesided noccwaitdie-hybrid nocccalvin nocccalvin-rpc nocccalvin-onesided nocccalvin-hybrid nn nr )
+set( apps noccrad noccocc noccocc-tcp noccocc-rpc noccocc-onesided noccocc-hybrid noccsi noccfarm noccnowait noccnowait-tcp noccnowait-rpc noccnowait-onesided noccnowait-hybrid noccsundial-tcp noccsundial-rpc noccsundial-onesided noccsundial-hybrid noccsundial noccmvcc noccmvcc-tcp noccmvcc-rpc noccmvcc-onesided noccmvcc-hybrid noccwaitdie noccwaitdie-tcp noccwaitdie-rpc noccwaitdie-onesided noccwaitdie-hybrid nocccalvin nocccalvin-tcp nocccalvin-rpc nocccalvin-onesided nocccalvin-hybrid nn nr )
 foreach( prog ${apps} )
   if( LINK_STATIC_LIB )
     target_link_libraries( ${prog}
@@ -178,29 +197,35 @@ endforeach( prog )
 
 # for the ease of running
 set(CMAKE_INSTALL_PREFIX ./)
-install(TARGETS noccocc  	DESTINATION scripts) 
+install(TARGETS noccocc  	DESTINATION scripts)
+install(TARGETS noccocc-tcp  	DESTINATION scripts) 
 install(TARGETS noccocc-rpc  	DESTINATION scripts) 
 install(TARGETS noccocc-onesided  	DESTINATION scripts) 
 install(TARGETS noccocc-hybrid  	DESTINATION scripts) 
 install(TARGETS noccfarm 	DESTINATION scripts)
 install(TARGETS noccsi   	DESTINATION scripts)
 install(TARGETS noccnowait 	DESTINATION scripts)
+install(TARGETS noccnowait-tcp 	DESTINATION scripts)
 install(TARGETS noccnowait-rpc 	DESTINATION scripts)
 install(TARGETS noccnowait-onesided 	DESTINATION scripts)
 install(TARGETS noccnowait-hybrid 	DESTINATION scripts)
 install(TARGETS noccwaitdie   	DESTINATION scripts)
+install(TARGETS noccwaitdie-tcp   	DESTINATION scripts)
 install(TARGETS noccwaitdie-rpc   	DESTINATION scripts)
 install(TARGETS noccwaitdie-onesided   	DESTINATION scripts)
 install(TARGETS noccwaitdie-hybrid   	DESTINATION scripts)
 install(TARGETS noccsundial   	DESTINATION scripts)
+install(TARGETS noccsundial-tcp   	DESTINATION scripts)
 install(TARGETS noccsundial-rpc   	DESTINATION scripts)
 install(TARGETS noccsundial-onesided   	DESTINATION scripts)
 install(TARGETS noccsundial-hybrid   	DESTINATION scripts)
 install(TARGETS noccmvcc     DESTINATION scripts)
+install(TARGETS noccmvcc-tcp     DESTINATION scripts)
 install(TARGETS noccmvcc-rpc     DESTINATION scripts)
 install(TARGETS noccmvcc-hybrid     DESTINATION scripts)
 install(TARGETS noccmvcc-onesided     DESTINATION scripts)
 install(TARGETS nocccalvin  DESTINATION scripts)
+install(TARGETS nocccalvin-tcp  DESTINATION scripts)
 install(TARGETS nocccalvin-rpc  DESTINATION scripts)
 install(TARGETS nocccalvin-onesided  DESTINATION scripts)
 install(TARGETS nocccalvin-hybrid  DESTINATION scripts)

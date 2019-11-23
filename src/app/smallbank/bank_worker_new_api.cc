@@ -30,7 +30,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   const int func_size = ycsb_set_length;
 
 #ifdef CALVIN_TX
-  static_assert(func_size < MAX_CALVIN_SETS_SUPPORTED, "ycsb generating sets more than the support of CALVIN.\n");
+  assert(func_size < MAX_CALVIN_SETS_SUPPORTED);
 #endif
   
   bool is_write[func_size];
@@ -44,8 +44,8 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
 #ifdef CALVIN_TX
   const char* buf = req->req_info;
   struct ycsb_req_info_t {
-  	uint64_t ids[func_size];
-  	bool is_write[func_size];
+  	uint64_t ids[10];
+  	bool is_write[10];
   };
 
   for(int i = 0; i < func_size; ++i) {
@@ -131,6 +131,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   // int dummy_ret = rtx_->dummy_work(10000, indexes[3]); 
   // LOG(3) << dummy_ret;
   usleep(sleep_time);
+
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret, 73);
 }
@@ -139,19 +140,20 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
 void BankWorker::ycsb_gen_rwsets(char* buf, yield_func_t &yield) {
   int index = -1;
 
-  static const int func_size = 10;
-  static_assert(func_size < MAX_CALVIN_SETS_SUPPORTED, "ycsb generating sets more than the support of CALVIN.\n");
+  const int func_size = ycsb_set_length;
+  assert(func_size < MAX_CALVIN_SETS_SUPPORTED);
   bool is_write[func_size];
   uint64_t ids[func_size];
   std::set<uint64_t> accounts;
   
   struct ycsb_req_info_t {
-  	uint64_t ids[func_size];
-  	bool is_write[func_size];
+  	uint64_t ids[10];
+  	bool is_write[10];
   };
 
   for(int i = 0; i < func_size; ++i) {
-    is_write[i] = (random_generator[cor_id_].next() % 2);
+    //is_write[i] = (random_generator[cor_id_].next() % 2);
+    is_write[i] = (random_generator[cor_id_].next() % ycsb_set_length) < ycsb_write_num;
     uint64_t id;
     GetAccount(random_generator[cor_id_],&id);
     while(accounts.find(id) != accounts.end()) {

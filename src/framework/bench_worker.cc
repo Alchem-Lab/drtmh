@@ -309,6 +309,7 @@ void BenchWorker::run() {
 
 #if USE_TCP_MSG == 1
   assert(local_comm_queues.size() > 0);
+  assert(local_comm_queues.size() > worker_id_);
   create_tcp_connections(local_comm_queues[worker_id_],tcp_port,send_context);
 #else
   MSGER_TYPE type;
@@ -347,8 +348,10 @@ void BenchWorker::run() {
   ROCC_BIND_STUB(rpc_, &BenchWorker::calvin_epoch_status_rpc_handler, this, RPC_CALVIN_EPOCH_STATUS);
 #endif
 
+#if USE_TCP_MSG == 0
   // fetch QPs
   fill_qp_vec(cm_,worker_id_);
+#endif
 
   // waiting for master to start workers
   this->inited = true;
@@ -534,6 +537,7 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
     }
   }
 
+  int my_timestamp = 0;
   char* const req_buf = req_buffers[cor_id_][cm_->get_nodeid()];
 
 #if ONE_SIDED_READ == 0
@@ -609,8 +613,10 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
         int tx_idx = req.tx_id;
     #endif
 
-        uint64_t request_timestamp = nocc::util::get_now_nano() << 3;
+        // uint64_t request_timestamp = nocc::util::get_now_nano() << 3;
+        uint64_t request_timestamp = my_timestamp << 3;
         request_timestamp |= cm_->get_nodeid();
+        my_timestamp += 1;
         // buffer for 10 milliseconds for one epoch
         if (batch_size_ < MAX_CALVIN_REQ_CNTS) {
         // if (request_timestamp - start < 10000) {
@@ -861,8 +867,9 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
         if (req->req_initiator == cm_->get_nodeid())
           ntxn_executed_ += 1;
         // fprintf(stdout, "executing %d %d %lu\n", i, req.req_idx, req.timestamp);
-        auto ret = workload[tx_idx].fn(this, req, yield);
-        // auto ret = txn_result_t(true, 73);
+        // auto ret = workload[tx_idx].fn(this, req, yield);
+        // usleep(5);
+        auto ret = txn_result_t(true, 73);
     #if NO_ABORT == 1
         //ret.first = true;
     #endif
@@ -894,46 +901,46 @@ BenchWorker::worker_routine_for_calvin(yield_func_t &yield) {
 
     // fprintf(stderr, "done execution for iteration %d.\n", iteration);
 
-#if ONE_SIDED_READ == 0
-    epoch_status_[cor_id_][cm_->get_nodeid()] = CALVIN_EPOCH_DONE;
-    // broadcast my epoch status to other machines
-    // char* send_buf = rpc_->get_static_buf(cor_id_);
-    *(uint8_t*)send_buf = CALVIN_EPOCH_DONE;
-    // char* reply_buf = rpc_->get_reply_buf();
-    rpc_->prepare_multi_req(reply_buf,mac_set_.size(),cor_id_);
-    rpc_->broadcast_to(send_buf,
-                       RPC_CALVIN_EPOCH_STATUS,
-                       sizeof(uint8_t),
-                       cor_id_,RRpc::REQ,mac_set_);
-    indirect_yield(yield);
-#else
-    ((calvin_header*)req_buffers[cor_id_][cm_->get_nodeid()])->epoch_status = CALVIN_EPOCH_DONE;
-    rtx::RDMAWriteOnlyReq req2(cor_id_, PA);
-    for (auto mac : mac_set_) {
-      Qp *qp = get_qp(mac);
-      assert(qp != NULL);
-      uint64_t remote_off = offsets_[cor_id_][cm_->get_nodeid()];
+// #if ONE_SIDED_READ == 0
+//     epoch_status_[cor_id_][cm_->get_nodeid()] = CALVIN_EPOCH_DONE;
+//     // broadcast my epoch status to other machines
+//     // char* send_buf = rpc_->get_static_buf(cor_id_);
+//     *(uint8_t*)send_buf = CALVIN_EPOCH_DONE;
+//     // char* reply_buf = rpc_->get_reply_buf();
+//     rpc_->prepare_multi_req(reply_buf,mac_set_.size(),cor_id_);
+//     rpc_->broadcast_to(send_buf,
+//                        RPC_CALVIN_EPOCH_STATUS,
+//                        sizeof(uint8_t),
+//                        cor_id_,RRpc::REQ,mac_set_);
+//     indirect_yield(yield);
+// #else
+//     ((calvin_header*)req_buffers[cor_id_][cm_->get_nodeid()])->epoch_status = CALVIN_EPOCH_DONE;
+//     rtx::RDMAWriteOnlyReq req2(cor_id_, PA);
+//     for (auto mac : mac_set_) {
+//       Qp *qp = get_qp(mac);
+//       assert(qp != NULL);
+//       uint64_t remote_off = offsets_[cor_id_][cm_->get_nodeid()];
       
-      // h.batch_size = ((calvin_header*)req_buf)->batch_size;
-      // h.received_size = h.batch_size;
-      uint8_t* epoch_status = new uint8_t;
-      *epoch_status = CALVIN_EPOCH_DONE;
-      // fprintf(stdout, "offsetof epoch_status: %d\n", OFFSETOF(calvin_header, epoch_status));
-      req2.set_write_meta(remote_off + OFFSETOF(calvin_header, epoch_status), 
-                                  (char*)epoch_status, sizeof(uint8_t));
-      req2.post_reqs(rdma_sched_, qp);
+//       // h.batch_size = ((calvin_header*)req_buf)->batch_size;
+//       // h.received_size = h.batch_size;
+//       uint8_t* epoch_status = new uint8_t;
+//       *epoch_status = CALVIN_EPOCH_DONE;
+//       // fprintf(stdout, "offsetof epoch_status: %d\n", OFFSETOF(calvin_header, epoch_status));
+//       req2.set_write_meta(remote_off + OFFSETOF(calvin_header, epoch_status), 
+//                                   (char*)epoch_status, sizeof(uint8_t));
+//       req2.post_reqs(rdma_sched_, qp);
 
-      // avoid send queue from overflow
-      if (unlikely(qp->rc_need_poll())) {
-        indirect_yield(yield);
-      }
-    }
-    indirect_yield(yield);
-#endif
+//       // avoid send queue from overflow
+//       if (unlikely(qp->rc_need_poll())) {
+//         indirect_yield(yield);
+//       }
+//     }
+//     indirect_yield(yield);
+// #endif
 
-    while (!check_epoch_done()) {
-      yield_next(yield);
-    }
+//     while (!check_epoch_done()) {
+//       yield_next(yield);
+//     }
 
     // fprintf(stderr, "%d %d ending for iteration %d.\n", worker_id_, cor_id_, iteration);
   }

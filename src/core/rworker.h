@@ -98,7 +98,9 @@ class RWorker : public ndb_thread {
     // pre-checks
     for(uint it = 0;it < total_worker_coroutine;++it) {
       assert(rpc_->has_pending_reqs(it) == false);
+#if USE_TCP_MSG == 0 
       assert(rdma_sched_->pending_counts_[it] == 0);
+#endif
     }
     routines_[0]();
   }
@@ -130,7 +132,10 @@ class RWorker : public ndb_thread {
     if(msg_handler_ != NULL){
       msg_handler_->poll_comps(true); // poll rpcs requests/replies
     }
+
+#if USE_TCP_MSG == 0 
     rdma_sched_->poll_comps();  // poll RDMA completions
+#endif
 
     //handles timeout events tr
     for(uint i = 0;i < total_worker_coroutine + 1;++i) {
