@@ -7,12 +7,14 @@ import random,subprocess
 colors=['b','g','r','c','m','y','k','grey']
 markers=['.', 'o']
 
-algs = ['occ', 'nowait', 'waitdie', 'mvcc', 'sundial']
+algs = ['nowait', 'waitdie', 'occ', 'mvcc', 'sundial']
 out_path = sys.argv[1]
 apps = ['bank', 'ycsb']
 apptitle = {'bank': 'SmallBank', 'ycsb':'YCSB'}
 
 versions = ['rpc','onesided']
+version_format = {'rpc':'RPC', 'onesided':'onesided'}
+
 # versions = ['rpc','onesided', 'hybrid']
 filenames = ["cor1","cor3","cor5","cor7","cor9","cor11","cor13","cor15","cor17" ,"cor19"]
 # prefix = sys.argv[2]
@@ -92,7 +94,7 @@ for j, appname in enumerate(apps):
                 # print(lat[hkz])
                 # tput[hkz].sort()
                 # lat[hkz].sort()
-                rects_list.append(plt.plot(tput[hkz],lat[hkz], ls='-', c=myco[hkz], lw=2, marker=markers[hkz], label=versions[hkz]))
+                rects_list.append(plt.plot(tput[hkz],lat[hkz], ls='-', c=myco[hkz], lw=2, marker=markers[hkz], label=version_format[versions[hkz]]))
 
             if j == 0:
                 plt.title(item, fontsize=24, loc='right')
