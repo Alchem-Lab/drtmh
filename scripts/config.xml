@@ -1,5 +1,5 @@
 <bench>
-  <port>8815</port>
+  <port>8888</port>
   <scale>3</scale>
   <rep_factor>0</rep_factor>
 
@@ -12,6 +12,7 @@
     <ts> 16 </ts>
     <wc> 17 </wc> 
     <aml> 16 </aml>
+    <ycsb> 0 </ycsb>
   </bank>
 
   <tpcc>
@@ -25,4 +26,14 @@
   <paxos>
     <pv>100</pv>
   </paxos>
+  
+  <ycsb>
+    <set_len>10</set_len>
+    <write_num>1</write_num>
+    <tx_hot>10</tx_hot>
+    <num_hot>100</num_hot>
+    <num_accounts>100000</num_accounts>
+    <sleep_time>5</sleep_time>
+  </ycsb>
+
 </bench>

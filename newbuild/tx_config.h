@@ -78,11 +78,12 @@
 #define RECORD_STALE NULL
 
 /* #undef LARGE_CONNECTION */
+#define LARGE_CONNECTION 5
 #ifndef LARGE_CONNECTION
 #define LARGE_CONNECTION 0 // in default, we donot use more QPs to connect to other servers
 #endif
 
-#define QP_NUMS 5
+#define QP_NUMS LARGE_CONNECTION
 #if !LARGE_CONNECTION
 #undef QP_NUMS
 #define QP_NUMS 1
