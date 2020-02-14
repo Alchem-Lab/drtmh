@@ -1,0 +1,85 @@
+NOCC started with program [noccmvcc-rpc]. at 31-10-2019 04:16:18
+[bench_runner.cc:327] Use TCP port 8847
+[0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 0 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=5tx hot10num_hot100num_accounts 100000
+[0m[bank_main.cc:143] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16, 0
+[util.cc:161] malloc_huge_pages: size = 21223178240huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:154] Total logger area 0.00390625G.
+[0m[bench_runner.cc:165] add RDMA store size 9.76562G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 9.99409G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[bank_main.cc:236] finish loading zipfian 0
+[0m[Bank], total 12000000 accounts loaded
+[bank_main.cc:337] check cv balance 46280
+[0m[Runner] local db size: 460.184 MB
+[Runner] Cache size: 0 MB
+worker: 0 binding 0
+worker: 2 binding 4
+worker: 1 binding 2
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[Global sequence running] !
+[bench_listener2.cc:64] try log results to ./results/noccmvcc-rpc_bank_4_10_1_100.log
+[0mregisterring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240[bench_listener2.cc:73] New monitor running!
+[0mregisterring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240threadid=0: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=2: all 4 qps connected
+8: 2 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+9: 2 out of 4 qps connected. Retry connecting qps...
+12: 1 out of 4 qps connected. Retry connecting qps...
+threadid=9: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=12: all 4 qps connected
+[rworker.cc:47] Worker 11 on cpu 22with cor id 0
+[0m[bench_worker.h:160] Use RDMA for logging.
+[0m[bench_listener2.cc:119] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 23with cor id 0
+[0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0mnoccmvcc-rpc: /home/huangkz/usc/new/drtmh/src/rtx/mvcc_rdma.cc:298: void nocc::rtx::MVCC::read_rpc_handler(int, int, char*, void*): Assertion `node != NULL && node->value != NULL' failed.
+stack trace:
+  ./noccmvcc-rpc() [0x47acc5]
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
+  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
+  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dbd7
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dc82
+  ./noccmvcc-rpc() [0x4dc3b5]
+  ./noccmvcc-rpc : nocc::oltp::RRpc::poll_comp_callback(char*, int, int)+0x99
+  ./noccmvcc-rpc : rdmaio::udmsg::UDMsg::poll_comps(bool)+0x127
+  ./noccmvcc-rpc : nocc::oltp::RWorker::new_master_routine(boost::coroutines::detail::symmetric_coroutine_yield<void>&, int)+0x12b
+  ./noccmvcc-rpc : boost::coroutines::detail::symmetric_coroutine_object<void, boost::_bi::bind_t<void, boost::_mfi::mf2<void, nocc::oltp::RWorker, boost::coroutines::detail::symmetric_coroutine_yield<void>&, int>, boost::_bi::list3<boost::_bi::value<nocc::oltp::RWorker*>, boost::arg<1>, boost::_bi::value<int> > >, boost::coroutines::basic_standard_stack_allocator<boost::coroutines::stack_traits> >::run()+0x4e
+  ./noccmvcc-rpc : make_fcontext()+0x1b
+[NOCC] Meet an assertion failure!

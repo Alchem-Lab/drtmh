@@ -1,0 +1,816 @@
+\section{Concurrency Control Protocols}
+%\vspace{-2mm}
+
+%-- Describe each protocol design in detail, explain the ideas well. If you made some design choices based some considerations or tradeoffs, please also put them here. 
+
+%-- Do not mention OCC as the baseline, just discuss
+%all protocols in some order. When talking about OCC, mention that it is based on the OSDI (with any modifications). 
+
+%-- For each protocol, remember to describe both: RPC and (mostly) RDMA. Draw some figures if needed, especially for the protocols that incurred significant coding/debugging (e.g. Calvin). 
+
+%-- I remember that you mention certain operations are needed by all (or several) protocols and it is best to use RPC/RDMA to implement them. Please discuss them in the final "Discussion" section, and perhaps add a table with {operations, protocols} indicating any design options and findings in each cell. 
+
+In \projectname, we implement six concurrency control protocols 
+with RDMA-enabled
+two-sided and one-sided communication primitives. 
+The implementations of these protocols
+involve a variety of techniques. 
+%The concurrency control algorithms that we primarily concern and included in our system cover a diversity of different techniques. 
+%These protocols can be classified into several types. 
+Among these protocols,
+\nowait~\cite{Bernstein:1981:CCD:356842.356846} and \waitdie~\cite{Bernstein:1981:CCD:356842.356846} are two examples of 2-phase locking (2PL)~\cite{Bernstein:1981:CCD:356842.356846} 
+concurrency control algorithm.
+They differ in conflict resolution --- how conflicts are handled to ensure serialization. 
+%We will have a detailed discussion in their respective subsections. 
+Compared to 2PL, Optimistic Concurrency Control (\occ)~\cite{kung1981optimistic} reads records speculatively without locking and 
+validates data upon transaction commits 
+--- the only time to use locks. 
+%OCC constraints locking only to the time when transactions commit. 
+\mvcc~\cite{bernstein1983multiversion} optimizes the performance of read-heavy transactions by allowing the read of stale records instead of aborting. \sundial~\cite{yu2018sundial} leverages dynamically changing logical leases to determine the transaction commit orders and reduce aborts. 
+\calvin~\cite{Thomson:2012:CFD:2213836.2213838} introduces determinism to sequence transaction inputs and schedule transactions in a deterministic fashion. 
+
+\begin{figure}[t]
+    \centering
+    \vspace{-1mm}
+    \includegraphics[width=8cm]{images/CC-data.pdf}
+    \vspace{-5mm}
+    \caption{Metadata for Concurrency Control protocols}
+    \vspace{-8mm}
+    \label{fig:metadata}
+\end{figure}
+
+While the protocols themselves are known before, 
+the new contribution of 
+\projectname is to rethink their {\em implementation in the context of RDMA}. 
+For each protocol, we implement two versions:
+1) RPC version, which mostly uses remote function call enabled by RDMA's two-sided communication primitives (i.e., \texttt{SEND/RECV}); 
+and 2) one-sided version, which mostly uses RDMA's unique 
+one-sided communication primitives (i.e., \texttt{WRITE/READ/ATOMIC}). 
+Each version does not solely use
+one type (one- vs. two-sided) of RDMA primitives
+--- we choose the proper primitives
+to implement certain operations when the alternative
+is overwhelmingly worse. 
+%Next, we first discuss the common
+%transaction structure and operations. 
+
+%Currently, there are two major means of inter-nodes communication using RDMA. 1) Remote Procedure Call (RPC) using two-sided RDMA primitives (i.e.,  SEND/RECV). This is a natural drop-in replacement of RPC using TCP. 2) One-sided primitives such as WRITE/READ/ATOMIC operations. Figure~\ref{fig:two-vs-one-primitives} illustrates these two different types of communications.
+
+%\vspace{-2mm}
+\subsection{Design Principle}
+%\vspace{-2mm}
+% TODO: the name of stages in one operation and in one transaction
+ 
+%is committed.
+%In the implementation of each protocol by RDMA
+%primitives, we should consider the trade-offs
+%between one- and two-sided communication. 
+The trade-off between two-sided and one-sided 
+RDMA primitives is well-known. 
+In RPC version, 
+operations are sent to and executed on the
+remote machine. 
+The advantage is that the whole operation can be done with one function call, saving communication.  
+But the local machine needs to 
+wait for the remote execution which is typically done by
+a co-routine after the remote CPU is interrupted.
+In contrast, one-sided primitives 
+bypass remote CPU and typically achieve
+better performance for 
+applications with higher CPU usage.
+However, it may launch more network 
+requests and needs to maintain metadata for remote offsets. 
+%whenever remote data is needed. 
+%Moreover, metadata need to be maintained to keep
+%remote offsets. 
+Also, one-sided atomic
+operation tends to be costly. 
+Based on these trade-offs, we consider several common operations used in concurrency control protocols. 
+
+{\bf Locking.} Locking is needed in all six protocols. The implementation choice depends on the load of remote machines executing co-routines. If it has longer co-routine
+execution time, the remote lock handler in RPC version will wait longer, and one-sided implementation is better. 
+We observe this behavior in YCSB 
+in which the co-routine
+execution time can be configured in the benchmark. 
+For TPC-C and SmallBank, RPC implementation is better
+since the co-routine execution time is short. 
+
+{\bf Validation. } This operation is needed
+in \occ, \mvcc, and \sundial.
+RPC version just needs one network operation, 
+but similar to locking, the best choice also depends on 
+the co-routine execution time in remote machines. 
+
+%but the RPC execution time needs to be considered.
+%Similar to locking, the best choice is determined 
+%by the co-routine execution time in remote machine. 
+
+{\bf Commit. } It is needed in all protocols.
+Except for \calvin, which only commits locally, one-sided 
+implementation is better since the operation normally just needs to write updated data in a remote machine. Moreover, the overhead of accessing metadata can be avoided by caching them in advance.
+
+Next, we describe the implementation 
+of five concurrency control protocols except for \occ, which
+is implemented based on RTX~\cite{wei2018deconstructing}.
+We try our best to give detailed descriptions so that
+the paper can also serve as a reference for others to implement 
+the protocols in RDMA. No prior work has shown the comprehensive 
+designs and we will also open source our framework if the paper is accepted. 
+
+
+
+
+
+
+% As \cite{} suggests, RPC with two-sided RDMA is more appropriate for CScenarios of discrepant needs may benefit from different usage of RDMA. CPU-bound situations, i.e., situations that needs far more local computation than network communications. Otherwise, one-sided primitives are preferred to eliminate the necessity of remote CPU involvement. 
+
+% design overview
+% For both RPC and ONEISDED version, we just have to implement three stages of the transaction within three function, that is, read/write, load\_read/load\_write and commit.
+
+%\vspace{-2mm}
+\subsection{NOWAIT}
+%\vspace{-2mm}
+
+
+ 
+\nowait~\cite{Bernstein:1981:CCD:356842.356846} is a basic concurrency control algorithm 
+based on 2PL that prevents the deadlocks. 
+%is the most basic way of deadlock prevention mechanism among 2-phase locking concurrent control algorithms. 
+%It was proposed by ~\cite{Bernstein:1981:CCD:356842.356846} in the 1980s. 
+A transaction in \nowait tries to lock all the records accessed, if it fails to lock a record that is already locked by another transaction, 
+the former transaction aborts immediately.
+%to prevent deadlock. 
+Figure~\ref{fig:nowait} shows our RPC and one-sided implementations of \nowait. 
+
+{\bf RPC}
+%In the RPC implementation,
+%is straight forward. As shown in Figure~\ref{fig:nowait}, 
+In data fetch stage, the locking of read/write
+ records is done by sending RPC locking request
+to the corresponding participant (\step \textbf{a1}).
+%will trigger the send of an RPC request for locking
+%to the corresponding participant (\step \textbf{a1}).
+%sending locking a RPC request to each corresponding participant (\step \textbf{a1}). 
+An RPC handler is called to lock the record using local CAS (\step \textbf{a2}). If the CAS fails, a failure message is sent back and the coordinator will release all read and write
+locks by posting RPC release requests before aborting the transaction (\step \textbf{a3}).
+%\red{WHAT OPERATION DO WE USE FOR 
+%RELEASING LOCK? ONE-SIDED?}. 
+After successfully locking the record, the coordinator buffers its key and the corresponding participant's ID. The coordinator then sends a read/write 
+request to the corresponding participant in another RPC 
+using the buffered information (\step \textbf{a4}). By executing the handler, the participant looks for the record locally (\step \textbf{a5}). After all records are collected, the transaction is executed locally at coordinator side.
+At commit stage, 
+a write back request with the updated record 
+is sent back to each participant (\step \textbf{a6}), where an RPC handler 
+performs write back of the record and releases the lock (\step \textbf{a7}).
+
+{\bf One-sided }
+In data fetch stage, RDMA atomic operations 
+\setlength{\intextsep}{2pt}%
+\setlength{\columnsep}{8pt}%
+\begin{wrapfigure}[10]{r}{.50\linewidth}
+%\begin{figure}[htp]
+    \centering
+    \vspace{-0.4cm}
+    \includegraphics[width=\linewidth]{images/NOWAIT.pdf}
+    \vspace{-0.8cm}
+    \caption{\nowait Implementations}
+     \vspace{-0.4cm}
+    \label{fig:nowait}
+\end{wrapfigure}
+are issued by the coordinator to lock remote records (\step \textbf{b1}). The transaction aborts if the RDMA \texttt{CAS} fails (\step \textbf{b2}). In the same \step \textbf{b1}, the coordinator issues an RDMA \texttt{READ} immediately after the RDMA \texttt{CAS} using the offset of remote record to load the record
+since the record cannot be changed if the lock succeeds. 
+In case of failed locking attempt, the returned record is simply ignored. 
+The read offsets are collected and cached by the coordinator before transaction execution starts and thus 
+do not incur much overhead.
+At commit stage, two RDMA \texttt{WRITEs} are posted to update and unlock the record (\step \textbf{b3}). Only the second RDMA write is signaled to avoid sending multiple MMIOs and wasting PCIe bandwidth. Such doorbell batching mechanism
+provides an efficient way to issue multiple outstanding requests from the sender.
+This optimization is also used in RTX~\cite{wei2018deconstructing}. 
+Based on this, only one yield is needed after the last request is posted, and
+we can reduce latency and context switching overhead.
+
+%Since the record of the tuple cannot be changed after being locked, we read the data \emph{right after} locking the tuple by doorbell-batching an RDMA \texttt{CAS} with an RDMA \texttt{READ} in step \textbf{b1}. 
+%The \texttt{CAS} might fail when the remote tuple is locked, and then the record retrieved from the second \texttt{READ} is ignored. 
+With high contention, lock\&read doorbell batching tends to add 
+wasted network traffic. For 
+network intensive applications with low contention (i.e., SmallBank), the throughput will increase by 25.1\% while average latency decreased by 22.7\% 
+with the above doorbell batching optimization.
+The lock\&read in data fetch stage and the update\&unlock in the commit stage with doorbell batching are used in one-sided implementation of five protocols except \calvin. 
+%As discussed before, the one-sided version of
+%commit operation is more efficient than RPC version.
+
+%\vspace{-2mm}
+\subsection{WAITDIE}
+%\vspace{-2mm}
+
+
+%\waitdie is another 2PL algorithm based on a
+%different conflict resolution policy. 
+It avoids the drawback of \nowait --- unnecessarily aborting any transactions accessing conflicting record.
+%as a deadlock prevention technique. 
+Instead, it resolves the conflicts with the globally consensus priority, i.e., a globally unique timestamp. When starting, each transaction 
+obtains a monotonously increasing timestamp. Unlike \nowait, where a transaction only tries to log a single bit (i.e., 1) onto a 64-bit record lock upon locking, a transaction in \waitdie logs its timestamp instead. Upon detecting a conflict, the transaction compares its own timestamp with the logged timestamp to decide whether an abort is needed.
+%Our implementation of WAITDIE is mostly the same with NOWAIT except the difference of conflict handling. 
+
+{\bf RPC} When an accessed record is locked, the lock request 
+\setlength{\intextsep}{2pt}%
+\setlength{\columnsep}{8pt}%
+\begin{wrapfigure}[9]{r}{.50\linewidth}
+%\begin{figure}[htp]
+    \centering
+    \vspace{-0.2cm}
+    \includegraphics[width=0.5\columnwidth]{images/WAITDIE.pdf}
+    \vspace{-0.8cm}
+    \caption{\waitdie Implementations
+    %: the locking phase when the requesting transaction needs to WAIT 
+    %instead of DIE.
+    }
+    \vspace{-0.2cm}
+    \label{fig:waitdie}
+\end{wrapfigure}
+handler decides
+based on the request's timestamp 
+whether to wait on the record until it is unlocked 
+or send back a failure reply immediately (\step \textbf{a2}).
+%encountering a locked record, 
+%based on the request's timestamp, the lock request handler will decide whether to wait on the record until the record is lockable or send back a failure reply immediately (\step \textbf{a2}).
+%While waiting for a locked record to be released,
+%To wait for the record to unlock, 
+The handler cannot busy wait for the lock and block other incoming requests. Instead, the transaction requesting the lock is added to 
+the lock's waiting list and checked in the event loop periodically by the handler thread (\step \textbf{a3}). On a lock release, the handler thread removes the transaction from waiting list and reply the coordinator with lock success message.
+%This design ensures the balance between throughput and latency. 
+
+{\bf One-sided} Similar to \nowait, two RDMA operations, \texttt{CAS} followed by an \texttt{READ},
+are sent from coordinator to retrieve the remote lock together with
+its timestamp and data record (\step \textbf{b1}). 
+The difference is that 
+the timestamp of current transaction and lock holder are compared 
+to determine whether to abort the transaction or let it wait. 
+With co-routine mechanism, when a transaction decides to wait, 
+it keeps posting RDMA \texttt{CAS} with \texttt{READ} requests and yields after every unsuccessful trial until succeeds (\step \textbf{b2}).
+
+%An RDMA \texttt{CAS} followed by an \texttt{READ} is initially sent from the coordinator to retrieve the remote lock, which is the timestamp of the lock holder for locked tuples (\step \textbf{b1}). Local comparison will be done between the
+%timestamp of the current transaction and the lock holder's, to decide whether to abort or keep waiting.
+%With co-routine mechanism, when a transaction decides to wait for a conflicting lock after comparing timestamps, it keeps posting RDMA \texttt{CAS} with \texttt{READ} requests and yields after every unsuccessful trial until succeeds (\step \textbf{b2}).
+
+
+
+
+
+\begin{comment}
+
+\subsection{OCC}
+
+\begin{figure}[htp]
+    \centering
+    \vspace{-0.6cm}
+    \includegraphics[width=9cm]{images/OCC-write.pdf}
+    \vspace{-0.7cm}
+    \caption{OCC Implementation for Write Operation}
+    \vspace{-0.2cm}
+    \label{fig:occ-write}
+\end{figure}
+
+\begin{figure}[htp]
+    \centering
+    \vspace{-0.6cm}
+    \includegraphics[width=9cm]{images/OCC-read.pdf}
+    \vspace{-0.7cm}
+    \caption{OCC Implementations for Read Operation}
+     \vspace{-0.2cm}
+    \label{fig:occ-read}
+\end{figure}
+
+% The baseline algorithm and starting point of our work is the native OCC which was presented in \cite{}. 
+\occ (Optimistic Concurrency Control)~\cite{kung1981optimistic} gets data without acquiring the lock at the fetch stage. It will validate the data by checking the write timestamp and the write lock after the execution stage. The protocol optimistically assumes 
+that the conflicts between transactions are low and
+perform validation before commit. 
+%it is uncommon for transaction to interfering with each other. 
+%So the validation is at very last stage. 
+Compared to 2PL, \occ is light-weight because
+write operations will lock the \red{tuple==> NOT MENTIONED BEFORE, DO YOU MEAN "RECORD" OR METADATA?} \blue{(the "tuple" is defined in section3, which is the name for the combination of meta data and record(these two structure is put physically together in our framework)} for a very short time. However, the disadvantage is that a transaction only aborts at the commit stage, wasting all computation and communication done in fetch and execution stage. 
+Thus, \occ has expensive abort.
+
+% When updating the data, OCC will lock the record and release the lock after updating. For workloads with low contention rate, OCC is better because it does not have to acquiring the read lock. And it only locks the write lock for a short time(a time period of updating). However, the abort penalty is higher compared to other 2-PL protocols. It can only validate the data after execution phase to make sure the data is correct and unmodified. So every OCC transaction will do the execution phase for the time it retries.
+
+{\bf RPC} In {\em data fetch} stage, 
+reads and writes all post a RPC request to fetch the data in the fetch stage(\step \textbf{a1} in Figure~\ref{fig:occ-write} and \ref{fig:occ-read}).
+This part can be implemented in two ways:
+%There are two methods to realize this. 
+1) all read requests can be accumulate and 
+broadcast to all target nodes when data is needed\blue(Batch RPC operation); or
+2) post the read request for each read or write.\blue{One-shot RPC operation}
+%The first one is to accumulate all read requests, and broadcast to all target nodes when data is needed. 
+%The second is to post the read request for each read or write. 
+With co-routine, 
+%As we have the mechanism of co-routine, 
+the latency of each post can be overlapped by other co-routines, which will not significantly 
+reduce throughput. 
+In comparison, in the first method, broadcasting \blue{sends all requests to every participant, which will } lead to \red{redundant==>WHY??} network \blue{\sout{requests} traffic}, causing overall decrease in throughput. 
+Therefore, we chose the second method in our implementation. 
+The same idea is applied in the RPC implementation of other protocols. 
+The handler in \step \textbf{a2} will prepare the data as well as the write timestamp. After receiving the reply, the write time stamp should be kept for validation in {\em commit} stage, which is
+different for write and read operation. 
+%There are differences between write and read operation at commit stage. 
+In \step \textbf{a4} of Figure~\ref{fig:occ-write}, the write operation will post \blue{batched} RPC lock requests with former write timestamp to lock all \red{tuples} involved in write operations of the transaction. \blue{The reason why batched RPC operations are used here is that we want to make the total locking time as little as possible. If one-shot RPC operation is used, there will be time when some tuples are already locked and waiting for other tuples haven't been locked. More lock time leads more aborts.} The handler in \step \textbf{a5} will try to lock the target \red{tuple} and check whether the write timestamp has changed. If any of the lock trial or check fails, a failure message will be sent back. Otherwise, the coordinator will post update RPC requests with updated data in \step \textbf{a7}. At this point, the handler in \step \textbf{a8} will renew the data and write timestamp, and then release the lock. 
+For read operations, in \step \textbf{a4} of Figure~\ref{fig:occ-read}, a validation RPC request with the former write timestamp is sent to the participant. Handler in \step \textbf{a5} will check the write timestamp locally, then reply with the result.
+\red{CAN YOU SUMMARIZE THE DIFFERENCE BETWEEN 
+OSDI PAPER?} \blue{Compared to ~\cite{wei2018deconstructing}, our implementation dynamically choose the RPC operations. For data fetching, one-shot RPC operation is taken to reduce network traffic, but for }
+
+{\bf One-sided} In the {\em fetch} stage, read and write operation will all read the write timestamp and the record using RDMA \texttt{READ} in \step \textbf{b1}. In the {\em commit} stage, for write operations, which is shown in \step \textbf{b2} in Figure~\ref{fig:occ-write}, RDMA CAS will be used to lock the tuple on the remote node. A CAS failure will lead to an abort. After locking all \red{tuples} involved in write operations, the coordinators will use two RDMA \texttt{WRITES} to update and unlock the \red{tuple}. For read operations, which is illustrated in \step \textbf{b2} in Figure~\ref{fig:occ-read}, one RDMA \texttt{READ} is posted to read the current write timestamp of the remote tuple. If any timestamp has changed, the transaction will abort.
+
+\end{comment}
+
+%\vspace{-2mm}
+\subsection{MVCC}
+%\vspace{-2mm}
+
+\begin{figure}[t]
+    \begin{minipage}{.49\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/MVCC-write.pdf}
+    \vspace{-10mm}
+    \caption{\mvcc: Write}
+    \label{fig:mvcc-write}
+    \end{minipage}
+    %\quad
+    \begin{minipage}{.49\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/MVCC-read.pdf}
+    \vspace{-10mm}
+    \caption{\mvcc: Read}
+    \label{fig:mvcc-read}
+    \end{minipage}
+    \vspace{-8mm}
+\end{figure}
+
+\begin{comment}
+\begin{figure}[htp]
+    \centering
+    \vspace{-0.7cm}
+    \includegraphics[width=0.8\columnwidth]{images/MVCC-write.pdf}
+    \vspace{-0.3cm}
+    \caption{\mvcc: Write}
+    \vspace{-0.4cm}
+    \label{fig:mvcc-write}
+\end{figure}
+
+\begin{figure}[htp]
+    \centering
+    \vspace{-0.2cm}
+    \includegraphics[width=0.8\columnwidth]{images/MVCC-read.pdf}
+    \vspace{-0.5cm}
+    \caption{\mvcc: Read}
+    \vspace{-0.3cm}
+    \label{fig:mvcc-read}
+\end{figure}
+\end{comment}
+
+\mvcc (Multi-Version Concurrent Control)~\cite{bernstein1983multiversion} 
+reduces read-write conflicts 
+by keeping and providing old record versions when possible. 
+%aimed at reducing read-write conflicts by preserving old versions of the records.
+For a read operation, \mvcc 
+looks for the proper record version 
+based on the transaction's current timestamp.
+%without necessarily contending with a write operation.
+
+The original \mvcc requires using a linked list to 
+maintain a set of record versions. 
+The nature of one-sided primitive makes it 
+costly to traverse a remote linked list --- in the worst case,
+the number of one-sided operations for a single remote
+read is proportional to the number of versions
+in the list.
+Our experiment shows that 
+a single one-sided operation take, 
+12.17\% of the overall time of a non-contented transaction.
+Thus, our \mvcc implementations uses a static number of memory slots (i.e., 4) allocated for each record to store the stale versions.
+A transaction when it cannot find a suitable version in the slots.
+Thus, the number of slots determines the trade-off between 
+memory/traversal overhead and read abort rate. 
+%It is costly to traverse a remote linked list.
+%The challenge for one-sided operations to handle linked list
+%is that it is costly to traverse a remote linked list.
+%Due to the nature of one-sided primitive, 
+%the number of one-sided operations for a single remote
+%read would be proportional to the number of versions
+%in the list in the worse case. 
+%In addition, our experiment shows that 
+%a single one-sided operation will take 
+%12.17\% of the overall time of a non-contented transaction.% 12.17% = 0.00224547ms / 0.0184527ms (single rdma read latency / mvcc transaction overall time in small bank).
+%Therefore, in our \mvcc implementations, 
+%we replace the linked list with a static number of memory slots (i.e., 4) allocated for each record to store the stale versions.
+%If a transaction intending to read has a too old timestamp and 
+%the stale version suitable for the read does not exist 
+%in any of the slots, the read transaction will abort. 
+%If a read has a timestamp that is so old that there is no stale versions in any slots, the transaction will have to abort. 
+%Thus, the number of slots indicates a trade-off between 
+%memory/traversal overhead and read abort rate. 
+%But using more slots costs more memory and add burden to the process to traverse the write timestamps. 
+%Therefore, choosing the number of slots is a trade-off between read abort rate and performance. 
+We use 4 slots because 
+our experiments show that
+at most 4.2\% of read aborts are 
+due to version slot overflow.
+%We believe it is an efficient implementation 
+%and similar idea has been used to keep fixed number of 
+%directory sharing pointers in shared-memory %multiprocessor~\cite{lenoski1990directory}. 
+
+%As a result, we make use of record slots instead of linked list to implement MVCC, with little increase in abort rate and great decrease in the average latency of read operation within one transaction. 
+
+%%Once a read or write aborts for it fails in a comparison with another large time stamp, the transaction server set its time stamp to the larger one afterwards and retry. 
+
+% Moreover, there is no global timer in our framework. To prevent a read with very small time stamp from aborting for a long time, we dynamically increase the time stamp. 
+
+
+
+% 0811 version
+% In the RPC version of MVCC, there are difference in write and read. To write, the coordinator needs to lock the record first. The write request handler will check the state of all the write/read time stamp and the write lock. If there are larger write/read time stamps (indicating that the requested write is out-dated) or a transaction with larger timestamp is writing the record, an update message and the corresponding timestamp will be sent back. As global timer will consume the NIC's bandwidth and local time has large bias, there are chances when one transaction server with small time stamp has to wait for a long time before its timestamp is large enough to update the record. We utilize the update message from the remote handler to fast-forward the local timer. Due to this timestamp update, an outdated write can become valid within its next trial after abort. 
+
+% The read will also have to check all the write time stamps to find the proper version of data. Due to the limited number of data slots, it is possible that there is no data valid for the time stamp of the read. The handler will also send back the largest time stamp for the initial transaction server to fast-forward the local time stamp accordingly.
+
+% 0812 version
+% TODO: change the "write request (ts)" -> "write request (transaction ts)"
+
+% introducing the meta data of mvcc
+Shown in Figure~\ref{fig:metadata},
+the metadata of \mvcc consists of three parts:
+1) write lock, which contains the timestamp of the current transaction holding the lock (\texttt{tts});
+2) read timestamp (\texttt{rts}), which is the latest (largest) transaction timestamp that has successfully read the record; and
+3) write timestamps (\texttt{wts}), which are  
+the timestamps of transactions that have successfully 
+performed writes on the record. 
+%\red{As we have limited number of data slots, we update the wts and the real data using LRU.}
+
+
+% hkz: i have't got a good way to descibe the advantage to update the timer in MVCC
+%In the \mvcc implementation, 
+A transaction generates a unique timestamp (\texttt{tts})
+by appending a unique transaction identifier 
+(e.g., generated by encoding machine ID and co-routine ID)
+to the low-order bits of a local clock time~\cite{bernstein1983multiversion}.
+%This timestamp determines the 
+%logic order of transactions and is used to select correct 
+%record version. 
+The local clock reduces bandwidth overhead of global clock but 
+may introduce large bias. While not affecting correctness,
+the large gap between \texttt{wts} on different machines 
+may lead to long waiting time. 
+To mitigate the issue, each machine adjusts its 
+local timer whenever it finds a larger \texttt{wts} or \texttt{rts}
+in any tuple received.
+This mechanism limits the gap of local timer between machines and 
+reduces the chance of abort due to the lack of suitable
+record version and the performance impact of 
+the fixed version slots. 
+
+
+
+
+{\bf RPC} 
+%In the RPC version of MVCC, there are differences in write and read operations. 
+The implementation of {\em write} operations is shown in 
+Figure~\ref{fig:mvcc-write}.
+In (\step \textbf{a1}),
+the coordinator sends an RPC request with its \texttt{tts} to the participant, 
+which handles it locally in \step \textbf{a2}. 
+%For write operation, as indicated in Figure~\ref{fig:mvcc-write}, in \step \textbf{a1}, the coordinator will send an RPC request with its tts to the participant, who will handle the request locally in \step \textbf{a2}.
+The participant will attempt to lock the 
+record using \texttt{tts} if:
+1) the record is not locked; and
+2) the transaction's \texttt{tts} is larger than the tuple's
+maximum \texttt{wts} {\em and} its current \texttt{rts}.
+Otherwise, write failure information with the updated timestamp is
+sent back in response, which potentially update local timer to limit the gap. 
+On receiving the failure message, 
+the coordinator aborts and updates 
+its \texttt{tts} before retry (\step \textbf{a3}).
+%By comparing the tts with rts and wts on the requested record, the participant will either try to lock the record using the tts or send back failure information as well as the updated timestamp. %In the \step \textbf{a3}, the coordinator will abort on receiving failure message and update its tts before retrying. 
+If the lock attempt is successful, the above condition 2) 
+is checked again, because 
+writes may happen in between condition 1) check 
+and the successful locking. 
+After the second check is passed, participant will
+eventually send
+a success message to the coordinator, making it
+proceed to \step \textbf{a4} and send another 
+RPC request for the actual data record. 
+%If the success message is received, the coordinator will go on to \step \textbf{a4}, to send an RPC request asking for data. 
+The participant handles the request by 
+traversing \texttt{wts} of the record and 
+replying with the latest version in \step \textbf{a5}. 
+After executing the computation based on received data, 
+in \step \textbf{a7}, coordinator sends an RPC request with updated data. 
+Then, participant writes the data back in \step \textbf{a8} and releases the lock.
+
+The {\em read} operation is shown in Figure~\ref{fig:mvcc-read}.
+The coordinator sends the RPC read request 
+with its \texttt{tts} to the participant (\step \textbf{a1}). 
+In \step \textbf{a2}, the participant traverses 
+all \texttt{wts} of the requested record, and finds the suitable version for the read. Since there is no read lock in \mvcc, 
+participant needs to traverse the \texttt{wts} 
+again after preparing the respond data to ensure 
+no writes happened during the reading period. 
+Note that all operations of \textbf{a2} are 
+performed locally without high overhead.
+%We have to emphasize that, all these operations in \textbf{a2} are done locally, so the overhead is insufficient. Then the reply will be sent back, the coordinator will abort or continue according to the message.
+On receiving the response, the coordinator will abort
+or continue based on the message. 
+
+{\bf One-sided}
+%For the ONESIDED version of MVCC, things get more complex. ONESIDED MVCC write operation is described in Figure~\ref{fig:mvcc-write}. 
+The {\em write} operation is shown in Figure~\ref{fig:mvcc-write}. 
+In \step \textbf{b1}, the coordinator posts a RDMA \texttt{READ} to read the \mvcc meta data and the records on the participant. Then, in \step \textbf{b2}, the received data are checked locally.
+A write operation can only succeed if the transaction's \texttt{tts}
+is larger than the received \texttt{rts} and all \texttt{wts} in 
+the tuple (same as in RPC).
+%in the transaction can only be valid if the tts is larger than the rts and any of wts on the tuple. 
+If the check fails, the coordinator will update its \texttt{tts} to the largest timestamp and abort. 
+Otherwise, similar to \nowait and \waitdie,
+coordinator will post RDMA \texttt{ATOMIC CAS} and RDMA \texttt{READ} to lock the remote record, fetch the meta data, and record in \textbf{b4}. 
+If \texttt{ATOMIC CAS} fails, the transaction will abort and update its \texttt{tts} if the timestamp on the lock is larger. 
+In the commit stage, the coordinator posts two RDMA \texttt{WRITE}s in \step \textbf{b6}. 
+The first write updates \texttt{wts} and the record, and
+the second write releases the lock.
+
+The {\em read} operation is shown in Figure~\ref{fig:mvcc-read}. In \step \textbf{b1}, a RDMA \texttt{READ} is posted to fetch the meta data and records on the participant. 
+The version check is performed locally in \textbf{b2}. If there is no valid version, the coordinator aborts and updates the \texttt{tts} in \textbf{b3}. Otherwise, 
+another RDMA \texttt{READ} is posted to read the meta data again in \textbf{b4}, which is re-checked \textbf{b5} 
+to ensure no writes after the first read (\textbf{b1}).
+%make sure the record read in \textbf{b1} is not in intermediate state.
+%It is to guarantee atomicity among multiple RDMA \texttt{READ}s.
+%This is because we cannot guarantee the atomicity using one RDMA READ. 
+%We have to re-check the meta data in \step \textbf{b5} to make sure the record read in \textbf{b1} is not in intermediate state. 
+Although the data will be ready for execution,
+we still need to update \texttt{rts} on the remote record. 
+In \step \textbf{b7}, a RDMA \texttt{ATOMIC CAS} 
+is posted if this transaction has larger \texttt{tts}
+than the \texttt{rts} on the tuple.
+
+Compared to RPC, 
+the one-sided version
+generates much more network operations. 
+A network operation is incurred for each 
+access of the remote data.
+The use of timestamps in \mvcc exaggerates this effects. 
+%Because every time the coordinator wants to get access to the remote data, it has to launch a network operation. But for RPC version, all work are done locally in the handler of the participant. This makes the RPC version more practical in network intensive workloads.
+
+% TODO: add phase b7 in the figure mvcc-read
+
+%There are reasons when the read will fail, the first is that the transaction timestamp is too old(small), so there is no valid version of data due to the limited number of slots. In this condition, they reply message will be attached with the largest time stamp  The second reason is that the
+
+% trade-off should be reconsidered
+% When the record is already locked, the handler will send back the fail message as well as the time stamp of the current transaction server that has locked the record. The transaction server can forward its logic time stamp according to the 
+% To implement the ONESIDED version of MVCC, as every access to remote data needs to call RDMA one-sided functions, our design principle is to reduce the frequency the transaction server read the remote record using RDMA read. For the first stage of write, we can choose to read the remote write time stamps to abort in time or directly try to lock the remote record using RDMA CAS to save one RDMA operation. After successfully locking, the server will call RDMA read to get the remote data and all the read/write time stamps. Here we need to validate this write again, because it is possible that a newer write has already committed on the record during the interval of the first validation and the time we acquire the lock. After the second validation, we can get the latest data as well as the position where the current write should commit the data. For read there is no read-lock in MVCC to achieve better concurrency. Meanwhile, as the slots are limited in out design, a target version live in one record may be modified by another write(if it is the most outdated one). During the first stage of read, two RDMA read operation will be called to guarantee the correctness of the record. After that, the read time stamp have to be CASed to the remote record if it is larger than the original read time stamp to prevent other writes within this period of time to commit, ruining the correctness of the system. In the commit stage, the write operation will first write back the updated data to the chosen position using LRU, and then unlock the record.
+
+%\vspace{-2mm}
+\subsection{SUNDIAL}
+%\vspace{-2mm}
+
+\begin{figure}[t]
+    \begin{minipage}{.49\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/Sundial-write.pdf}
+    \vspace{-10mm}
+    \caption{\sundial: Write}
+    \label{fig:sundial-write}
+    \end{minipage}
+    %\quad
+    \begin{minipage}{.49\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/Sundial-read.pdf}
+    \vspace{-10mm}
+    \caption{\sundial: Read}
+    \label{fig:sundial-read}
+    \end{minipage}
+    \vspace{-8mm}
+\end{figure}
+
+
+
+
+\sundial~\cite{yu2018sundial} dynamically chooses
+the logical order of transaction, and is essentially
+a combination of \waitdie and \occ. 
+%\waitdie avoids write-write conflict 
+%while \occ handles read-write conflict. 
+For write conflicts, with \waitdie, 
+only one transaction can succeed and others 
+are aborted early.
+%, instead of aborting at the commit time
+%as in \occ. 
+%By ensuring all but one of the transactions writing the same record to abort, 2PL can allow transaction to abort early instead of aborting at commit time, which is more costly. 
+For read-write conflict, a transaction in \sundial
+dynamically changes the lease of the tuples 
+and its \texttt{tts}. 
+Thus, \sundial can correctly write a record even if it is being read by another transaction.
+%Towards read-write conflict, a Sundial transaction dynamically changes the lease of the tuples as well as its transaction timestamp(tts). 
+%By doing this, Sundial can correctly write a record even if it is being read by another transaction. In Sundial, as shown in Figure~\ref{fig:metadata}, two timestamps are set on the record, \textbf{wts} and \textbf{rts}. \textbf{wts} records the logical timestamp when the last write commits. \textbf{rts} is the end of the lease and is always greater or equal to \textbf{wts}. A record can only be read at logical time \textbf{ts} where $\textbf{wts} \leq \textbf{ts} \leq \textbf{rts}$. and the lease can be extended if there is not any write that is committing or has committed to the record.
+
+% The meta data of Sundial consists of a write lock, read timestamp (rts) and write timestamp (wts). The write lock will record the timestamp of the transaction holding the lock of the record. And the wts records the logical timestamp when the record was last written. The rts is the end of the read lease, meaning that the record can be read by transactions with timestamp satisfying $wts < ts < rts$.
+
+% In our RPC version of Sundial, the work that the write do is the same in WAITDIE, that is to try to lock the record and get the real data. While the read will just get the remote data and the corresponding time stamps. What's most important, the transaction server will update the commit time stamp according to the write and read time stamps of the included records. For a write, it has to guarantee the commit time stamp larger than the read time stamp of the record. For a read, the commit time stamp should be larger than the write time stamp of the record. That is 
+
+% TODO: in figure sundial-write, duplicated a4 and a6,there should be a transaction ts from a7 to a8
+% TODO: in figure sundial-read, rpc, add a local op after a4
+{\bf RPC}
+The {\em write} operation is shown in Figure~\ref{fig:sundial-write}. In \step \textbf{a1}, coordinator posts an RPC request to the participant to lock the requested record. The participant tries to lock the record using local CAS operation in the handler in \step \textbf{a2}. The coordinator will abort if the handler returns failure. Otherwise, another RPC request is posted to fetch the record and meta data in \step \textbf{a4}. Upon receiving reply, local update of \texttt{tts} is performed in \step \textbf{a6}. Then, 
+the coordinator will advance \texttt{tts} to $rts + 1$. In the commit stage, the updated data and the new \texttt{wts} (the final \texttt{tts}) will be sent in an RPC request in \step \textbf{a7}. In \step \textbf{a8}, the data and \texttt{wts} are updated before the handler releases the lock. 
+
+The {\em read} operation is shown in Figure~\ref{fig:sundial-read}. First, 
+coordinator posts a request to fetch the record and meta data 
+(\step \textbf{a1}). 
+Then, the handler prepares the requested data, 
+and re-checks the \texttt{wts} before sending 
+(\step \textbf{a2}). 
+The coordinator will update \texttt{tts} 
+according to the received \texttt{wts} 
+according to 
+$transaction_{ts} = max(transaction_{ts}, wts)$. After fetching the data for all reads and writes, 
+if \texttt{tts} is still within the lease of the tuple being read, i.e., $tuple.wts < transaction.ts < tuple.rts$, the read is valid. 
+Otherwise, in \step \textbf{a4}, an RPC request 
+is sent to the participant to renew the lease. The transaction aborts if the renewal fails. %List~\ref{lst:sundial-rpc-renew} illustrates the code in the handler(\step \textbf{a5}) to renew the lease for read. 
+
+{\bf One-sided}
+%We illustrate the process of ONESIDED write operation in \ref{fig:sundial-write}.
+For {\em write} operations,
+in \step \textbf{b1} in Figure~\ref{fig:sundial-write},
+coordinator tries to lock the remote tuple and fetch the meta data and the record using the combined RDMA \texttt{ATOMIC CAS} and RDMA \texttt{READ} in \step \textbf{b1}. The coordinator also updates the \texttt{tts} using received meta data in \step \textbf{b3}. In \step \textbf{b4}, after the computation, the coordinator updates and unlocks the remote record using two RDMA \texttt{WRITE}.
+
+For {\em read} operations, the first step (\step \textbf{b1} in \ref{fig:sundial-read}) is to read the whole remote tuple directly using a RDMA \texttt{READ}. After fetching the meta data, local operations in \step \textbf{b2} is performed to update \texttt{tts}. 
+%Once everything in write and read operations need is ready, 
+Then the coordinator checks all the read operations and determines whether
+the final \texttt{tts} is within the lease. For read operations whose lease are not valid (i.e., $transaction.ts > read.rts$), the coordinator posts an RDMA \texttt{READ} to fetch the meta data of the tuple again from the corresponding participant in \step \textbf{b3}. 
+If there is update of \texttt{rts}, an RDMA \texttt{WRITE} 
+is performed. 
+%will be called if there is update of the rts. The List~\ref{lst:sundial-onesided-renew} shows in detail how the preparation phase works in ONESIDED version.
+% TODO: change the phase on the figure for Sundial
+
+% By comparing the List~\ref{lst:sundial-rpc-renew} and List~\ref{lst:sundial-onesided-renew}, we can find that
+
+
+\begin{comment}
+\begin{figure}[h]
+\begin{lstlisting}[caption=a5 in Figure~\ref{fig:sundial-read},captionpos=b,label={lst:sundial-rpc-renew}]
+Function renew_lease_handler_twosided(key, wts, transaction_ts)
+    if wts != DB[key].wts or (transaction_ts > DB[key].rts and DB[key].locked == TRUE):
+        ret = ABORT
+    else:
+        DB[key].rts = Max(DB[key].rts, transaction_ts)
+        ret = SUCCESS
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[h]
+\begin{lstlisting}[caption=b4 in Figure~\ref{fig:sundial-read},captionpos=b,label={lst:sundial-onesided-renew}]
+Function renew_lease_onesided(offset, wts, transaction_ts)
+    meta = RDMA_read(offset) // get meta data of remote tuple
+    if wts != meta.wts or (transaction_ts > meta.rts and meta.locked == TRUE):
+        ret = ABORT
+    else:
+        if meta.rts < transaction_ts:
+            new_rts = transaction_ts
+            RDMA_write(offset, new_rts) // renew the rts 
+        ret = SUCCESS
+            
+\end{lstlisting}
+\end{figure}
+\end{comment}
+
+% In our implementation of ONESIDED version, the first stage of write is to lock the remote record using RDMA atomic operation. Here the mechanism is similar to WAITDIE, when faced with a locked record, if the current transaction has higher priority according to the time stamp, it will keep acquiring the lock, otherwise, it will abort. After acquiring the lock, it will post RDMA read request to read the time stamps and the data. For a read, we use one RDMA read operation because the write time stamp will be checked later. The commit time stamp will also be updated just like what we do in RPC version. For the second stage, at which we will check if the commit time stamp meets all the requirements of the records, we will again read the remote time stamp for the records in the read set. This time, if the remote time stamp needs renewing, the new read time stamp will be directly written on the remote record. However, as we use two RDMA operation to finish the process of renewing the lease, we cannot guarantee the atomicity. To fix this, we will launch another RDMA read operation after the write operation to check if there is another write happening during the renewing period. As a result, if one record needs renewing the lease, there has to be three RDMA operations for a successful update, which is really costly. In the third stage, the write will call RDMA write to write to the remote record. 
+
+% can enable as many as possible transaction servers to find suitable commit times
+% The second stage is to validate the commit time stamp. As we do not use read lock, there are two situations that will cause abort. The first is that if a write committed on the record in the read-set of the transaction, it will change the data as well as the write time stamp. By checking the write time stamp can 
+
+%\vspace{-2mm}
+\subsection{CALVIN}
+%\vspace{-2mm}
+
+
+
+
+
+
+
+
+\begin{comment}
+\begin{figure}[htp]
+    \centering
+    \vspace{-0.2cm}
+    \includegraphics[width=0.8\columnwidth]{images/CALVIN-det-framework.pdf}
+    \vspace{-0.4cm}
+    \caption{Sequencing and Scheduling}
+     \vspace{-0.3cm}
+    \label{fig:calvin-det-framework}
+\end{figure}
+
+\begin{figure}[htp]
+    \centering
+    \vspace{-0.2cm}
+    \includegraphics[width=0.8\columnwidth]{images/CALVIN.pdf}
+    \vspace{-0.4cm}
+    \caption{Fetching, Execution and Commit}
+    \vspace{-0.3cm}
+    \label{fig:calvin-transaction}
+\end{figure}
+\end{comment}
+
+\setlength{\intextsep}{2pt}%
+\setlength{\columnsep}{8pt}%
+\begin{wrapfigure}[7]{r}{.50\linewidth}
+%\begin{figure}[htp]
+    \centering
+    \vspace{-0.8cm}
+    \includegraphics[width=\linewidth]{images/CALVIN-overview.pdf}
+    \vspace{-1cm}
+    \caption{CALVIN Overview}
+    \vspace{-0.4cm}
+    \label{fig:calvin-overview}
+\end{wrapfigure}
+\calvin~\cite{Thomson:2012:CFD:2213836.2213838} allows transactions to execute in a deterministic manner. It was initially designed to reduce transaction aborts due to non-deterministic events such as node failures. By replicating transaction requests across multiple replicas and executing transactions in these replicas in parallel, \calvin ensures that all replicas maintain a consistent state at any time of transaction execution and thus any replica is capable of serving as an immediate replacement of a failed node. At high level, \calvin includes a {\em sequencing} layer and a {\em scheduling} layer, both distributed in different partitions. The sequencing layer intercepts and batches a sequence of transaction inputs and then sends them to the scheduling layer at other partitions for every epoch. After collecting transaction inputs from the sequencing layer of all partitions and forming a deterministic order, the scheduling layer orchestrates transaction executions sequentially according to the order.  
+
+
+
+Figure~\ref{fig:calvin-overview} shows a possible configuration of \calvin in \projectname, which contains one replica, two partitions, three threads and three co-routines. Compared to
+\calvin's original architecture in ~\cite{Thomson:2012:CFD:2213836.2213838}, 
+we made two modifications:
+1) To focus on the concurrency control, 
+we assume a reliable cluster and 
+omit replicating transaction inputs across multiple replicas;
+%This is reasonable since we assume a reliable cluster on which one-sided RDMA operations like RDMA READ and RDMA ATOMIC can be used with a reliable connection QP transport. so there won't be failure-induced aborts for CALVIN transactions. 
+2) To allow \calvin to scale horizontally to multiple co-routines, each co-routine serves as a sequencer (SEQ) and a scheduler (SCHED) of a batch of transactions. After collecting all batches as a scheduler, each co-routine starts fetching, executing and committing each transaction for that epoch.
+
+\setlength{\intextsep}{2pt}%
+\setlength{\columnsep}{8pt}%
+\begin{wrapfigure}[11]{r}{.50\linewidth}
+    \centering
+    \vspace{-0.2cm}
+    \includegraphics[width=\linewidth]{images/calvin_datastructures.pdf}
+    \vspace{-0.8cm}
+    \caption{RDMA-enabled buffer organization for one \calvin co-routine
+    with batch size per epoch = 4 and maximum number of read/write sets supported per transaction = 3.}
+    \vspace{-0.2cm}
+    \label{fig:calvin-buffers}
+\end{wrapfigure}
+We define \emph{counterpart} of a coordinator 
+(i.e., co-routine) as another remote co-routine with the same co-routine ID and thread ID. In \calvin, two types of inter-partition communications are required:
+1) Transaction input broadcasting. Upon batching transaction requests in one epoch, a coordinator broadcasts its batched transaction inputs at the sequencing stage to its counterparts at all partitions at the scheduling stage; and 2) Value forwarding, where a coordinator at the fetching stage forwards its local reads to all counterparts. 
+
+
+
+\begin{figure}[t]
+    \begin{minipage}{.49\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/CALVIN-det-framework.pdf}
+    \vspace{-10mm}
+    \caption{Sequencing and Scheduling}
+    \label{fig:calvin-det-framework}
+    \end{minipage}
+    %\quad
+    \begin{minipage}{.49\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{images/CALVIN.pdf}
+    \vspace{-10mm}
+    \caption{Fetching, Exec., Commit}
+    \label{fig:calvin-transaction}
+    \end{minipage}
+    \vspace{-7mm}
+\end{figure}
+
+Our implementation of \calvin uses two memory buffers that enable RDMA remote access ---
+%to accomplish the two tasks respectively. 
+ \calvin Request Buffer (CRB) and \calvin Forward Buffer (CFB). Each CRB is a RDMA-enabled memory region which contains one \calvin Header (CH) and a list of \calvin Requests (CR). Every co-routine contains as many CRBs (indexed from $0$ to $partition-1$) as the number of partitions to collect transaction requests from all counterparts. It also contains one CFB to be used for receiving forwarded values from counterparts. Each CH has control information for \calvin's deterministic executor to decide whether the scheduler has collected all transaction inputs in one epoch and whether all transactions in a batch have finished execution and the executor should move on to the next epoch. Figure~\ref{fig:calvin-buffers} shows an example buffer organization for each co-routine in \calvin.
+
+Figure~\ref{fig:calvin-det-framework} shows the procedure for transaction input broadcasting. For {\bf RPC}, at \step \textbf{a1},  a coordinator at partition $i$ first accumulates transaction requests at $CRB_{i}$, and then broadcasts a batch of transaction requests to other partition nodes using an RPC (\step \textbf{a2}). The handler of each receiving node then buffers the batch at $CRB_{i}$ of its own memory (\step \textbf{a3}). After receiving each batch from other counterparts, the coordinator then sorts all the received transaction requests based on their timestamps (\textbf{a4}). 
+For {\bf one-sided}, the local operations (\step \textbf{b1}, \step \textbf{b4}) are similar. For \step \textbf{b2}, a coordinator first posts a one-sided RDMA \texttt{WRITE} to write all local \calvin requests starting from the offset of $CR_1$ of $CRB_{i}$. Then it posts the second one-sided RDMA \texttt{WRITE} to update the remote \textit{Received Sz} field in the corresponding \calvin header using the offset of $CRB_{i}$. Note that all offsets are pre-calculated and do not incur an extra performance penalty in runtime. \step \textbf{b3} requires the receiving counterpart to wait until all batches of transactions are collected; it simply watches the \textit{Received Sz} field of the \calvin header and yields until it captures the all-batch-received event. All counterparts of a scheduler may be executing different transactions at the same time, but they execute in a lockstep manner at the granularity of an epoch.
+
+Figure~\ref{fig:calvin-transaction} shows the execution of one transaction in an epoch. Note that a transaction, although sequenced by only one coordinator, runs at multiple machines after copied to other counterparts in the scheduling stage. Each transaction only requests locks for its local records (\step \textbf{a1} and \step \textbf{b1}). 
+If failed, the transaction will abort and retry. 
+%locks only for its locally-accessed records (\step \textbf{a1} and \step \textbf{b1}).} And it aborts and retries on failing to lock. 
+After successfully locking and reading all local records, a transaction will start forwarding all its local records to those active counterparts (i.e., those counterparts that need the forwarded values) (\step \textbf{a2} and \step \textbf{b2}). The CFB is necessary since the forwarded values can not go directly into the actual read/write sets of other counterparts. Without CFB, they would mess up the read/write sets of in-flight transactions in the same epoch in the other counterparts.
+
+For {\bf RPC} implementation, after receiving forward values of transaction $i$ in the epoch, the handler will buffer the values locally at $CFB_{i}$, waiting for the counterpart to pick up the values when needed (\step \textbf{a3}). For {\bf one-sided} implementation, to ensure correctness, two RDMA \texttt{WRITE}s are used, one being writing the actual forwarded value to its offset on the counterpart machine, followed by the other writing the length of the value (\step \textbf{b3}). The counterpart consistently checks the length field to see whether the forwarded values needed are already installed and yield otherwise. Both RPC and one-sided implementations share the same commit stage (\step \textbf{a4} and \step \textbf{b4}): each coordinator commits their local writes locally without necessarily reaching out to other machines.
+
+%\subsection{Discussion}
+
+%\begin{enumerate}
+%    \item To lock a tuple and read the record of it, for RPC version, only one network request will be sent, and the remote handler will lock the tuple and reply with the real data. For WAITDIE mode lock-acquiring, there is local co-routine keep querying the lock. However, for ONESIDED version, at least two RDMA ONESIDED operations should be post(RDMA CAS to change the lock and RDMA READ to fetch the data). For WAITDIE mode, more RDMA CAS has to be post to try for the lock. This leads to more network traffic using ONESIDED version.
+ %   \item For protocols optimized for read operations(\sundial, \mvcc), there is no read lock. So they have to check the correctness of there read. For RPC version, it is easy to locally check the reading process by revisit the write timestamp. However, for ONESIDED version, one more RDMA RDMA has to be posted to check the write timestamp.
+%\end{enumerate}
+
+% \begin{enumerate}
+%     \item For network intensive applications(smallbank), on EDR cluster, the overall throughput of RPC is (0.1x - 0.3x)higher than the ONESIDED. The exception is \occ, whose ONESIDED version has higher throughput. The latency of RPC and ONESIDED is nearly the same. In \mvcc, the ONESIDED latency is higher, while in \occ the RPC latency is higher. On FDR cluster, the throughput of RPC is (1x-5x) higher than the ONESIDED version. The gap of performance grow with the co-routine number. The latency of ONESIDED is from 0.5x to 8x larger than that of RPC. %Comparing two clusters
+    
+%     \item For cpu intensive application(YCSB with exec), on EDR cluster, the throughput of ONESIDED is 0.4x higher than that of RPC version, with latency 20\% less than the RPC version. On the FDR cluster, the throughput of ONESIDED come to peak when co-routine number is 3, under this condition, the throughput is higher than the RPC version. But the throughput of the ONESIDED version decreases sharply when the co-routine number grow, but the RPC version will increase until the number reached to 10.
+    
+%     \item When we increase the execution workload in YCSB, the throughput and latency of RPC will decrease more sharply than that of ONESIDED.
+    
+%     \item Changing the ratio of read and write will not affect the abort rate \nowait and \waitdie, but will have effect on the \occ , \sundial and \mvcc. When the read ratio increase, more 
+    
+%     \item Increasing the number of operations within one transaction 
+    
+%     \item Change the skew(hotaccount and zipfian(used in original YCSB))
+    
+%     \item 
+%     % in \nowait RPC throughput is 0.1x-0.3x higher than ONESIDED throughput, with latency nearly the same(ONESIDED is a little higher) in
+% \end{enumerate}

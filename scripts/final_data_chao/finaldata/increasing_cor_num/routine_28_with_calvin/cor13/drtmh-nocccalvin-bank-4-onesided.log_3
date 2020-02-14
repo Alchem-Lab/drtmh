@@ -1,0 +1,1874 @@
+NOCC started with program [nocccalvin-onesided]. at 15-08-2019 04:30:19
+[bench_runner.cc:362] Use TCP port 8882
+[0m[bench_runner.cc:384] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 0 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:143] ycsb param:set len=10 write num=5tx hot10num_hot100num_accounts 100000
+[0m[bank_main.cc:152] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16
+[util.cc:161] malloc_huge_pages: size = 21223178240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 19.7676
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:169] Total logger area 0.00390625G.
+[0m[bench_runner.cc:180] add RDMA store size 9.76562G.
+[0m[bench_runner.cc:193] add calvin request buffer of size 0.334407G.
+[0m[bench_runner.cc:209] [Mem] RDMA heap size 9.65969G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[Bank], total 12000000 accounts loaded
+[Runner] local db size: 276.191 MB
+[bank_main.cc:459] loading cache.
+[0mregisterring 2122317824021: 2 out of 4 qps connected. Retry connecting qps...
+threadid=21: all 4 qps connected
+   0% [                                                            ]   0% [                                                            ]   0% [                                                            ]   1% [                                                            ]   1% [                                                            ]   1% [|                                                           ]   2% [|                                                           ]   2% [|                                                           ]   2% [|                                                           ]   3% [|                                                           ]   3% [||                                                          ]   3% [||                                                          ]   4% [||                                                          ]   4% [||                                                          ]   4% [||                                                          ]   5% [|||                                                         ]   5% [|||                                                         ]   5% [|||                                                         ]   6% [|||                                                         ]   6% [|||                                                         ]   6% [||||                                                        ]   7% [||||                                                        ]   7% [||||                                                        ]   7% [||||                                                        ]   8% [||||                                                        ]   8% [|||||                                                       ]   8% [|||||                                                       ]   9% [|||||                                                       ]   9% [|||||                                                       ]   9% [|||||                                                       ]  10% [||||||                                                      ]  10% [||||||                                                      ]  10% [||||||                                                      ]  11% [||||||                                                      ]  11% [||||||                                                      ]  11% [|||||||                                                     ]  12% [|||||||                                                     ]  12% [|||||||                                                     ]  12% [|||||||                                                     ]  13% [|||||||                                                     ]  13% [||||||||                                                    ]  13% [||||||||                                                    ]  14% [||||||||                                                    ]  14% [||||||||                                                    ]  14% [||||||||                                                    ]  15% [|||||||||                                                   ]  15% [|||||||||                                                   ]  15% [|||||||||                                                   ]  16% [|||||||||                                                   ]  16% [|||||||||                                                   ]  16% [||||||||||                                                  ]  17% [||||||||||                                                  ]  17% [||||||||||                                                  ]  17% [||||||||||                                                  ]  18% [||||||||||                                                  ]  18% [|||||||||||                                                 ]  18% [|||||||||||                                                 ]  19% [|||||||||||                                                 ]  19% [|||||||||||                                                 ]  19% [|||||||||||                                                 ]  20% [||||||||||||                                                ]  20% [||||||||||||                                                ]  20% [||||||||||||                                                ]  21% [||||||||||||                                                ]  21% [||||||||||||                                                ]  21% [|||||||||||||                                               ]  22% [|||||||||||||                                               ]  22% [|||||||||||||                                               ]  22% [|||||||||||||                                               ]  23% [|||||||||||||                                               ]  23% [||||||||||||||                                              ]  23% [||||||||||||||                                              ]  24% [||||||||||||||                                              ]  24% [||||||||||||||                                              ]  24% [||||||||||||||                                              ]  25% [|||||||||||||||                                             ]  25% [|||||||||||||||                                             ]  25% [|||||||||||||||                                             ]  26% [|||||||||||||||                                             ]  26% [|||||||||||||||                                             ]  26% [||||||||||||||||                                            ]  27% [||||||||||||||||                                            ]  27% [||||||||||||||||                                            ]  27% [||||||||||||||||                                            ]  28% [||||||||||||||||                                            ]  28% [|||||||||||||||||                                           ]  28% [|||||||||||||||||                                           ]  28% [|||||||||||||||||                                           ]  29% [|||||||||||||||||                                           ]  29% [|||||||||||||||||                                           ]  30% [||||||||||||||||||                                          ]  30% [||||||||||||||||||                                          ]  30% [||||||||||||||||||                                          ]  31% [||||||||||||||||||                                          ]  31% [||||||||||||||||||                                          ]  31% [|||||||||||||||||||                                         ]  32% [|||||||||||||||||||                                         ]  32% [|||||||||||||||||||                                         ]  32% [|||||||||||||||||||                                         ]  33% [|||||||||||||||||||                                         ]  33% [||||||||||||||||||||                                        ]  33% [||||||||||||||||||||                                        ]  34% [||||||||||||||||||||                                        ]  34% [||||||||||||||||||||                                        ]  34% [||||||||||||||||||||                                        ]  35% [|||||||||||||||||||||                                       ]  35% [|||||||||||||||||||||                                       ]  35% [|||||||||||||||||||||                                       ]  36% [|||||||||||||||||||||                                       ]  36% [|||||||||||||||||||||                                       ]  36% [||||||||||||||||||||||                                      ]  37% [||||||||||||||||||||||                                      ]  37% [||||||||||||||||||||||                                      ]  37% [||||||||||||||||||||||                                      ]  38% [||||||||||||||||||||||                                      ]  38% [|||||||||||||||||||||||                                     ]  38% [|||||||||||||||||||||||                                     ]  39% [|||||||||||||||||||||||                                     ]  39% [|||||||||||||||||||||||                                     ]  39% [|||||||||||||||||||||||                                     ]  40% [||||||||||||||||||||||||                                    ]  40% [||||||||||||||||||||||||                                    ]  40% [||||||||||||||||||||||||                                    ]  41% [||||||||||||||||||||||||                                    ]  41% [||||||||||||||||||||||||                                    ]  41% [|||||||||||||||||||||||||                                   ]  42% [|||||||||||||||||||||||||                                   ]  42% [|||||||||||||||||||||||||                                   ]  42% [|||||||||||||||||||||||||                                   ]  43% [|||||||||||||||||||||||||                                   ]  43% [||||||||||||||||||||||||||                                  ]  43% [||||||||||||||||||||||||||                                  ]  44% [||||||||||||||||||||||||||                                  ]  44% [||||||||||||||||||||||||||                                  ]  44% [||||||||||||||||||||||||||                                  ]  45% [|||||||||||||||||||||||||||                                 ]  45% [|||||||||||||||||||||||||||                                 ]  45% [|||||||||||||||||||||||||||                                 ]  46% [|||||||||||||||||||||||||||                                 ]  46% [|||||||||||||||||||||||||||                                 ]  46% [||||||||||||||||||||||||||||                                ]  47% [||||||||||||||||||||||||||||                                ]  47% [||||||||||||||||||||||||||||                                ]  47% [||||||||||||||||||||||||||||                                ]  48% [||||||||||||||||||||||||||||                                ]  48% [|||||||||||||||||||||||||||||                               ]  48% [|||||||||||||||||||||||||||||                               ]  49% [|||||||||||||||||||||||||||||                               ]  49% [|||||||||||||||||||||||||||||                               ]  49% [|||||||||||||||||||||||||||||                               ]  50% [||||||||||||||||||||||||||||||                              ]  50% [||||||||||||||||||||||||||||||                              ]  50% [||||||||||||||||||||||||||||||                              ]  51% [||||||||||||||||||||||||||||||                              ]  51% [||||||||||||||||||||||||||||||                              ]  51% [|||||||||||||||||||||||||||||||                             ]  52% [|||||||||||||||||||||||||||||||                             ]  52% [|||||||||||||||||||||||||||||||                             ]  52% [|||||||||||||||||||||||||||||||                             ]  53% [|||||||||||||||||||||||||||||||                             ]  53% [||||||||||||||||||||||||||||||||                            ]  53% [||||||||||||||||||||||||||||||||                            ]  54% [||||||||||||||||||||||||||||||||                            ]  54% [||||||||||||||||||||||||||||||||                            ]  54% [||||||||||||||||||||||||||||||||                            ]  55% [|||||||||||||||||||||||||||||||||                           ]  55% [|||||||||||||||||||||||||||||||||                           ]  55% [|||||||||||||||||||||||||||||||||                           ]  56% [|||||||||||||||||||||||||||||||||                           ]  56% [|||||||||||||||||||||||||||||||||                           ]  56% [||||||||||||||||||||||||||||||||||                          ]  56% [||||||||||||||||||||||||||||||||||                          ]  57% [||||||||||||||||||||||||||||||||||                          ]  57% [||||||||||||||||||||||||||||||||||                          ]  57% [||||||||||||||||||||||||||||||||||                          ]  58% [|||||||||||||||||||||||||||||||||||                         ]  58% [|||||||||||||||||||||||||||||||||||                         ]  59% [|||||||||||||||||||||||||||||||||||                         ]  59% [|||||||||||||||||||||||||||||||||||                         ]  59% [|||||||||||||||||||||||||||||||||||                         ]  60% [||||||||||||||||||||||||||||||||||||                        ]  60% [||||||||||||||||||||||||||||||||||||                        ]  60% [||||||||||||||||||||||||||||||||||||                        ]  61% [||||||||||||||||||||||||||||||||||||                        ]  61% [||||||||||||||||||||||||||||||||||||                        ]  61% [|||||||||||||||||||||||||||||||||||||                       ]  62% [|||||||||||||||||||||||||||||||||||||                       ]  62% [|||||||||||||||||||||||||||||||||||||                       ]  62% [|||||||||||||||||||||||||||||||||||||                       ]  63% [|||||||||||||||||||||||||||||||||||||                       ]  63% [||||||||||||||||||||||||||||||||||||||                      ]  63% [||||||||||||||||||||||||||||||||||||||                      ]  64% [||||||||||||||||||||||||||||||||||||||                      ]  64% [||||||||||||||||||||||||||||||||||||||                      ]  64% [||||||||||||||||||||||||||||||||||||||                      ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  66% [|||||||||||||||||||||||||||||||||||||||                     ]  66% [|||||||||||||||||||||||||||||||||||||||                     ]  66% [||||||||||||||||||||||||||||||||||||||||                    ]  67% [||||||||||||||||||||||||||||||||||||||||                    ]  67% [||||||||||||||||||||||||||||||||||||||||                    ]  67% [||||||||||||||||||||||||||||||||||||||||                    ]  68% [||||||||||||||||||||||||||||||||||||||||                    ]  68% [|||||||||||||||||||||||||||||||||||||||||                   ]  68% [|||||||||||||||||||||||||||||||||||||||||                   ]  69% [|||||||||||||||||||||||||||||||||||||||||                   ]  69% [|||||||||||||||||||||||||||||||||||||||||                   ]  69% [|||||||||||||||||||||||||||||||||||||||||                   ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  71% [||||||||||||||||||||||||||||||||||||||||||                  ]  71% [||||||||||||||||||||||||||||||||||||||||||                  ]  71% [|||||||||||||||||||||||||||||||||||||||||||                 ]  72% [|||||||||||||||||||||||||||||||||||||||||||                 ]  72% [|||||||||||||||||||||||||||||||||||||||||||                 ]  72% [|||||||||||||||||||||||||||||||||||||||||||                 ]  73% [|||||||||||||||||||||||||||||||||||||||||||                 ]  73% [||||||||||||||||||||||||||||||||||||||||||||                ]  73% [||||||||||||||||||||||||||||||||||||||||||||                ]  74% [||||||||||||||||||||||||||||||||||||||||||||                ]  74% [||||||||||||||||||||||||||||||||||||||||||||                ]  74% [||||||||||||||||||||||||||||||||||||||||||||                ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  76% [|||||||||||||||||||||||||||||||||||||||||||||               ]  76% [|||||||||||||||||||||||||||||||||||||||||||||               ]  76% [||||||||||||||||||||||||||||||||||||||||||||||              ]  77% [||||||||||||||||||||||||||||||||||||||||||||||              ]  77% [||||||||||||||||||||||||||||||||||||||||||||||              ]  77% [||||||||||||||||||||||||||||||||||||||||||||||              ]  78% [||||||||||||||||||||||||||||||||||||||||||||||              ]  78% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  78% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  79% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  79% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  79% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  81% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  81% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  81% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  83% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  86% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  88% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  93% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  93% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  93% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  96% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ] 100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]Time to loader the caching is 70.243023 second
+[Runner] Cache size: 442.344 MB
+registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240registerring 21223178240worker: 0 binding 0
+worker: 1 binding 2
+worker: 2 binding 4
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[Global epoch manager running] !
+[bench_listener2.cc:73] New monitor running!
+[0mregisterring 21223178240registerring 212231782407: 3 out of 4 qps connected. Retry connecting qps...
+4: 3 out of 4 qps connected. Retry connecting qps...
+2: 3 out of 4 qps connected. Retry connecting qps...
+6: 3 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+5: 3 out of 4 qps connected. Retry connecting qps...
+9: 3 out of 4 qps connected. Retry connecting qps...
+11: 3 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
+0: 3 out of 4 qps connected. Retry connecting qps...
+12: 2 out of 4 qps connected. Retry connecting qps...
+8: 3 out of 4 qps connected. Retry connecting qps...
+threadid=7: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=12: all 4 qps connected
+register_dgram_mr: 0x60001ee06440 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x60001c820840 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x600023b13040 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x600020139640 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x60001fc44740 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x60001f3bbf40 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x60002341c140 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x60001ff17440 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x60002053d640 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x600020830540 0x7fbf1b400000 21223178240 15
+register_dgram_mr: 0x600025ee6b40 0x7fbf1b400000 21223178240 15
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+[0m[bench_worker.cc:257] req_base_offset for thread 6: 10687905856
+[0m[bench_worker.cc:258] addresses:
+[0m[bench_worker.cc:260] routine 0
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1984c8040
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19854cd68
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1985d1a90
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1986567b8
+[0m[bench_worker.cc:260] routine 1
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1986db4e0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc198760208
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1987e4f30
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc198869c58
+[0m[bench_worker.cc:260] routine 2
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1988ee980
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1989736a8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1989f83d0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc198a7d0f8
+[0m[bench_worker.cc:260] routine 3
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc198b01e20
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc198b86b48
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc198c0b870
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc198c90598
+[0m[bench_worker.cc:260] routine 4
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc198d152c0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc198d99fe8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc198e1ed10
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc198ea3a38
+[0m[bench_worker.cc:260] routine 5
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc198f28760
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc198fad488
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1990321b0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1990b6ed8
+[0m[bench_worker.cc:260] routine 6
+[0mregister RPCID 19.
+[bench_worker.cc:266] node 0's addrs: 0x7fc19913bc00
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:266] node 1's addrs: 0x7fc1991c0928
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:266] node 2's addrs: 0x7fc199245650
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:266] node 3's addrs: 0x7fc1992ca378
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0m[bench_worker.cc:260] routine 7
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:266] node 0's addrs: 0x7fc19934f0a0
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:266] node 1's addrs: 0x7fc1993d3dc8
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+[bench_worker.cc:266] node 2's addrs: 0x7fc199458af0
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:266] node 3's addrs: 0x7fc1994dd818
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+[bench_worker.cc:260] routine 8
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+[bench_worker.cc:266] node 0's addrs: 0x7fc199562540
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0m[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:266] node 1's addrs: 0x7fc1995e7268
+warning: the RPC ID 19 has been registered.
+[bench_worker.cc:257] req_base_offset for thread 8: 10753190656
+register RPCID 19.
+[0m[0m[bench_worker.cc:258] addresses:
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+[bench_worker.cc:266] node 2's addrs: 0x7fc19966bf90
+register RPCID 19.
+[0m[0m[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+[bench_worker.cc:266] node 3's addrs: 0x7fc1996f0cb8
+[0m[bench_worker.cc:257] req_base_offset for thread 7: 10720548256
+[0m[0m[bench_worker.cc:260] routine 9
+[0m[bench_worker.cc:258] addresses:
+[bench_worker.cc:260] routine 0
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1997759e0
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19c30ab00
+[0m[bench_worker.cc:260] routine 0
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19c38f828
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1997fa708
+[bench_worker.cc:266] node 0's addrs: 0x7fc19a3e95a0
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19c414550
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19a46e2c8
+[bench_worker.cc:266] node 3's addrs: 0x7fc19c499278
+[bench_worker.cc:266] node 2's addrs: 0x7fc19987f430
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19a4f2ff0
+[bench_worker.cc:260] routine 1
+[bench_worker.cc:266] node 3's addrs: 0x7fc199904158
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19a577d18
+[bench_worker.cc:266] node 0's addrs: 0x7fc19c51dfa0
+[bench_worker.cc:260] routine 10
+[0m[0m[0m[bench_worker.cc:260] routine 1
+[bench_worker.cc:266] node 1's addrs: 0x7fc19c5a2cc8
+[bench_worker.cc:266] node 0's addrs: 0x7fc199988e80
+[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19a5fca40
+[bench_worker.cc:266] node 2's addrs: 0x7fc19c6279f0
+[bench_worker.cc:266] node 1's addrs: 0x7fc199a0dba8
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc199a928d0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19c6ac718
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc199b175f8
+[0m[bench_worker.cc:260] routine 2
+[0m[bench_worker.cc:260] routine 11
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19c731440
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc199b9c320
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19c7b6168
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc199c21048
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19c83ae90
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc199ca5d70
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19c8bfbb8
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc199d2aa98
+[0m[bench_worker.cc:260] routine 3
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19c9448e0
+[0m[bench_worker.cc:260] routine 12
+[bench_worker.cc:266] node 1's addrs: 0x7fc19a681768
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19c9c9608
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc199daf7c0
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19ca4e330
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19a706490
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc199e344e8
+[bench_worker.cc:266] node 3's addrs: 0x7fc19cad3058
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19a78b1b8
+[0m[0m[bench_worker.cc:260] routine 4
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc199eb9210
+[0m[bench_worker.cc:260] routine 2
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc199f3df38
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19cb57d80
+[bench_worker.cc:266] node 0's addrs: 0x7fc19a80fee0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19a894c08
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19a919930
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19cbdcaa8
+[bench_worker.cc:260] routine 13
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19a99e658
+[bench_worker.cc:266] node 2's addrs: 0x7fc19cc617d0
+[bench_worker.cc:266] node 0's addrs: 0x7fc199fc2c60
+[0m[0m[0m[bench_worker.cc:260] routine 3
+[bench_worker.cc:266] node 1's addrs: 0x7fc19a047988
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19cce64f8
+[bench_worker.cc:266] node 2's addrs: 0x7fc19a0cc6b0
+[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19aa23380
+[bench_worker.cc:260] routine 5
+[bench_worker.cc:266] node 3's addrs: 0x7fc19a1513d8
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19aaa80a8
+[bench_worker.cc:266] node 0's addrs: 0x7fc19cd6b220
+[bench_worker.cc:270] offsets:
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19ab2cdd0
+[0m[bench_worker.cc:274] routine 0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19abb1af8
+[0m[bench_worker.cc:260] routine 4
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19cdeff48
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19ac36820
+[bench_worker.cc:266] node 2's addrs: 0x7fc19ce74c70
+[bench_worker.cc:277] node 0's offset: 10687905856
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19acbb548
+[0m[bench_worker.cc:277] node 1's offset: 10688449896
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19cef9998
+[0m[bench_worker.cc:277] node 2's offset: 10688993936
+[0m[bench_worker.cc:277] node 3's offset: 10689537976
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19ad40270
+[bench_worker.cc:274] routine 1
+[0m[bench_worker.cc:260] routine 6
+[0m[bench_worker.cc:277] node 0's offset: 10690082016
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19adc4f98
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19cf7e6c0
+[0m[0m[bench_worker.cc:260] routine 5
+[0m[bench_worker.cc:277] node 1's offset: 10690626056
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19d0033e8
+[bench_worker.cc:266] node 0's addrs: 0x7fc19ae49cc0
+[0m[bench_worker.cc:277] node 2's offset: 10691170096
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19aece9e8
+[bench_worker.cc:277] node 3's offset: 10691714136
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19d088110
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19af53710
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19d10ce38
+[0m[bench_worker.cc:260] routine 7
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19afd8438
+[bench_worker.cc:274] routine 2
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19d191b60
+[0m[bench_worker.cc:277] node 0's offset: 10692258176
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+[bench_worker.cc:266] node 1's addrs: 0x7fc19d216888
+[0m[0mregister RPCID 19.
+[bench_worker.cc:260] routine 6
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:277] node 1's offset: 10692802216
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19d29b5b0
+[0m[bench_worker.cc:277] node 2's offset: 10693346256
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19b05d160
+[0m[bench_worker.cc:277] node 3's offset: 10693890296
+[0m[bench_worker.cc:274] routine 3
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19b0e1e88
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19d3202d8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19b166bb0
+[0m[bench_worker.cc:260] routine 8
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19b1eb8d8
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19d3a5000
+[0m[bench_worker.cc:260] routine 7
+[0m[bench_worker.cc:277] node 0's offset: 10694434336
+[bench_worker.cc:266] node 1's addrs: 0x7fc19d429d28
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19b270600
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19d4aea50
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19b2f5328
+[bench_worker.cc:266] node 3's addrs: 0x7fc19d533778
+[0m[0m[bench_worker.cc:277] node 1's offset: 10694978376
+[0m[bench_worker.cc:260] routine 9
+[bench_worker.cc:266] node 2's addrs: 0x7fc19b37a050
+[0m[0m[bench_worker.cc:277] node 2's offset: 10695522416
+[bench_worker.cc:266] node 3's addrs: 0x7fc19b3fed78
+[bench_worker.cc:266] node 0's addrs: 0x7fc19d5b84a0
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19d63d1c8
+[0m[bench_worker.cc:277] node 3's offset: 10696066456
+[bench_worker.cc:260] routine 8
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19d6c1ef0
+[0m[bench_worker.cc:274] routine 4
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19d746c18
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19b483aa0
+[0m[bench_worker.cc:260] routine 10
+[0m[bench_worker.cc:277] node 0's offset: 10696610496
+[bench_worker.cc:266] node 1's addrs: 0x7fc19b5087c8
+[bench_worker.cc:266] node 0's addrs: 0x7fc19d7cb940
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19d850668
+[bench_worker.cc:277] node 1's offset: 10697154536
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19b58d4f0
+[0m[bench_worker.cc:277] node 2's offset: 10697698576
+[bench_worker.h:279] Use RDMA for logging.
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19b612218
+[0m[bench_worker.cc:277] node 3's offset: 10698242616
+[0m[bench_worker.cc:260] routine 9
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19d8d5390
+[bench_worker.cc:274] routine 5
+[0m[bench_worker.cc:277] node 0's offset: 10698786656
+[bench_worker.cc:266] node 0's addrs: 0x7fc19b696f40
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19d95a0b8
+[0m[bench_worker.cc:277] node 1's offset: 10699330696
+[0m[bench_worker.cc:260] routine 11
+[bench_worker.cc:266] node 1's addrs: 0x7fc19b71bc68
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19b7a0990
+[0m[bench_worker.cc:277] node 2's offset: 10699874736
+[bench_worker.cc:266] node 0's addrs: 0x7fc19d9dede0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19b8256b8
+[bench_worker.cc:266] node 1's addrs: 0x7fc19da63b08
+[0m[0m[0m[bench_worker.cc:277] node 3's offset: 10700418776
+[bench_worker.cc:260] routine 10
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19dae8830
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19b8aa3e0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19db6d558
+[0m[bench_worker.cc:260] routine 12
+[bench_worker.cc:266] node 1's addrs: 0x7fc19b92f108
+[bench_worker.cc:274] routine 6
+[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19dbf2280
+[bench_worker.cc:266] node 2's addrs: 0x7fc19b9b3e30
+[bench_worker.cc:277] node 0's offset: 10700962816
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19dc76fa8
+[bench_worker.cc:266] node 3's addrs: 0x7fc19ba38b58
+[bench_worker.cc:277] node 1's offset: 10701506856
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19dcfbcd0
+[bench_worker.cc:260] routine 11
+[bench_worker.cc:277] node 2's offset: 10702050896
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19dd809f8
+[bench_worker.cc:266] node 0's addrs: 0x7fc19babd880
+[bench_worker.cc:277] node 3's offset: 10702594936
+[0m[0m[bench_worker.cc:260] routine 13
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19bb425a8
+[0m[bench_worker.cc:274] routine 7
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19de05720
+[0m[bench_worker.cc:277] node 0's offset: 10703138976
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19de8a448
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19bbc72d0
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19df0f170
+[0m[bench_worker.cc:277] node 1's offset: 10703683016
+[bench_worker.cc:266] node 3's addrs: 0x7fc19bc4bff8
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19df93e98
+[0m[0m[bench_worker.cc:260] routine 12
+[bench_worker.cc:277] node 2's offset: 10704227056
+[0m[0m[bench_worker.cc:270] offsets:
+[0m[bench_worker.cc:277] node 3's offset: 10704771096
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19bcd0d20
+[0m[bench_worker.cc:274] routine 0
+[0m[bench_worker.cc:274] routine 8
+[bench_worker.cc:266] node 1's addrs: 0x7fc19bd55a48
+[bench_worker.cc:277] node 0's offset: 10753190656
+[0m[0m[bench_worker.cc:277] node 1's offset: 10753734696
+[bench_worker.cc:277] node 0's offset: 10705315136
+[0m[0m[0m[bench_worker.cc:277] node 2's offset: 10754278736
+[0m[bench_worker.cc:277] node 1's offset: 10705859176
+[0m[bench_worker.cc:277] node 2's offset: 10706403216
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19bdda770
+[0m[bench_worker.cc:277] node 3's offset: 10706947256
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19be5f498
+[0m[bench_worker.cc:277] node 3's offset: 10754822776
+[0m[bench_worker.cc:274] routine 9
+[bench_worker.cc:260] routine 13
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19bee41c0
+[bench_worker.cc:274] routine 1
+[0m[0m[0m[bench_worker.cc:277] node 0's offset: 10707491296
+[bench_worker.cc:266] node 1's addrs: 0x7fc19bf68ee8
+[0m[bench_worker.cc:277] node 0's offset: 10755366816
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19bfedc10
+[0m[bench_worker.cc:277] node 1's offset: 10755910856
+[0m[bench_worker.cc:277] node 1's offset: 10708035336
+[bench_worker.cc:266] node 3's addrs: 0x7fc19c072938
+[0m[bench_worker.cc:270] offsets:
+[bench_worker.cc:277] node 2's offset: 10756454896
+[0m[0m[0m[bench_worker.cc:277] node 3's offset: 10756998936
+[0m[bench_worker.cc:274] routine 0
+[0m[bench_worker.cc:274] routine 2
+[0m[bench_worker.cc:277] node 2's offset: 10708579376
+[0m[bench_worker.cc:277] node 0's offset: 10757542976
+[bench_worker.cc:277] node 0's offset: 10720548256
+[bench_worker.cc:277] node 3's offset: 10709123416
+[0m[0m[0m[bench_worker.cc:277] node 1's offset: 10721092296
+[0m[bench_worker.cc:274] routine 10
+[0m[bench_worker.cc:277] node 2's offset: 10721636336
+[0m[bench_worker.cc:277] node 1's offset: 10758087016
+[bench_worker.cc:277] node 0's offset: 10709667456
+[0m[bench_worker.cc:277] node 1's offset: 10710211496
+[bench_worker.cc:277] node 3's offset: 10722180376
+[0m[0m[bench_worker.cc:277] node 2's offset: 10758631056
+[0m[bench_worker.cc:274] routine 1
+[0m[bench_worker.cc:277] node 2's offset: 10710755536
+[0m[bench_worker.cc:277] node 0's offset: 10722724416
+[0m[bench_worker.cc:277] node 3's offset: 10759175096
+[0m[bench_worker.cc:277] node 1's offset: 10723268456
+[0m[0m[bench_worker.cc:277] node 3's offset: 10711299576
+[0m[bench_worker.cc:277] node 2's offset: 10723812496
+[0m[bench_worker.cc:274] routine 11
+[0m[bench_worker.cc:277] node 3's offset: 10724356536
+[bench_worker.cc:277] node 0's offset: 10711843616
+[bench_worker.cc:274] routine 3
+[0m[0m[0m[bench_worker.cc:274] routine 2
+[bench_worker.cc:277] node 1's offset: 10712387656
+[bench_worker.cc:277] node 0's offset: 10759719136
+[0m[0m[0m[bench_worker.cc:277] node 1's offset: 10760263176
+[0m[bench_worker.cc:277] node 2's offset: 10712931696
+[0m[bench_worker.cc:277] node 0's offset: 10724900576
+[bench_worker.cc:277] node 2's offset: 10760807216
+[0m[bench_worker.cc:277] node 3's offset: 10713475736
+[0m[bench_worker.cc:274] routine 12
+[bench_worker.cc:277] node 3's offset: 10761351256
+[0m[0m[0m[bench_worker.cc:274] routine 4
+[bench_worker.cc:277] node 1's offset: 10725444616
+[0m[0m[bench_worker.cc:277] node 2's offset: 10725988656
+[0m[bench_worker.cc:277] node 0's offset: 10761895296
+[bench_worker.cc:277] node 0's offset: 10714019776
+[0m[bench_worker.cc:277] node 3's offset: 10726532696
+[0m[bench_worker.cc:277] node 1's offset: 10714563816
+[0m[bench_worker.cc:274] routine 3
+[0m[bench_worker.cc:277] node 2's offset: 10715107856
+[0m[bench_worker.cc:277] node 0's offset: 10727076736
+[0m[bench_worker.cc:277] node 1's offset: 10727620776
+[0m[bench_worker.cc:277] node 2's offset: 10728164816
+[0m[bench_worker.cc:277] node 3's offset: 10728708856
+[0m[bench_worker.cc:277] node 1's offset: 10762439336
+[bench_worker.cc:277] node 3's offset: 10715651896
+[0m[0m[bench_worker.cc:274] routine 4
+[0m[0m[bench_worker.cc:274] routine 13
+[0m[bench_worker.cc:277] node 0's offset: 10729252896
+[0m[bench_worker.cc:277] node 0's offset: 10716195936
+[0m[bench_worker.cc:277] node 1's offset: 10729796936
+[0m[bench_worker.cc:277] node 1's offset: 10716739976
+[0m[bench_worker.cc:277] node 2's offset: 10730340976
+[0m[bench_worker.cc:277] node 3's offset: 10730885016
+[0m[bench_worker.cc:277] node 2's offset: 10717284016
+[bench_worker.cc:277] node 2's offset: 10762983376
+[0m[0m[bench_worker.cc:277] node 3's offset: 10717828056
+[0m[bench_worker.cc:274] routine 5
+register RPCID 31.
+register RPCID 30.
+[bench_worker.cc:277] node 3's offset: 10763527416
+[0m[0m[bench_worker.cc:274] routine 5
+[0m[bench_worker.cc:277] node 0's offset: 10731429056
+[0m[bench_worker.cc:277] node 1's offset: 10731973096
+[0m[bench_worker.cc:277] node 0's offset: 10764071456
+[0m[bench_worker.cc:277] node 1's offset: 10764615496
+[0m[bench_worker.cc:277] node 2's offset: 10732517136
+[0m[bench_worker.cc:277] node 2's offset: 10765159536
+[0m[bench_worker.cc:277] node 3's offset: 10733061176
+[0m[bench_worker.cc:274] routine 6
+[0m[bench_worker.cc:277] node 3's offset: 10765703576
+[0m[bench_worker.cc:274] routine 6
+[0m[bench_worker.cc:277] node 0's offset: 10733605216
+[0m[bench_worker.cc:277] node 1's offset: 10734149256
+[0m[bench_worker.cc:277] node 0's offset: 10766247616
+[0m[bench_worker.cc:277] node 1's offset: 10766791656
+[0m[bench_worker.cc:277] node 2's offset: 10734693296
+[0m[bench_worker.cc:277] node 3's offset: 10735237336
+[0m[bench_worker.cc:277] node 2's offset: 10767335696
+[0m[bench_worker.cc:277] node 3's offset: 10767879736
+[0m[bench_worker.cc:274] routine 7
+[0m[bench_worker.cc:277] node 0's offset: 10735781376
+[0m[bench_worker.cc:274] routine 7
+[0m[bench_worker.cc:277] node 0's offset: 10768423776
+[0m[bench_worker.cc:277] node 1's offset: 10736325416
+[0m[bench_worker.cc:277] node 2's offset: 10736869456
+[0m[bench_worker.cc:277] node 1's offset: 10768967816
+[0m[bench_worker.cc:277] node 2's offset: 10769511856
+[0m[bench_worker.cc:277] node 3's offset: 10737413496
+[0m[bench_worker.cc:274] routine 8
+[0m[bench_worker.cc:277] node 3's offset: 10770055896
+[0m[bench_worker.cc:274] routine 8
+[0m[bench_worker.cc:277] node 0's offset: 10737957536
+[0m[bench_worker.cc:277] node 1's offset: 10738501576
+[0m[bench_worker.cc:277] node 0's offset: 10770599936
+[0m[bench_worker.cc:277] node 1's offset: 10771143976
+[0m[bench_worker.cc:277] node 2's offset: 10739045616
+[0m[bench_worker.cc:277] node 3's offset: 10739589656
+[0m[bench_worker.cc:274] routine 9
+[0m[bench_worker.cc:277] node 0's offset: 10740133696
+[0m[bench_worker.cc:277] node 2's offset: 10771688016
+[0m[bench_worker.cc:277] node 1's offset: 10740677736
+[0m[bench_worker.cc:277] node 3's offset: 10772232056
+[0m[bench_worker.cc:274] routine 9
+[0m[bench_worker.cc:277] node 2's offset: 10741221776
+[0m[bench_worker.cc:277] node 3's offset: 10741765816
+[0m[bench_worker.cc:277] node 0's offset: 10772776096
+[0m[bench_worker.cc:274] routine 10
+[0m[bench_worker.cc:277] node 1's offset: 10773320136
+[0m[bench_worker.cc:277] node 2's offset: 10773864176
+[0m[bench_worker.cc:277] node 0's offset: 10742309856
+[0m[bench_worker.cc:277] node 1's offset: 10742853896
+[0m[bench_worker.cc:277] node 2's offset: 10743397936
+[bench_worker.cc:277] node 3's offset: 10774408216
+[0m[0m[bench_worker.cc:277] node 3's offset: 10743941976
+[0m[bench_worker.cc:274] routine 10
+[0m[bench_worker.cc:274] routine 11
+[0m[bench_worker.cc:277] node 0's offset: 10774952256
+[0m[bench_worker.cc:277] node 1's offset: 10775496296
+[0m[bench_worker.cc:277] node 0's offset: 10744486016
+[0m[bench_worker.cc:277] node 2's offset: 10776040336
+[0m[bench_worker.cc:277] node 3's offset: 10776584376
+[0m[bench_worker.cc:277] node 1's offset: 10745030056
+[0m[bench_worker.cc:277] node 2's offset: 10745574096
+[0m[bench_worker.cc:277] node 3's offset: 10746118136
+[0m[bench_worker.cc:274] routine 11
+[0m[bench_worker.cc:274] routine 12
+[0m[bench_worker.cc:277] node 0's offset: 10777128416
+[0m[bench_worker.cc:277] node 1's offset: 10777672456
+[0m[bench_worker.cc:277] node 0's offset: 10746662176
+[0m[bench_worker.cc:277] node 1's offset: 10747206216
+[0m[bench_worker.cc:277] node 2's offset: 10778216496
+[0m[bench_worker.cc:277] node 3's offset: 10778760536
+[0m[bench_worker.cc:277] node 2's offset: 10747750256
+[0m[bench_worker.cc:277] node 3's offset: 10748294296
+[0m[bench_worker.cc:274] routine 12
+[0m[bench_worker.cc:277] node 0's offset: 10779304576
+[0m[bench_worker.cc:274] routine 13
+[0m[bench_worker.cc:277] node 0's offset: 10748838336
+[0m[bench_worker.cc:277] node 1's offset: 10779848616
+[0m[bench_worker.cc:277] node 1's offset: 10749382376
+[0m[bench_worker.cc:277] node 2's offset: 10749926416
+[0m[bench_worker.cc:277] node 2's offset: 10780392656
+[0m[bench_worker.cc:277] node 3's offset: 10780936696
+[0m[bench_worker.cc:277] node 3's offset: 10750470456
+[0mregister RPCID 31.
+register RPCID 30.
+[bench_worker.cc:274] routine 13
+[0m[bench_worker.cc:277] node 0's offset: 10781480736
+[0m[bench_worker.cc:277] node 1's offset: 10782024776
+[0m[bench_worker.cc:277] node 2's offset: 10782568816
+[0m[bench_worker.cc:277] node 3's offset: 10783112856
+[0mregister RPCID 31.
+register RPCID 30.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+[bench_worker.cc:257] req_base_offset for thread 2: 10557336256
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0m[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+warning: the RPC ID 19 has been registered.
+[bench_worker.cc:258] addresses:
+register RPCID 19.
+[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+[0mwarning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+[0mregister RPCID 19.
+[bench_worker.cc:260] routine 0
+warning: the RPC ID 19 has been registered.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:257] req_base_offset for thread 3: 10589978656
+[bench_worker.cc:257] req_base_offset for thread 5: 10655263456
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0m[0mregister RPCID 19.
+[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+[bench_worker.cc:258] addresses:
+[bench_worker.cc:266] node 0's addrs: 0x7fc190842ac0
+[0m[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+[0m[bench_worker.cc:258] addresses:
+[0m[0m[0m[bench_worker.cc:260] routine 0
+[0m[bench_worker.cc:257] req_base_offset for thread 1: 10524693856
+[0m[bench_worker.cc:260] routine 0
+[bench_worker.cc:266] node 0's addrs: 0x7fc192764020
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1908c77e8
+[bench_worker.cc:258] addresses:
+[0m[0m[bench_worker.cc:257] req_base_offset for thread 9: 10785833056
+[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1965a6ae0
+[bench_worker.cc:260] routine 0
+[0m[bench_worker.cc:258] addresses:
+[bench_worker.cc:266] node 1's addrs: 0x7fc1927e8d48
+[bench_worker.cc:266] node 2's addrs: 0x7fc19094c510
+[0m[0m[0m[0m[bench_worker.cc:260] routine 0
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18e921560
+[bench_worker.cc:266] node 2's addrs: 0x7fc19286da70
+[bench_worker.cc:266] node 1's addrs: 0x7fc19662b808
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1909d1238
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:266] node 3's addrs: 0x7fc1928f2798
+[bench_worker.cc:266] node 0's addrs: 0x7fc19e22c060
+[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0m[bench_worker.cc:249] start_ptr = 0x7fbf1b400000
+[0m[0m[bench_worker.cc:257] req_base_offset for thread 4: 10622621056
+[bench_worker.cc:266] node 1's addrs: 0x7fc18e9a6288
+[0m[0m[bench_worker.cc:260] routine 1
+[0m[bench_worker.cc:260] routine 1
+[bench_worker.cc:266] node 0's addrs: 0x7fc1929774c0
+[bench_worker.cc:257] req_base_offset for thread 0: 10492051456
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1966b0530
+[bench_worker.cc:258] addresses:
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc190a55f60
+[bench_worker.cc:266] node 1's addrs: 0x7fc19e2b0d88
+[0m[0m[0m[bench_worker.cc:260] routine 0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc196735258
+[bench_worker.cc:266] node 2's addrs: 0x7fc18ea2afb0
+[0m[0m[0m[bench_worker.cc:258] addresses:
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19e335ab0
+[0m[bench_worker.cc:260] routine 0
+[bench_worker.cc:266] node 3's addrs: 0x7fc18eaafcd8
+[bench_worker.cc:266] node 0's addrs: 0x7fc18ca00000
+[0m[0m[bench_worker.cc:260] routine 1
+[bench_worker.cc:266] node 3's addrs: 0x7fc19e3ba7d8
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc190adac88
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18ca84d28
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1929fc1e8
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc194685580
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc190b5f9b0
+[0m[0m[0m[bench_worker.cc:260] routine 1
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18cb09a50
+[bench_worker.cc:266] node 0's addrs: 0x7fc1967b9f80
+[bench_worker.cc:266] node 1's addrs: 0x7fc19470a2a8
+[bench_worker.cc:260] routine 1
+[bench_worker.cc:266] node 0's addrs: 0x7fc18eb34a00
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc192a80f10
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc190be46d8
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18ebb9728
+[bench_worker.cc:266] node 3's addrs: 0x7fc192b05c38
+[bench_worker.cc:266] node 0's addrs: 0x7fc19e43f500
+[bench_worker.cc:266] node 1's addrs: 0x7fc19683eca8
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18cb8e778
+[0m[0m[bench_worker.cc:260] routine 1
+[0m[0m[0m[bench_worker.cc:260] routine 2
+[bench_worker.cc:260] routine 2
+[bench_worker.cc:266] node 2's addrs: 0x7fc1968c39d0
+[bench_worker.cc:266] node 2's addrs: 0x7fc19478efd0
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19e4c4228
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc194813cf8
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc192b8a960
+[bench_worker.cc:266] node 0's addrs: 0x7fc18cc134a0
+[bench_worker.cc:266] node 2's addrs: 0x7fc19e548f50
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc190c69400
+[bench_worker.cc:266] node 2's addrs: 0x7fc18ec3e450
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1969486f8
+[0m[0m[0m[bench_worker.cc:260] routine 1
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18ecc3178
+[bench_worker.cc:266] node 1's addrs: 0x7fc190cee128
+[bench_worker.cc:266] node 3's addrs: 0x7fc19e5cdc78
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc192c0f688
+[bench_worker.cc:266] node 0's addrs: 0x7fc194898a20
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19491d748
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1949a2470
+[bench_worker.cc:260] routine 2
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc190d72e50
+[0m[bench_worker.cc:260] routine 2
+[bench_worker.cc:266] node 1's addrs: 0x7fc18cc981c8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc192c943b0
+[bench_worker.cc:260] routine 2
+[bench_worker.cc:266] node 0's addrs: 0x7fc1969cd420
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc194a27198
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18cd1cef0
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc196a52148
+[bench_worker.cc:266] node 3's addrs: 0x7fc190df7b78
+[0m[bench_worker.cc:260] routine 2
+[bench_worker.cc:266] node 3's addrs: 0x7fc192d190d8
+[bench_worker.cc:266] node 0's addrs: 0x7fc18ed47ea0
+[0m[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19e6529a0
+[0m[bench_worker.cc:260] routine 3
+[bench_worker.cc:266] node 3's addrs: 0x7fc18cda1c18
+[bench_worker.cc:266] node 1's addrs: 0x7fc18edccbc8
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc194aabec0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc194b30be8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc196ad6e70
+[0m[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18ee518f0
+[bench_worker.cc:260] routine 3
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc190e7c8a0
+[bench_worker.cc:266] node 2's addrs: 0x7fc194bb5910
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19e6d76c8
+[bench_worker.cc:266] node 3's addrs: 0x7fc196b5bb98
+[0m[0m[bench_worker.cc:260] routine 2
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc194c3a638
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc190f015c8
+[bench_worker.cc:266] node 0's addrs: 0x7fc192d9de00
+[bench_worker.cc:266] node 0's addrs: 0x7fc18ce26940
+[bench_worker.cc:266] node 3's addrs: 0x7fc18eed6618
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19e75c3f0
+[0m[0m[0m[0m[bench_worker.cc:260] routine 3
+[0m[bench_worker.cc:260] routine 3
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc190f862f0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc192e22b28
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc192ea7850
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19e7e1118
+[bench_worker.cc:266] node 0's addrs: 0x7fc194cbf360
+[0m[0m[bench_worker.cc:260] routine 3
+[bench_worker.cc:266] node 3's addrs: 0x7fc192f2c578
+[bench_worker.cc:266] node 3's addrs: 0x7fc19100b018
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18ceab668
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18cf30390
+[bench_worker.cc:266] node 1's addrs: 0x7fc194d44088
+[bench_worker.cc:260] routine 3
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18ef5b340
+[0m[0m[bench_worker.cc:260] routine 4
+[bench_worker.cc:266] node 0's addrs: 0x7fc196be08c0
+[bench_worker.cc:266] node 3's addrs: 0x7fc18cfb50b8
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19e865e40
+[bench_worker.cc:266] node 1's addrs: 0x7fc18efe0068
+[0m[0m[bench_worker.cc:260] routine 4
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19e8eab68
+[bench_worker.cc:266] node 0's addrs: 0x7fc192fb12a0
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc196c655e8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19e96f890
+[bench_worker.cc:266] node 2's addrs: 0x7fc18f064d90
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19108fd40
+[bench_worker.cc:266] node 1's addrs: 0x7fc193035fc8
+[bench_worker.cc:266] node 2's addrs: 0x7fc194dc8db0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc194e4dad8
+[bench_worker.cc:260] routine 3
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc196cea310
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc191114a68
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19e9f45b8
+[bench_worker.cc:266] node 3's addrs: 0x7fc196d6f038
+[bench_worker.cc:260] routine 4
+[bench_worker.cc:266] node 0's addrs: 0x7fc18d039de0
+[bench_worker.cc:266] node 3's addrs: 0x7fc18f0e9ab8
+[bench_worker.cc:266] node 2's addrs: 0x7fc1930bacf0
+[bench_worker.cc:266] node 2's addrs: 0x7fc191199790
+[0m[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18d0beb08
+[0m[0m[bench_worker.cc:260] routine 4
+[bench_worker.cc:266] node 3's addrs: 0x7fc19121e4b8
+[0m[bench_worker.cc:260] routine 4
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc194ed2800
+[bench_worker.cc:266] node 2's addrs: 0x7fc18d143830
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19313fa18
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc196df3d60
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18f16e7e0
+[bench_worker.cc:260] routine 5
+[bench_worker.cc:260] routine 5
+[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1931c4740
+[bench_worker.cc:266] node 1's addrs: 0x7fc194f57528
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc196e78a88
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18f1f3508
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc193249468
+[bench_worker.cc:266] node 3's addrs: 0x7fc18d1c8558
+[bench_worker.cc:266] node 2's addrs: 0x7fc196efd7b0
+[bench_worker.cc:260] routine 4
+[0m[0m[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19ea792e0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc196f824d8
+[bench_worker.cc:266] node 2's addrs: 0x7fc194fdc250
+[bench_worker.cc:266] node 0's addrs: 0x7fc1912a31e0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc191327f08
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1932ce190
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc193352eb8
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc195060f78
+[bench_worker.cc:260] routine 5
+[bench_worker.cc:266] node 1's addrs: 0x7fc19eafe008
+[0m[0m[bench_worker.cc:260] routine 4
+[0m[bench_worker.cc:260] routine 6
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1913acc30
+[0m[bench_worker.cc:260] routine 5
+[bench_worker.cc:266] node 2's addrs: 0x7fc18f278230
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1933d7be0
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18d24d280
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19eb82d30
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18d2d1fa8
+[bench_worker.cc:266] node 3's addrs: 0x7fc191431958
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1950e5ca0
+[bench_worker.cc:266] node 1's addrs: 0x7fc19345c908
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc197007200
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19ec07a58
+[0m[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18f2fcf58
+[0m[bench_worker.cc:260] routine 6
+[bench_worker.cc:260] routine 5
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18d356cd0
+[bench_worker.cc:260] routine 5
+[bench_worker.cc:266] node 2's addrs: 0x7fc1934e1630
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1914b6680
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19516a9c8
+[bench_worker.cc:266] node 1's addrs: 0x7fc19153b3a8
+[bench_worker.cc:266] node 1's addrs: 0x7fc19708bf28
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19ec8c780
+[bench_worker.cc:266] node 3's addrs: 0x7fc18d3db9f8
+[0m[0m[0m[bench_worker.cc:260] routine 5
+[bench_worker.cc:266] node 3's addrs: 0x7fc193566358
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18f381c80
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1951ef6f0
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19ed114a8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1915c00d0
+[0m[0m[bench_worker.cc:260] routine 7
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc197110c50
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19ed961d0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19ee1aef8
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc197195978
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc195274418
+[bench_worker.cc:266] node 0's addrs: 0x7fc1935eb080
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc191644df8
+[bench_worker.cc:266] node 0's addrs: 0x7fc18d460720
+[bench_worker.cc:266] node 1's addrs: 0x7fc18f4069a8
+[bench_worker.cc:260] routine 6
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19366fda8
+[0m[bench_worker.cc:260] routine 6
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1936f4ad0
+[0m[bench_worker.cc:260] routine 6
+[bench_worker.cc:260] routine 7
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19ee9fc20
+[bench_worker.cc:266] node 2's addrs: 0x7fc18f48b6d0
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19721a6a0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18d4e5448
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19ef24948
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1937797f8
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18f5103f8
+[0m[bench_worker.cc:260] routine 8
+[bench_worker.cc:266] node 2's addrs: 0x7fc18d56a170
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19729f3c8
+[bench_worker.cc:266] node 0's addrs: 0x7fc1952f9140
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc1916c9b20
+[0m[0m[0m[bench_worker.cc:260] routine 6
+[bench_worker.cc:266] node 1's addrs: 0x7fc19537de68
+[bench_worker.cc:266] node 2's addrs: 0x7fc19efa9670
+[bench_worker.cc:266] node 3's addrs: 0x7fc18d5eee98
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19174e848
+[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18f595120
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1973240f0
+[bench_worker.cc:266] node 2's addrs: 0x7fc1917d3570
+[bench_worker.cc:266] node 2's addrs: 0x7fc195402b90
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18f619e48
+[bench_worker.cc:266] node 3's addrs: 0x7fc19f02e398
+[0m[bench_worker.cc:260] routine 7
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc191858298
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1954878b8
+[0m[bench_worker.cc:260] routine 8
+[bench_worker.cc:266] node 0's addrs: 0x7fc1937fe520
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1973a8e18
+[bench_worker.cc:260] routine 6
+[0m[bench_worker.cc:260] routine 7
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19f0b30c0
+[0m[0m[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18f69eb70
+[bench_worker.cc:266] node 0's addrs: 0x7fc19550c5e0
+[bench_worker.cc:266] node 0's addrs: 0x7fc18d673bc0
+[bench_worker.cc:266] node 1's addrs: 0x7fc19f137de8
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18f723898
+[bench_worker.cc:266] node 0's addrs: 0x7fc1918dcfc0
+[0m[0m[bench_worker.cc:260] routine 7
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19742db40
+[bench_worker.cc:266] node 1's addrs: 0x7fc193883248
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18d6f88e8
+[bench_worker.cc:266] node 2's addrs: 0x7fc19f1bcb10
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1974b2868
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc197537590
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc195591308
+[bench_worker.cc:266] node 1's addrs: 0x7fc191961ce8
+[bench_worker.cc:260] routine 7
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1975bc2b8
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19f241838
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc193907f70
+[bench_worker.cc:266] node 2's addrs: 0x7fc1919e6a10
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18d77d610
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18f7a85c0
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc195616030
+[bench_worker.cc:260] routine 8
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18d802338
+[bench_worker.cc:266] node 3's addrs: 0x7fc19398cc98
+[bench_worker.cc:266] node 0's addrs: 0x7fc19f2c6560
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19569ad58
+[bench_worker.cc:266] node 1's addrs: 0x7fc18f82d2e8
+[0m[bench_worker.cc:260] routine 9
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19f34b288
+[bench_worker.cc:260] routine 8
+[0m[bench_worker.cc:260] routine 8
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc193a119c0
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc193a966e8
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19571fa80
+[bench_worker.cc:266] node 3's addrs: 0x7fc191a6b738
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18f8b2010
+[0m[0m[bench_worker.cc:260] routine 7
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc193b1b410
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc197640fe0
+[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1957a47a8
+[0m[bench_worker.cc:260] routine 9
+[bench_worker.cc:266] node 3's addrs: 0x7fc193ba0138
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1976c5d08
+[bench_worker.cc:266] node 2's addrs: 0x7fc19f3cffb0
+[bench_worker.cc:260] routine 10
+[bench_worker.cc:266] node 0's addrs: 0x7fc18d887060
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18f936d38
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19774aa30
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1958294d0
+[bench_worker.cc:266] node 0's addrs: 0x7fc191af0460
+[0m[0m[bench_worker.cc:260] routine 8
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18d90bd88
+[bench_worker.cc:266] node 3's addrs: 0x7fc19f454cd8
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1958ae1f8
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1977cf758
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc193c24e60
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18d990ab0
+[bench_worker.cc:266] node 0's addrs: 0x7fc18f9bba60
+[bench_worker.cc:266] node 1's addrs: 0x7fc191b75188
+[0m[bench_worker.cc:260] routine 9
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc193ca9b88
+[bench_worker.cc:260] routine 9
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc191bf9eb0
+[bench_worker.cc:260] routine 9
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc195932f20
+[bench_worker.cc:266] node 0's addrs: 0x7fc197854480
+[bench_worker.cc:266] node 0's addrs: 0x7fc19f4d9a00
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18fa40788
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1959b7c48
+[bench_worker.cc:266] node 1's addrs: 0x7fc19f55e728
+[bench_worker.cc:266] node 3's addrs: 0x7fc18da157d8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18fac54b0
+[0m[bench_worker.cc:260] routine 8
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc193d2e8b0
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19f5e3450
+[bench_worker.cc:266] node 3's addrs: 0x7fc191c7ebd8
+[0m[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc195a3c970
+[bench_worker.cc:266] node 1's addrs: 0x7fc1978d91a8
+[0m[bench_worker.cc:260] routine 10
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19795ded0
+[bench_worker.cc:266] node 3's addrs: 0x7fc18fb4a1d8
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18da9a500
+[bench_worker.cc:266] node 3's addrs: 0x7fc193db35d8
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19f668178
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1979e2bf8
+[0m[bench_worker.cc:260] routine 9
+[0m[0m[bench_worker.cc:260] routine 10
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc195ac1698
+[0m[bench_worker.cc:260] routine 11
+[0m[bench_worker.cc:260] routine 10
+[bench_worker.cc:266] node 0's addrs: 0x7fc191d03900
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19f6ecea0
+[bench_worker.cc:266] node 0's addrs: 0x7fc193e38300
+[bench_worker.cc:260] routine 10
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc191d88628
+[bench_worker.cc:266] node 1's addrs: 0x7fc18db1f228
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18fbcef00
+[bench_worker.cc:266] node 2's addrs: 0x7fc18dba3f50
+[0m[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc195b463c0
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc191e0d350
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc193ebd028
+[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc193f41d50
+[bench_worker.cc:266] node 1's addrs: 0x7fc19f771bc8
+[bench_worker.cc:266] node 3's addrs: 0x7fc18dc28c78
+[bench_worker.cc:266] node 1's addrs: 0x7fc195bcb0e8
+[bench_worker.cc:266] node 3's addrs: 0x7fc191e92078
+[0m[0m[0m[0m[bench_worker.cc:260] routine 11
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc197a67920
+[0m[0m[bench_worker.cc:260] routine 9
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc193fc6a78
+[bench_worker.cc:266] node 0's addrs: 0x7fc18dcad9a0
+[bench_worker.cc:266] node 2's addrs: 0x7fc195c4fe10
+[bench_worker.cc:266] node 0's addrs: 0x7fc191f16da0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18fc53c28
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18dd326c8
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19f7f68f0
+[0m[bench_worker.cc:260] routine 12
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc191f9bac8
+[bench_worker.cc:266] node 1's addrs: 0x7fc197aec648
+[bench_worker.cc:266] node 0's addrs: 0x7fc19404b7a0
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19f87b618
+[bench_worker.cc:266] node 3's addrs: 0x7fc195cd4b38
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc1920207f0
+[bench_worker.cc:266] node 1's addrs: 0x7fc1940d04c8
+[0m[0m[0m[bench_worker.cc:260] routine 11
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc195d59860
+[bench_worker.cc:266] node 2's addrs: 0x7fc18fcd8950
+[bench_worker.cc:266] node 2's addrs: 0x7fc18ddb73f0
+[bench_worker.cc:260] routine 11
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc197b71370
+[bench_worker.cc:266] node 2's addrs: 0x7fc1941551f0
+[0m[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1941d9f18
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18de3c118
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1920a5518
+[0m[bench_worker.cc:260] routine 13
+[bench_worker.cc:266] node 1's addrs: 0x7fc195dde588
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19f900340
+[bench_worker.cc:260] routine 10
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc197bf6098
+[bench_worker.cc:260] routine 12
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18fd5d678
+[bench_worker.cc:266] node 0's addrs: 0x7fc18dec0e40
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18df45b68
+[0m[0m[bench_worker.cc:260] routine 11
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19212a240
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19425ec40
+[0m[bench_worker.cc:260] routine 10
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19f985068
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc197c7adc0
+[bench_worker.cc:266] node 2's addrs: 0x7fc195e632b0
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1942e3968
+[bench_worker.cc:266] node 3's addrs: 0x7fc195ee7fd8
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18fde23a0
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18dfca890
+[bench_worker.cc:266] node 1's addrs: 0x7fc1921aef68
+[0m[bench_worker.cc:260] routine 12
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19fa09d90
+[bench_worker.cc:266] node 1's addrs: 0x7fc197cffae8
+[bench_worker.cc:266] node 2's addrs: 0x7fc192233c90
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18e04f5b8
+[bench_worker.cc:266] node 2's addrs: 0x7fc194368690
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc195f6cd00
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc195ff1a28
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19fa8eab8
+[bench_worker.cc:260] routine 11
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1922b89b8
+[0m[0m[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc197d84810
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc196076750
+[bench_worker.cc:266] node 0's addrs: 0x7fc18e0d42e0
+[bench_worker.cc:266] node 1's addrs: 0x7fc18fe670c8
+[0m[bench_worker.cc:260] routine 13
+[0m[0m[bench_worker.cc:260] routine 12
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18e159008
+[bench_worker.cc:266] node 2's addrs: 0x7fc18feebdf0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1960fb478
+[bench_worker.cc:266] node 3's addrs: 0x7fc1943ed3b8
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc197e09538
+[bench_worker.cc:266] node 0's addrs: 0x7fc19233d6e0
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18ff70b18
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19fb137e0
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18e1ddd30
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1923c2408
+[bench_worker.cc:270] offsets:
+[0m[bench_worker.cc:260] routine 12
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc18e262a58
+[bench_worker.cc:266] node 0's addrs: 0x7fc197e8e260
+[bench_worker.cc:260] routine 11
+[0m[0m[bench_worker.cc:260] routine 13
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19fb98508
+[0m[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19fc1d230
+[bench_worker.cc:274] routine 0
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc192447130
+[bench_worker.cc:266] node 0's addrs: 0x7fc1961801a0
+[0m[0m[bench_worker.cc:260] routine 12
+[0m[0m[bench_worker.cc:266] node 0's addrs: 0x7fc18e2e7780
+[bench_worker.cc:266] node 0's addrs: 0x7fc18fff5840
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19fca1f58
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1924cbe58
+[0m[0m[bench_worker.cc:277] node 0's offset: 10589978656
+[bench_worker.cc:260] routine 13
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc197f12f88
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18e36c4a8
+[bench_worker.cc:266] node 0's addrs: 0x7fc19fd26c80
+[bench_worker.cc:266] node 1's addrs: 0x7fc19007a568
+[bench_worker.cc:266] node 1's addrs: 0x7fc196204ec8
+[0m[0m[bench_worker.cc:277] node 1's offset: 10590522696
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc196289bf0
+[bench_worker.cc:266] node 2's addrs: 0x7fc197f97cb0
+[0m[0m[bench_worker.cc:270] offsets:
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18e3f11d0
+[bench_worker.cc:266] node 2's addrs: 0x7fc1900ff290
+[0m[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19fdab9a8
+[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc19630e918
+[0m[bench_worker.cc:266] node 3's addrs: 0x7fc190183fb8
+[bench_worker.cc:277] node 2's offset: 10591066736
+[bench_worker.cc:270] offsets:
+[bench_worker.cc:274] routine 0
+[bench_worker.cc:266] node 3's addrs: 0x7fc19801c9d8
+[0m[bench_worker.cc:260] routine 13
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc19fe306d0
+[bench_worker.cc:266] node 3's addrs: 0x7fc18e475ef8
+[0m[0m[bench_worker.cc:274] routine 0
+[0m[0m[bench_worker.cc:277] node 0's offset: 10622621056
+[0m[0m[bench_worker.cc:277] node 0's offset: 10557336256
+[0m[bench_worker.cc:260] routine 12
+[bench_worker.cc:266] node 3's addrs: 0x7fc19feb53f8
+[0m[0m[bench_worker.cc:277] node 1's offset: 10557880296
+[bench_worker.cc:277] node 1's offset: 10623165096
+[0m[bench_worker.cc:277] node 3's offset: 10591610776
+[0m[0m[bench_worker.cc:260] routine 13
+[bench_worker.cc:266] node 0's addrs: 0x7fc1980a1700
+[0m[0m[bench_worker.cc:277] node 2's offset: 10623709136
+[0m[0m[bench_worker.cc:270] offsets:
+[bench_worker.cc:266] node 0's addrs: 0x7fc190208ce0
+[0m[bench_worker.cc:277] node 2's offset: 10558424336
+[0m[bench_worker.cc:277] node 3's offset: 10624253176
+[0m[bench_worker.cc:274] routine 1
+[0m[bench_worker.cc:266] node 1's addrs: 0x7fc19028da08
+[0m[bench_worker.cc:277] node 0's offset: 10592154816
+[bench_worker.cc:274] routine 0
+[bench_worker.cc:266] node 0's addrs: 0x7fc18e4fac20
+[bench_worker.cc:277] node 3's offset: 10558968376
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc190312730
+[0m[bench_worker.cc:274] routine 1
+[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc18e57f948
+[0m[bench_worker.cc:277] node 0's offset: 10559512416
+[bench_worker.cc:266] node 1's addrs: 0x7fc198126428
+[0m[0m[0m[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc190397458
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc18e604670
+[bench_worker.cc:266] node 2's addrs: 0x7fc1981ab150
+[bench_worker.cc:277] node 0's offset: 10785833056
+[0m[bench_worker.cc:274] routine 1
+[0m[bench_worker.cc:277] node 1's offset: 10560056456
+[0m[0m[0m[bench_worker.cc:260] routine 13
+[0m[0m[bench_worker.cc:277] node 1's offset: 10786377096
+[bench_worker.cc:277] node 1's offset: 10592698856
+[bench_worker.cc:266] node 3's addrs: 0x7fc19822fe78
+[bench_worker.cc:277] node 2's offset: 10560600496
+[bench_worker.cc:277] node 0's offset: 10624797216
+[0m[bench_worker.cc:266] node 0's addrs: 0x7fc19041c180
+[0m[0m[bench_worker.cc:277] node 2's offset: 10593242896
+[0m[0m[bench_worker.cc:270] offsets:
+[0m[bench_worker.cc:277] node 1's offset: 10625341256
+[bench_worker.cc:266] node 3's addrs: 0x7fc18e689398
+[0m[0m[bench_worker.cc:277] node 3's offset: 10561144536
+[0m[bench_worker.cc:277] node 2's offset: 10786921136
+[0m[0m[bench_worker.cc:277] node 2's offset: 10625885296
+[0m[bench_worker.cc:277] node 3's offset: 10787465176
+[bench_worker.cc:274] routine 2
+[0m[bench_worker.cc:277] node 3's offset: 10593786936
+[bench_worker.cc:270] offsets:
+[bench_worker.cc:274] routine 0
+[bench_worker.cc:277] node 3's offset: 10626429336
+[0m[0m[bench_worker.cc:274] routine 2
+[0m[0m[0m[0m[bench_worker.cc:266] node 1's addrs: 0x7fc1904a0ea8
+[0m[bench_worker.cc:277] node 0's offset: 10655263456
+[0m[bench_worker.cc:277] node 0's offset: 10561688576
+[bench_worker.cc:277] node 0's offset: 10626973376
+[0m[bench_worker.cc:266] node 2's addrs: 0x7fc190525bd0
+[bench_worker.cc:274] routine 2
+[0m[bench_worker.cc:274] routine 0
+[0m[0m[bench_worker.cc:277] node 1's offset: 10627517416
+[bench_worker.cc:274] routine 1
+[0m[0m[bench_worker.cc:266] node 3's addrs: 0x7fc1905aa8f8
+[bench_worker.cc:277] node 1's offset: 10562232616
+[0m[0m[bench_worker.cc:277] node 1's offset: 10655807496
+[0m[bench_worker.cc:277] node 0's offset: 10492051456
+[0m[bench_worker.cc:277] node 2's offset: 10656351536
+[0m[0m[0m[bench_worker.cc:277] node 0's offset: 10594330976
+[bench_worker.cc:277] node 0's offset: 10788009216
+[bench_worker.cc:277] node 3's offset: 10656895576
+[bench_worker.cc:277] node 1's offset: 10492595496
+[0m[bench_worker.cc:270] offsets:
+[0m[0m[bench_worker.cc:277] node 2's offset: 10628061456
+[0m[bench_worker.cc:277] node 1's offset: 10594875016
+[0m[bench_worker.cc:277] node 2's offset: 10562776656
+[0m[0m[bench_worker.cc:277] node 2's offset: 10493139536
+[bench_worker.cc:274] routine 1
+[bench_worker.cc:277] node 2's offset: 10595419056
+[0m[bench_worker.cc:277] node 3's offset: 10628605496
+[0m[0m[bench_worker.cc:274] routine 0
+[0m[bench_worker.cc:277] node 3's offset: 10563320696
+[bench_worker.cc:277] node 1's offset: 10788553256
+[0m[bench_worker.cc:274] routine 3
+[bench_worker.cc:277] node 3's offset: 10493683576
+[0m[0m[bench_worker.cc:274] routine 3
+[0m[bench_worker.cc:277] node 0's offset: 10524693856
+[0m[bench_worker.cc:274] routine 1
+[0m[0m[bench_worker.cc:277] node 0's offset: 10657439616
+[0m[bench_worker.cc:277] node 2's offset: 10789097296
+[0m[bench_worker.cc:277] node 0's offset: 10494227616
+[bench_worker.cc:277] node 0's offset: 10629149536
+[0m[bench_worker.cc:277] node 0's offset: 10563864736
+[bench_worker.cc:277] node 3's offset: 10595963096
+[0m[0m[0m[0m[bench_worker.cc:274] routine 3
+[bench_worker.cc:277] node 1's offset: 10629693576
+[bench_worker.cc:277] node 3's offset: 10789641336
+[bench_worker.cc:277] node 1's offset: 10525237896
+[0m[bench_worker.cc:277] node 1's offset: 10657983656
+[bench_worker.cc:277] node 1's offset: 10494771656
+[0m[0m[0m[0m[bench_worker.cc:277] node 2's offset: 10525781936
+[0m[0m[bench_worker.cc:277] node 0's offset: 10596507136
+[0m[0m[bench_worker.cc:274] routine 2
+[bench_worker.cc:277] node 2's offset: 10658527696
+[bench_worker.cc:277] node 2's offset: 10630237616
+[0m[bench_worker.cc:277] node 1's offset: 10564408776
+[bench_worker.cc:277] node 3's offset: 10526325976
+[0m[0m[bench_worker.cc:277] node 2's offset: 10495315696
+[0m[bench_worker.cc:274] routine 1
+[bench_worker.cc:277] node 3's offset: 10630781656
+[0m[bench_worker.cc:277] node 1's offset: 10597051176
+[0m[bench_worker.cc:277] node 2's offset: 10597595216
+[0m[bench_worker.cc:277] node 2's offset: 10564952816
+[0m[0m[bench_worker.cc:277] node 0's offset: 10790185376
+[0m[bench_worker.cc:277] node 3's offset: 10659071736
+[0m[bench_worker.cc:274] routine 4
+[0m[bench_worker.cc:277] node 3's offset: 10495859736
+[0m[0m[bench_worker.cc:277] node 3's offset: 10565496856
+[bench_worker.cc:277] node 3's offset: 10598139256
+[0m[bench_worker.cc:274] routine 2
+[0m[0m[bench_worker.cc:274] routine 4
+[0m[bench_worker.cc:277] node 0's offset: 10526870016
+[0m[bench_worker.cc:277] node 0's offset: 10659615776
+[bench_worker.cc:274] routine 2
+[bench_worker.cc:274] routine 4
+[0m[bench_worker.cc:277] node 0's offset: 10566040896
+[0m[0m[bench_worker.cc:277] node 0's offset: 10631325696
+[bench_worker.cc:277] node 1's offset: 10790729416
+[0m[bench_worker.cc:277] node 1's offset: 10527414056
+[bench_worker.cc:277] node 1's offset: 10660159816
+[0m[bench_worker.cc:277] node 0's offset: 10598683296
+[0m[0m[0m[bench_worker.cc:277] node 0's offset: 10496403776
+[bench_worker.cc:277] node 2's offset: 10791273456
+[0m[0m[bench_worker.cc:277] node 1's offset: 10631869736
+[bench_worker.cc:277] node 2's offset: 10660703856
+[0m[bench_worker.cc:277] node 1's offset: 10566584936
+[0m[0m[0m[bench_worker.cc:277] node 3's offset: 10661247896
+[bench_worker.cc:277] node 2's offset: 10632413776
+[bench_worker.cc:277] node 1's offset: 10599227336
+[0m[bench_worker.cc:277] node 2's offset: 10527958096
+[0m[0m[bench_worker.cc:277] node 2's offset: 10567128976
+[0m[0m[bench_worker.cc:277] node 1's offset: 10496947816
+[0m[bench_worker.cc:274] routine 3
+[0m[0m[bench_worker.cc:277] node 0's offset: 10661791936
+[0m[bench_worker.cc:277] node 2's offset: 10497491856
+[bench_worker.cc:277] node 2's offset: 10599771376
+[bench_worker.cc:277] node 3's offset: 10528502136
+[bench_worker.cc:277] node 3's offset: 10632957816
+[bench_worker.cc:277] node 3's offset: 10567673016
+[bench_worker.cc:277] node 3's offset: 10791817496
+[0m[bench_worker.cc:277] node 1's offset: 10662335976
+[0m[0m[0m[bench_worker.cc:274] routine 5
+[0m[bench_worker.cc:274] routine 2
+[0m[bench_worker.cc:277] node 2's offset: 10662880016
+[bench_worker.cc:277] node 3's offset: 10600315416
+[0m[0m[bench_worker.cc:277] node 3's offset: 10498035896
+[0m[bench_worker.cc:274] routine 3
+[0m[0m[0m[0m[bench_worker.cc:277] node 0's offset: 10568217056
+[bench_worker.cc:274] routine 5
+[0m[bench_worker.cc:277] node 0's offset: 10792361536
+[0m[bench_worker.cc:277] node 0's offset: 10529046176
+[0m[bench_worker.cc:277] node 3's offset: 10663424056
+[0m[0m[bench_worker.cc:277] node 0's offset: 10633501856
+[0m[bench_worker.cc:277] node 1's offset: 10634045896
+[0m[bench_worker.cc:277] node 1's offset: 10568761096
+[bench_worker.cc:274] routine 5
+[0m[bench_worker.cc:277] node 1's offset: 10792905576
+[0m[bench_worker.cc:274] routine 4
+[bench_worker.cc:274] routine 3
+[bench_worker.cc:277] node 1's offset: 10529590216
+[0m[bench_worker.cc:277] node 2's offset: 10793449616
+[0m[bench_worker.cc:277] node 2's offset: 10634589936
+[0m[bench_worker.cc:277] node 0's offset: 10600859456
+[bench_worker.cc:277] node 3's offset: 10635133976
+[0m[0m[bench_worker.cc:277] node 2's offset: 10530134256
+[0m[bench_worker.cc:277] node 3's offset: 10793993656
+[0m[bench_worker.cc:277] node 2's offset: 10569305136
+[bench_worker.cc:277] node 0's offset: 10498579936
+[bench_worker.cc:277] node 3's offset: 10530678296
+[0m[0m[0m[bench_worker.cc:277] node 1's offset: 10601403496
+[bench_worker.cc:274] routine 4
+[0m[0m[0m[bench_worker.cc:277] node 2's offset: 10601947536
+[0m[bench_worker.cc:277] node 1's offset: 10499123976
+[bench_worker.cc:274] routine 3
+[0m[0m[bench_worker.cc:277] node 0's offset: 10794537696
+[bench_worker.cc:277] node 0's offset: 10663968096
+[0m[bench_worker.cc:277] node 3's offset: 10602491576
+[bench_worker.cc:274] routine 6
+[0m[0m[0m[bench_worker.cc:277] node 3's offset: 10569849176
+[0m[bench_worker.cc:274] routine 6
+[bench_worker.cc:277] node 2's offset: 10499668016
+[0m[0m[bench_worker.cc:277] node 1's offset: 10664512136
+[bench_worker.cc:277] node 1's offset: 10795081736
+[0m[bench_worker.cc:277] node 0's offset: 10531222336
+[0m[0m[bench_worker.cc:277] node 2's offset: 10795625776
+[0m[bench_worker.cc:277] node 1's offset: 10531766376
+[bench_worker.cc:277] node 3's offset: 10500212056
+[bench_worker.cc:277] node 0's offset: 10635678016
+[0m[0m[bench_worker.cc:277] node 3's offset: 10796169816
+[bench_worker.cc:277] node 0's offset: 10603035616
+[0m[0m[bench_worker.cc:274] routine 4
+[0m[0m[bench_worker.cc:277] node 2's offset: 10665056176
+[0m[bench_worker.cc:277] node 3's offset: 10665600216
+[0m[bench_worker.cc:274] routine 5
+[0m[0m[bench_worker.cc:277] node 1's offset: 10603579656
+[0m[bench_worker.cc:277] node 0's offset: 10500756096
+[0m[bench_worker.cc:277] node 1's offset: 10501300136
+[0m[0m[bench_worker.cc:274] routine 6
+[0m[bench_worker.cc:274] routine 5
+[bench_worker.cc:277] node 1's offset: 10636222056
+[bench_worker.cc:277] node 0's offset: 10796713856
+[bench_worker.cc:277] node 2's offset: 10532310416
+[bench_worker.cc:277] node 2's offset: 10501844176
+[0m[bench_worker.cc:277] node 0's offset: 10570393216
+[0m[0m[0m[bench_worker.cc:277] node 3's offset: 10502388216
+[0m[bench_worker.cc:277] node 0's offset: 10666144256
+[0m[0m[bench_worker.cc:277] node 1's offset: 10797257896
+[bench_worker.cc:277] node 3's offset: 10532854456
+[0m[bench_worker.cc:277] node 2's offset: 10604123696
+[bench_worker.cc:277] node 2's offset: 10636766096
+[0m[bench_worker.cc:277] node 1's offset: 10666688296
+[0m[0m[bench_worker.cc:277] node 2's offset: 10667232336
+[0m[bench_worker.cc:277] node 3's offset: 10637310136
+[0m[0m[bench_worker.cc:277] node 2's offset: 10797801936
+[bench_worker.cc:277] node 1's offset: 10570937256
+[0m[bench_worker.cc:277] node 3's offset: 10604667736
+[0m[bench_worker.cc:274] routine 5
+[0m[bench_worker.cc:274] routine 7
+[bench_worker.cc:277] node 2's offset: 10571481296
+[bench_worker.cc:277] node 3's offset: 10667776376
+[0m[0m[bench_worker.cc:274] routine 7
+[bench_worker.cc:277] node 0's offset: 10502932256
+[0m[0m[bench_worker.cc:274] routine 4
+[0m[0m[bench_worker.cc:277] node 0's offset: 10605211776
+[0m[bench_worker.cc:277] node 0's offset: 10637854176
+[bench_worker.cc:274] routine 6
+[bench_worker.cc:277] node 0's offset: 10533398496
+[0m[bench_worker.cc:277] node 1's offset: 10503476296
+[0m[0m[bench_worker.cc:277] node 1's offset: 10638398216
+[0m[bench_worker.cc:277] node 3's offset: 10798345976
+[0m[bench_worker.cc:277] node 2's offset: 10638942256
+[0m[bench_worker.cc:277] node 2's offset: 10504020336
+[0m[0m[bench_worker.cc:277] node 3's offset: 10572025336
+[0m[0m[bench_worker.cc:277] node 3's offset: 10504564376
+[0m[bench_worker.cc:277] node 0's offset: 10668320416
+[0m[bench_worker.cc:274] routine 6
+[0m[0m[bench_worker.cc:277] node 1's offset: 10605755816
+[bench_worker.cc:274] routine 6
+[bench_worker.cc:277] node 1's offset: 10668864456
+[bench_worker.cc:274] routine 7
+[0m[0m[0m[bench_worker.cc:277] node 0's offset: 10798890016
+[bench_worker.cc:277] node 1's offset: 10533942536
+[0m[0m[bench_worker.cc:277] node 2's offset: 10606299856
+[0m[0m[bench_worker.cc:277] node 1's offset: 10799434056
+[0m[bench_worker.cc:277] node 3's offset: 10639486296
+[bench_worker.cc:277] node 0's offset: 10505108416
+[0m[bench_worker.cc:277] node 3's offset: 10606843896
+[0m[bench_worker.cc:277] node 2's offset: 10669408496
+[0m[bench_worker.cc:274] routine 8
+[0m[0m[bench_worker.cc:274] routine 8
+[bench_worker.cc:277] node 0's offset: 10572569376
+[bench_worker.cc:277] node 0's offset: 10607387936
+[bench_worker.cc:277] node 2's offset: 10799978096
+[0m[bench_worker.cc:277] node 1's offset: 10505652456
+[bench_worker.cc:277] node 3's offset: 10669952536
+[bench_worker.cc:277] node 2's offset: 10534486576
+[0m[0m[bench_worker.cc:277] node 3's offset: 10800522136
+[0m[0m[bench_worker.cc:277] node 0's offset: 10640030336
+[0m[bench_worker.cc:277] node 1's offset: 10573113416
+[0m[0m[bench_worker.cc:274] routine 7
+[bench_worker.cc:277] node 2's offset: 10506196496
+[0m[bench_worker.cc:277] node 1's offset: 10640574376
+[0m[0m[bench_worker.cc:277] node 2's offset: 10641118416
+[0m[bench_worker.cc:277] node 1's offset: 10607931976
+[0m[0m[bench_worker.cc:277] node 3's offset: 10506740536
+[0m[0m[bench_worker.cc:274] routine 7
+[bench_worker.cc:274] routine 7
+[bench_worker.cc:277] node 3's offset: 10641662456
+[bench_worker.cc:277] node 2's offset: 10573657456
+[bench_worker.cc:277] node 3's offset: 10535030616
+[0m[0m[bench_worker.cc:274] routine 9
+[0m[0m[bench_worker.cc:277] node 0's offset: 10670496576
+[0m[0m[bench_worker.cc:277] node 2's offset: 10608476016
+[bench_worker.cc:277] node 0's offset: 10507284576
+[0m[bench_worker.cc:277] node 0's offset: 10801066176
+[0m[bench_worker.cc:277] node 1's offset: 10671040616
+[bench_worker.cc:274] routine 5
+[0m[0m[0m[bench_worker.cc:277] node 1's offset: 10507828616
+[bench_worker.cc:277] node 0's offset: 10642206496
+[0m[bench_worker.cc:277] node 0's offset: 10535574656
+[bench_worker.cc:277] node 3's offset: 10574201496
+[bench_worker.cc:277] node 1's offset: 10642750536
+[0m[0m[0m[bench_worker.cc:274] routine 8
+[0m[bench_worker.cc:277] node 2's offset: 10508372656
+[bench_worker.cc:277] node 2's offset: 10671584656
+[bench_worker.cc:277] node 1's offset: 10536118696
+[0m[0m[bench_worker.cc:277] node 1's offset: 10801610216
+[bench_worker.cc:277] node 0's offset: 10574745536
+[0m[0m[bench_worker.cc:277] node 1's offset: 10575289576
+[0m[bench_worker.cc:277] node 2's offset: 10802154256
+[0m[0m[0m[bench_worker.cc:277] node 3's offset: 10508916696
+[bench_worker.cc:277] node 3's offset: 10609020056
+[bench_worker.cc:277] node 2's offset: 10536662736
+[bench_worker.cc:277] node 2's offset: 10643294576
+[bench_worker.cc:277] node 3's offset: 10672128696
+[0m[0m[0m[0m[bench_worker.cc:274] routine 9
+[0m[bench_worker.cc:277] node 2's offset: 10575833616
+[0m[bench_worker.cc:274] routine 8
+[bench_worker.cc:277] node 3's offset: 10643838616
+[0m[bench_worker.cc:274] routine 8
+[bench_worker.cc:277] node 3's offset: 10537206776
+[0m[0m[0m[bench_worker.cc:277] node 0's offset: 10509460736
+[0m[bench_worker.cc:274] routine 10
+[0m[0m[0m[bench_worker.cc:277] node 0's offset: 10609564096
+[bench_worker.cc:277] node 0's offset: 10672672736
+[bench_worker.cc:277] node 3's offset: 10802698296
+[0m[bench_worker.cc:277] node 0's offset: 10644382656
+[bench_worker.cc:277] node 1's offset: 10510004776
+[bench_worker.cc:274] routine 6
+[0m[0m[bench_worker.cc:277] node 1's offset: 10610108136
+[0m[0m[bench_worker.cc:277] node 1's offset: 10673216776
+[bench_worker.cc:277] node 3's offset: 10576377656
+[0m[bench_worker.cc:277] node 1's offset: 10644926696
+[0m[bench_worker.cc:277] node 2's offset: 10645470736
+[0m[bench_worker.cc:274] routine 9
+[bench_worker.cc:274] routine 8
+[0m[0m[bench_worker.cc:277] node 0's offset: 10803242336
+[bench_worker.cc:277] node 2's offset: 10510548816
+[0m[0m[bench_worker.cc:277] node 3's offset: 10646014776
+[bench_worker.cc:277] node 2's offset: 10673760816
+[bench_worker.cc:277] node 2's offset: 10610652176
+[0m[bench_worker.cc:277] node 0's offset: 10576921696
+[0m[0m[0m[bench_worker.cc:277] node 1's offset: 10577465736
+[0m[bench_worker.cc:277] node 3's offset: 10611196216
+[0m[0m[bench_worker.cc:277] node 3's offset: 10511092856
+[bench_worker.cc:277] node 3's offset: 10674304856
+[0m[bench_worker.cc:277] node 1's offset: 10803786376
+[bench_worker.cc:274] routine 11
+[0m[bench_worker.cc:277] node 0's offset: 10537750816
+[0m[0m[0m[bench_worker.cc:274] routine 9
+[0m[bench_worker.cc:277] node 1's offset: 10538294856
+[bench_worker.cc:277] node 0's offset: 10646558816
+[0m[bench_worker.cc:277] node 2's offset: 10578009776
+[0m[bench_worker.cc:274] routine 10
+[0m[0m[bench_worker.cc:277] node 1's offset: 10647102856
+[bench_worker.cc:277] node 2's offset: 10804330416
+[0m[bench_worker.cc:274] routine 9
+[0m[bench_worker.cc:277] node 2's offset: 10647646896
+[0m[bench_worker.cc:277] node 2's offset: 10538838896
+[bench_worker.cc:277] node 3's offset: 10578553816
+[0m[bench_worker.cc:277] node 0's offset: 10611740256
+[0m[0m[bench_worker.cc:277] node 3's offset: 10648190936
+[0m[bench_worker.cc:277] node 0's offset: 10511636896
+[0m[0m[bench_worker.cc:274] routine 10
+[0m[bench_worker.cc:277] node 3's offset: 10539382936
+[bench_worker.cc:277] node 0's offset: 10579097856
+[0m[bench_worker.cc:277] node 3's offset: 10804874456
+[bench_worker.cc:277] node 1's offset: 10612284296
+[0m[bench_worker.cc:277] node 0's offset: 10674848896
+[0m[bench_worker.cc:277] node 1's offset: 10675392936
+[0m[0m[bench_worker.cc:274] routine 9
+[0m[bench_worker.cc:274] routine 7
+[0m[bench_worker.cc:274] routine 12
+[bench_worker.cc:277] node 2's offset: 10675936976
+[0m[0m[bench_worker.cc:277] node 1's offset: 10512180936
+[0m[bench_worker.cc:277] node 1's offset: 10579641896
+[bench_worker.cc:277] node 2's offset: 10612828336
+[0m[0m[0m[bench_worker.cc:277] node 0's offset: 10539926976
+[0m[0m[bench_worker.cc:277] node 0's offset: 10648734976
+[bench_worker.cc:277] node 3's offset: 10676481016
+[0m[bench_worker.cc:277] node 0's offset: 10805418496
+[bench_worker.cc:277] node 1's offset: 10540471016
+[bench_worker.cc:277] node 2's offset: 10512724976
+[0m[bench_worker.cc:277] node 1's offset: 10649279016
+[0m[0m[bench_worker.cc:277] node 3's offset: 10613372376
+[bench_worker.cc:274] routine 10
+[0m[0m[0m[0m[0m[bench_worker.cc:277] node 2's offset: 10541015056
+[bench_worker.cc:274] routine 11
+[bench_worker.cc:277] node 2's offset: 10580185936
+[bench_worker.cc:277] node 3's offset: 10513269016
+[bench_worker.cc:277] node 0's offset: 10677025056
+[0m[bench_worker.cc:277] node 2's offset: 10649823056
+[0m[bench_worker.cc:277] node 1's offset: 10677569096
+[0m[0m[bench_worker.cc:277] node 1's offset: 10805962536
+[0m[0m[bench_worker.cc:277] node 3's offset: 10650367096
+[bench_worker.cc:277] node 2's offset: 10678113136
+[0m[bench_worker.cc:277] node 3's offset: 10541559096
+[0m[bench_worker.cc:277] node 3's offset: 10678657176
+[0m[0m[bench_worker.cc:277] node 0's offset: 10613916416
+[0m[bench_worker.cc:277] node 1's offset: 10614460456
+[0m[0m[bench_worker.cc:274] routine 8
+[bench_worker.cc:274] routine 10
+[bench_worker.cc:277] node 3's offset: 10580729976
+[0m[bench_worker.cc:277] node 2's offset: 10806506576
+[0m[0m[bench_worker.cc:274] routine 11
+[0m[bench_worker.cc:277] node 0's offset: 10542103136
+[0m[0m[bench_worker.cc:277] node 2's offset: 10615004496
+[0m[bench_worker.cc:277] node 0's offset: 10679201216
+[bench_worker.cc:274] routine 13
+[bench_worker.cc:277] node 3's offset: 10615548536
+[0m[0m[bench_worker.cc:274] routine 11
+[bench_worker.cc:277] node 0's offset: 10513813056
+[0m[0m[bench_worker.cc:277] node 3's offset: 10807050616
+[0m[0m[bench_worker.cc:277] node 1's offset: 10679745256
+[bench_worker.cc:277] node 0's offset: 10650911136
+[0m[bench_worker.cc:274] routine 12
+[bench_worker.cc:274] routine 10
+[0m[0m[bench_worker.cc:277] node 2's offset: 10680289296
+[0m[bench_worker.cc:277] node 1's offset: 10651455176
+[0m[bench_worker.cc:277] node 3's offset: 10680833336
+[0m[0m[bench_worker.cc:277] node 1's offset: 10514357096
+[0m[bench_worker.cc:277] node 2's offset: 10651999216
+[0m[bench_worker.cc:277] node 0's offset: 10616092576
+[0m[0m[bench_worker.cc:277] node 1's offset: 10542647176
+[bench_worker.cc:274] routine 12
+[0m[bench_worker.cc:277] node 0's offset: 10807594656
+[0m[bench_worker.cc:277] node 1's offset: 10616636616
+[bench_worker.cc:277] node 1's offset: 10808138696
+[0m[bench_worker.cc:277] node 0's offset: 10581274016
+[0m[bench_worker.cc:277] node 0's offset: 10681377376
+[bench_worker.cc:277] node 3's offset: 10652543256
+[0m[bench_worker.cc:277] node 2's offset: 10543191216
+[0m[0m[bench_worker.cc:277] node 2's offset: 10808682736
+[0m[bench_worker.cc:277] node 1's offset: 10581818056
+[0m[0m[bench_worker.cc:277] node 2's offset: 10514901136
+[0m[0mregister RPCID 31.
+[bench_worker.cc:277] node 2's offset: 10582362096
+register RPCID 30.
+[bench_worker.cc:277] node 3's offset: 10809226776
+[0m[bench_worker.cc:277] node 1's offset: 10681921416
+[bench_worker.cc:277] node 3's offset: 10543735256
+[0m[bench_worker.cc:277] node 2's offset: 10617180656
+[0m[0m[0m[bench_worker.cc:274] routine 9
+[bench_worker.cc:274] routine 11
+[bench_worker.cc:277] node 3's offset: 10515445176
+[bench_worker.cc:277] node 3's offset: 10617724696
+[0m[bench_worker.cc:277] node 0's offset: 10544279296
+[0m[0m[bench_worker.cc:277] node 2's offset: 10682465456
+[0m[0m[bench_worker.cc:277] node 1's offset: 10544823336
+[0m[bench_worker.cc:277] node 3's offset: 10582906136
+[bench_worker.cc:274] routine 11
+[0m[bench_worker.cc:277] node 3's offset: 10683009496
+[bench_worker.cc:274] routine 13
+[0m[0m[bench_worker.cc:277] node 2's offset: 10545367376
+[0m[0m[bench_worker.cc:277] node 0's offset: 10618268736
+[0m[bench_worker.cc:274] routine 13
+[bench_worker.cc:277] node 0's offset: 10809770816
+[0m[bench_worker.cc:277] node 3's offset: 10545911416
+[0m[0m[bench_worker.cc:277] node 0's offset: 10515989216
+[bench_worker.cc:277] node 1's offset: 10618812776
+[0m[bench_worker.cc:277] node 1's offset: 10810314856
+[bench_worker.cc:274] routine 12
+[bench_worker.cc:277] node 2's offset: 10619356816
+[bench_worker.cc:274] routine 10
+[0m[0m[0m[0m[0m[bench_worker.cc:277] node 1's offset: 10516533256
+[bench_worker.cc:277] node 3's offset: 10619900856
+[bench_worker.cc:277] node 0's offset: 10683553536
+[0m[0m[bench_worker.cc:277] node 2's offset: 10517077296
+[0m[bench_worker.cc:277] node 2's offset: 10810858896
+[0m[0m[0mregister RPCID 31.
+register RPCID 30.
+[bench_worker.cc:277] node 3's offset: 10811402936
+[0m[bench_worker.cc:277] node 3's offset: 10517621336
+[bench_worker.cc:277] node 0's offset: 10546455456
+[0m[bench_worker.cc:277] node 1's offset: 10684097576
+[0m[bench_worker.cc:277] node 0's offset: 10583450176
+[bench_worker.cc:274] routine 12
+[0m[bench_worker.cc:277] node 1's offset: 10546999496
+[0m[bench_worker.cc:277] node 0's offset: 10811946976
+[0m[0m[bench_worker.cc:274] routine 12
+[bench_worker.cc:277] node 2's offset: 10684641616
+[0m[bench_worker.cc:277] node 2's offset: 10547543536
+[0m[bench_worker.cc:277] node 1's offset: 10583994216
+[0m[bench_worker.cc:277] node 3's offset: 10685185656
+[0m[bench_worker.cc:277] node 0's offset: 10518165376
+[0m[0mregister RPCID 31.
+register RPCID 30.
+[bench_worker.cc:277] node 2's offset: 10584538256
+[0m[bench_worker.cc:277] node 1's offset: 10812491016
+[0m[0m[bench_worker.cc:277] node 2's offset: 10813035056
+[0m[bench_worker.cc:277] node 3's offset: 10548087576
+[bench_worker.cc:277] node 3's offset: 10585082296
+[bench_worker.cc:277] node 1's offset: 10518709416
+[0m[0m[bench_worker.cc:277] node 2's offset: 10519253456
+[0m[bench_worker.cc:277] node 3's offset: 10813579096
+[0m[bench_worker.cc:274] routine 13
+[0m[bench_worker.cc:274] routine 13
+[0m[bench_worker.cc:274] routine 11
+[0m[bench_worker.cc:277] node 0's offset: 10585626336
+[0m[0m[bench_worker.cc:277] node 0's offset: 10814123136
+[0m[bench_worker.cc:277] node 3's offset: 10519797496
+[bench_worker.cc:277] node 0's offset: 10548631616
+[bench_worker.cc:277] node 1's offset: 10586170376
+[0m[bench_worker.cc:277] node 1's offset: 10814667176
+[0m[0m[0m[bench_worker.cc:277] node 2's offset: 10815211216
+[0m[bench_worker.cc:277] node 2's offset: 10586714416
+[bench_worker.cc:274] routine 13
+[bench_worker.cc:277] node 1's offset: 10549175656
+[0m[0m[bench_worker.cc:277] node 0's offset: 10520341536
+[0m[bench_worker.cc:277] node 3's offset: 10815755256
+[bench_worker.cc:277] node 3's offset: 10587258456
+[0m[bench_worker.cc:277] node 1's offset: 10520885576
+[0m[0m[0mregister RPCID 31.
+register RPCID 30.
+[bench_worker.cc:277] node 2's offset: 10521429616
+[0m[bench_worker.cc:277] node 2's offset: 10549719696
+register RPCID 31.
+register RPCID 30.
+[bench_worker.cc:277] node 3's offset: 10521973656
+[0m[0mregister RPCID 31.
+register RPCID 30.
+[bench_worker.cc:277] node 3's offset: 10550263736
+[0m[bench_worker.cc:274] routine 12
+[0m[bench_worker.cc:277] node 0's offset: 10550807776
+[0m[bench_worker.cc:277] node 1's offset: 10551351816
+[0m[bench_worker.cc:277] node 2's offset: 10551895856
+[0m[bench_worker.cc:277] node 3's offset: 10552439896
+[0m[bench_worker.cc:274] routine 13
+[0m[bench_worker.cc:277] node 0's offset: 10552983936
+[0m[bench_worker.cc:277] node 1's offset: 10553527976
+[0m[bench_worker.cc:277] node 2's offset: 10554072016
+[0m[bench_worker.cc:277] node 3's offset: 10554616056
+[0mregister RPCID 31.
+register RPCID 30.
+[rworker.cc:47] Worker 11 on cpu 20with cor id 0
+[0m[bench_listener2.cc:119] All workers has initilized.
+[0mregister_dgram_mr: 0x60002b128a40 0x7fbf1b400000 21223178240 15
+register RPCID 0.
+register RPCID 1.
+register RPCID 2.
+register RPCID 3.
+[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+[0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[0m[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[0mmy throughput 2.600000 M, abort 44431, commit 2600000, abort ratio 0.016802
+my throughput 2.733915 M, abort 46275, commit 2733915, abort ratio 0.016645
+my throughput 2.677842 M, abort 47775, commit 2677842, abort ratio 0.017528
+my throughput 2.728000 K, abort 49, commit 2728, abort ratio 0.017645
+[bench_listener2.cc:260] start to exit.
+[0mstats for worker 0:
+no timer!
+no timer!
+no timer!
+no timer!
+no timer!
+no timer!
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+SendPayment executed 536478, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+DepositChecking executed 536155, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Balance executed 536979, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Transact saving executed 504705, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Write check executed 536413, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Txn amal executed 504542, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+succs ratio 0.995752
+[bank_worker.h:161] worker exit.
+[0m[bank_worker.h:164] read time: 0ms
+[0m[occ_statistics.h:39] read_lat time: 0ms
+[0m[occ_statistics.h:40] lock time: 0ms
+[0m[occ_statistics.h:41] release_write time: 0ms
+[0m[occ_statistics.h:42] renew_lease time: 0ms
+[0m[occ_statistics.h:43] commit time: 0ms
+[0m[occ_statistics.h:45] 0
+[0m[occ_statistics.h:46] 0
+[0m[occ_statistics.h:47] 0
+[0m[occ_statistics.h:48] 0
+[0m[occ_statistics.h:49] 0
+[0m[occ_statistics.h:51] log time: 0
+[0m[occ_statistics.h:52] temp time: 0ms
+[0m[occ_statistics.h:53] release_read time: 0ms
+[0mmaster routine exit...
+[bench_runner.cc:334] main runner ends.
+[0m

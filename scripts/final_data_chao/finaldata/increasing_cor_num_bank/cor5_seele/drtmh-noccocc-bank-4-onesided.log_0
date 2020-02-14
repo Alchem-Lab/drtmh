@@ -1,0 +1,38 @@
+NOCC started with program [noccocc-onesided]. at 12-08-2019 10:40:08
+[bench_runner.cc:327] Use TCP port 8859
+[0m[bench_runner.cc:349] use scale factor: 24; with total 8 threads.
+[0m[view.h:48] Start with 0 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:132] ycsb param:set len=10 write num=5tx hot10num_hot100num_accounts 100000
+[0m[bank_main.cc:141] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16
+[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0m[librdma] get device name mlx4_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:154] Total logger area 0.00390625G.
+[0m[bench_runner.cc:165] add RDMA store size 9.76562G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.15816G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[Bank], total 9600000 accounts loaded
+[bank_main.cc:332] check cv balance 46280
+[0m[Runner] local db size: 219.996 MB
+[bank_main.cc:443] loading cache.
+[0mGet error msg ERROR on binding,Address already in use
+noccocc-onesided: /home/kezhaohuang/git_repos/drtmh/third_party/libRDMA/src/pre_connector.hpp:33: static int rdmaio::PreConnector::get_listen_socket(const string&, int): Assertion `false' failed.
+stack trace:
+  ./noccocc-onesided() [0x475648]
+  /lib64/libc.so.6 : ()+0x35270
+  /lib64/libc.so.6 : gsignal()+0x37
+  /lib64/libc.so.6 : abort()+0x148
+  /lib64/libc.so.6 : ()+0x2e266
+  /lib64/libc.so.6 : ()+0x2e312
+  ./noccocc-onesided : rdmaio::RdmaCtrl::recv_thread(void*)+0x700
+  /lib64/libpthread.so.0 : ()+0x7e25
+  /lib64/libc.so.6 : clone()+0x6d
+[NOCC] Meet an assertion failure!

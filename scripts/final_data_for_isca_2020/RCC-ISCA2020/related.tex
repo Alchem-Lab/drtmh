@@ -1,0 +1,22 @@
+%\vspace{-2mm}
+\section{Related Work}
+%\vspace{-2mm}
+{\bf Comparisons among concurrency control protocols}
+%Prior work has made valuable comparisons on different concurrency control protocols. 
+\cite{agrawal1987concurrency} uses modeling techniques to reveal the hidden connections between protocols' underlying assumptions and their seemingly contradictory performance results.\cite{huang1991experimental} compares three concurrency control protocols in real-time database systems but only restraints to optimistic ones. \cite{yu2015evaluation,yu2014staring} focuses on the scalability issues and examines seven concurrency control protocols on a main-memory DBMS on top of a simulated 1024-core system.  Deneva~\cite{harding2017evaluation} is the recent work comparing distributed concurrency control protocols in a single unified framework. 
+%Deneva executes all transactions as stored procedures that run on servers, and analyzes the performance of different protocols under different settings like network speed, node number, update rate and contention. 
+\projectname 
+takes the first step in comparing different protocols under the context of various RDMA primitives.
+
+{\bf Comparisons between RDMA primitives}
+%Before \projectname, there has already been work comparing RDMA primitives. 
+\cite{kaminsky2014using} compares the use of RDMA \texttt{WRITE} and RDMA \texttt{READ} when constructing a high performance key-value system. \cite{dragojevic2014farm} finds out that RDMA \texttt{WRITE}'s polling significantly outperforms \texttt{SEND} and \texttt{RECV} verbs when constructing the FaRM's communication subsystem. \cite{kalia2016fasst} shows that UD-based RPC using \texttt{SEND} and \texttt{RECV} outperforms one-sided primitives. \cite{wei2018deconstructing} did more primitive-level comparisons with different payload size. Compared
+to them, \projectname compare the primitives
+with a much wider range of concurrency control algorithms
+on two clusters with different RDMA capabilities.
+
+%applicRDMA nation level in order to reach useful insights in constructing concurrency control protocols.
+
+{\bf Distributed transaction systems}
+High performance transaction systems have been investigated intensively~\cite{Thomson:2012:CFD:2213836.2213838,corbett2013spanner,tu2013speedy,dragojevic2015no,chen2016fast,wei2018deconstructing,lee2015implementing}. Most of them focus on distributed transaction systems~\cite{corbett2013spanner,dragojevic2015no,chen2016fast,wei2018deconstructing} since it is more challenging to implement a high performance transaction system with data partitioned across the nodes. 
+Some works, e.g., \cite{lee2015implementing,dragojevic2015no,chen2016fast,wei2018deconstructing,kalia2016fasst}, focus only on one protocol (i.e., some variants of \occ). Other works like~\cite{wei2015fast,yu2018sundial,Thomson:2012:CFD:2213836.2213838} explore novel techniques like determinism or leasing. However, these works did not explore the opportunity of using RDMA networks.

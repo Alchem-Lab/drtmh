@@ -1,0 +1,53 @@
+NOCC started with program [noccnowait-rpc]. at 14-08-2019 08:19:34
+[tpcc] settings:
+  new_order_remote_item_pct    : 1
+  uniform_item_dist            : 0
+  micro dist :20
+[bench_runner.cc:327] Use TCP port 8850
+[0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 0 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0mTxn NewOrder, 100
+Remote counts: 100
+NAIVE: 4[util.cc:161] malloc_huge_pages: size = 21223178240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 19.7676
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:154] Total logger area 0.00390625G.
+[0m[bench_runner.cc:165] add RDMA store size 9.76562G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 9.99411G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[TPCC loader] total 120 warehouses
+[tpcc_loader.cc:55] loading warehouses.
+[0m[tpcc_loader.cc:122] [TPCC] finished loading warehouse.
+[0m[tpcc_loader.cc:123] [TPCC]   * average warehouse record length: 101 bytes.
+[0m[tpcc_loader.cc:192] [TPCC] finished loading district.
+[0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
+[0m[TPCC] finished loading item
+[TPCC]   * average item record length: 84.1739 bytes
+[TPCC] finished loading stock
+[TPCC]   * average stock record length: 9 bytes
+[tpcc_loader.cc:319] [TPCC] finished loading customer.
+[0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
+[0m[Runner] local db size: 2885.34 MB
+[Runner] Cache size: 0 MB
+Get error msg ERROR on binding,Address already in use
+noccnowait-rpc: /home/huangkz/usc/new/drtmh/third_party/libRDMA/src/pre_connector.hpp:33: static int rdmaio::PreConnector::get_listen_socket(const string&, int): Assertion `false' failed.
+[Tpcc] n_ware_per_worker: 3
+stack trace:
+[NOCC] Meet an assertion failure!
+[bench_listener2.cc:64] try log results to ./results/noccnowait-rpc_tpcc_4_10_15_100.log
+[0m  ./noccnowait-rpc() [0x47e265]
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
+  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
+  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dbd7
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dc82
+  ./noccnowait-rpc : rdmaio::RdmaCtrl::recv_thread(void*)+0x705
+  /lib/x86_64-linux-gnu/libpthread.so.0 : ()+0x76ba
+  /lib/x86_64-linux-gnu/libc.so.6 : clone()+0x6d

@@ -1,0 +1,258 @@
+%\vspace{-2mm}
+\section{Introduction}
+%\vspace{-1mm}
+%\vspace{-1mm}
+%-- The importance and challenges of distributed 
+% transactions. (from VLDB 1st and 2nd paragraph of introduction)
+
+On-line transaction
+processing (OLTP) has ubiquitous 
+applications in important domains including
+banking, stock marketing, e-commerce, etc. 
+As the exponential growth of data volume, single-server Database Management Systems (DBMS) are experiencing extreme difficulties to handle a large number of queries from clients due to limited system resources. Partitioning data sets across distributed machines is
+necessary and becoming increasingly important. 
+%becoming increasingly necessary and important. 
+However, it has been shown that partitioning data such that all queries access only one partition is challenging~\cite{curino2010schism,pavlo2012skew}. Therefore, it is unavoidable to execute distributed transactions that access 
+a set of networked machines. 
+
+Distributed transactions should guarantee:
+(1) atomicity: either all or none of the machines agree to apply the updates; and
+(2) serializability: all transactions must commit in some serializable order. 
+%must have the following properties 1) atomicity. Either all machines agrees to apply the changes or none of them does. 2) serializability. All transactions must commit changes as if they commit in some serializable order. 
+To ensure these properties, distributed transactions have been intensively for decades.
+%there has been a large amount of studies in the database community about distributed transactions since the 1980's. 
+Prior works have proposed many distributed concurrency control protocols such as 2-Phase Locking (2PL)~\cite{Bernstein:1981:CCD:356842.356846}, timestamp-based~\cite{Bernstein:1981:CCD:356842.356846}, multi-versioned~\cite{bernstein1983multiversion}, optimistic concurrency control (OCC)~\cite{kung1981optimistic}, etc. % MaaT~\cite{mahmoud2014maat}etc. 
+
+The well-known challenge of multi-partition serializable concurrency control protocols
+is the significant performance 
+penalties\cite{stonebraker1986case}~\cite{Thomson:2012:CFD:2213836.2213838}.
+When a transaction accesses multiple records over the network, any other transactions it conflicts with have to be serialized~\cite{bailis2014coordination}. Therefore, a high-speed network plays a crucial role in a distributed DBMS system.
+
+
+% -- Performance advantage of RDMA and fast network. (1st paragraph of OSDI in introduction) 
+
+Remote Direct Memory Access (RDMA) is a
+new technology that enables the network interface card (NIC) to access the memory of a 
+remote server in a distributed cluster. 
+Due to its high bandwidth and very low
+latency, RDMA has been actively used in distributed transaction systems~\cite{wei2015fast,kalia2016fasst,chen2016fast,dragojevic2015no} and has enhanced the performance by orders of magnitude compared to traditional systems using TCP/IP. 
+
+RDMA network supports both TCP-like 
+{\em two-sided} communication using primitives \texttt{SEND/RECV}, and
+{\em one-sided} communication using 
+primitives \texttt{READ/WRITE/ATOMIC},
+which are capable of accessing remote memory while bypassing traditional network stack,
+the kernel, and even remote CPUs. 
+To understand the performance of these primitives, there has already been 
+intensive studies investigating the 
+pros and cons of using each primitive. 
+Recently, several works compared two-sided primitives versus one-sided ones~\cite{kalia2014using,dragojevic2014farm,dragojevic2015no,wei2018deconstructing,tsai2017lite} at  {\em primitive-level} using micro-benchmarks. 
+
+
+
+Unfortunately, primitive-level comparisons do not directly transfer to insights of
+building high-performance transaction processing systems. 
+How to effectively leverage the two types of primitives is still a difficult consideration. 
+Two takeaways from recent work RTX~\cite{wei2018deconstructing} are: 
+(1) the best performance of a specific concurrency control protocol (i.e., OCC) cannot be simply achieved by solely using one-sided or two-sided communication; and 
+(2) different communication primitives 
+are suitable for different protocol {\em stages}. 
+These conclusions suggest 
+that achieving the best performance of a concurrency control protocol using RDMA technology is far from trivial and demands a systematic investigation. 
+
+Recent works such as \cite{kalia2016fasst,dragojevic2014farm,wei2018deconstructing} all focus on the design and optimization of \occ using RDMA. 
+However, with a great number of other well-known
+and important concurrency control protocols~\cite{mu2014extracting,mahmoud2014maat,roy2015homeostasis,escriva2015warp,cowling2012granola}, 
+the best implementation practices using 
+RDMA and its implication 
+on {\em different protocols} are still unknown. 
+Specifically, we ask several key
+{\bf open questions}: 
+(1) For each protocol, {\em how} to leverage 
+RDMA to construct an efficient implementation?
+(2) For each protocol, between two-sided 
+and one-sided communication, {\em which} choice
+can achieve better performance?
+(3) In the context of RDMA, how can we perform
+{\em apple-to-apple} comparison among the 
+performance and characteristics of 
+{\em different} protocols?
+(4) For different protocols, what are the 
+implications of RDMA network performance? 
+Are the implications similar or largely different?
+What is the relative performance of different
+protocols with RDMA compared to TCP~\cite{harding2017evaluation}?
+The list of questions can go on and on. 
+Unfortunately, current research on RDMA-enabled distributed transaction systems is insufficient
+to answer these critical questions. 
+
+%What would a detailed one-sided implementation be like for a protocol If there hasn't been one? 
+
+%(2) Which is a better way to implement a protocol, two-sided-primitive based remote procedure call (RPC) or one-sided primitives? 
+
+%(3) Can we perform an fair and apple-to-apple
+%comparison among all these RDMA-based protocol implementations in a unified framework? 
+
+%(4) what's the implication of RDMA network performance on protocols' behavior? All these questions are open problems 
+%unanswered in the existing work.
+
+In this paper, we take the first step to
+provide definitive answers to the above questions. 
+We build {\em \projectname}, the first
+unified and comprehensive RDMA-enabled distributed transaction processing framework supporting 
+{\em six} concurrency control protocols including
+\nowait~\cite{Bernstein:1981:CCD:356842.356846}, \waitdie~\cite{Bernstein:1981:CCD:356842.356846}, \occ~\cite{kung1981optimistic}, \mvcc~\cite{bernstein1983multiversion}, \sundial~\cite{yu2018sundial}, and 
+\calvin~\cite{Thomson:2012:CFD:2213836.2213838}.
+Based on \projectname, we conduct the {\em first
+and most comprehensive} 
+(to the best of our knowledge) comparison
+of {\em different} representative distributed
+concurrency control protocols in the context 
+of RDMA. 
+%We attempt to answer these questions by building \textbf{\system} -
+%the first unified RDMA-based transaction processing framework for evaluating representative distributed 
+%concurrency control protocols. 
+The wide range of protocols supported in \projectname includes: (1) classical protocols
+that have been used in production DBMS
+for decades such as 2PL (\nowait and \waitdie);
+(2) \occ, which has attracted most recent research 
+interests; (3) \mvcc and \sundial,
+which use timestamp to allow more concurrency;
+and (4) \calvin, a recently proposed protocol
+to ensure deterministic transaction execution.
+We believe that the diverse set of protocols
+can well represent recent 
+research trends and industry
+practices of concurrency control algorithms.
+It is imperative to understand
+the potential and implication of RDMA technology
+in this context. 
+
+%We consider classic protocols that have been used in real DBMS industry for decades like 2-phase locking with both no-wait and wait-die deadlock prevention strategies as well as timestamp-based multi-version protocol. Meanwhile, we consider  recently proposed protocols like CALVIN\cite{} and Sundial\cite{}. CALVIN is a deterministic protocol. Sundial is the state-of-the-art protocol which is capable of integrating with cache coherence. They represent recent trends on the development of concurrency control protocols thus worth our attention. 
+
+In \projectname, we provide two implementations
+for each protocol: using {\em two-sided} 
+RDMA-enabled Remote Procedure Call (RPC)
+and one-sided communication primitives.
+We intensively optimize the performance
+without bias
+using known techniques such as co-routines~\cite{kalia2016fasst}, outstanding requests~\cite{wei2018deconstructing},
+doorbell batching~\cite{kalia2016design}.
+We evaluated all protocols in \projectname
+on {\em two clusters} with different 
+RDMA network capabilities.
+One is equipped with ConnectX-4 EDR 100Gb/s InfiniBand (EDR) and the other with ConnectX-3 Pro FDR 56Gb/s InfiniBand (FDR).
+We use them due to the huge difference in supporting RDMA one-sided operations: the latency of a single one-sided operation using FDR InfiniBand can be 5x more than that of using the EDR InfiniBand. We evaluate \projectname on three OLTP workloads: 
+SmallBank~\cite{SmallBank}, TPC-C~\cite{TPC-C}, and
+YCSB~\cite{cooper2010benchmarking}. 
+
+Compared to RTX~\cite{wei2018deconstructing} which only studied \occ, \projectname covers
+significantly more representative protocols,
+providing the opportunity to perform
+a much more comprehensive study and revealing 
+more insights. 
+%opening up new possibilities for us to conduct a more extensive study on the impact of using RDMA on different concurrency control protocols and compare these protocol under the context of RDMA. 
+Compared to Deneva~\cite{harding2017evaluation}, the latest in-memory distributed database evaluation framework also including six 
+(slightly different) concurrency control protocols, \projectname
+implements each protocol using
+RDMA communication primitives 
+instead of TCP/IP, providing more guidelines and insights for building RDMA-friendly protocols.
+
+%Based on \projectname, we have the following 
+%findings:
+%\red{SUMMARIZE THE FINDINGS HERE}
+
+\begin{comment}
+\begin{itemize}
+    \item For workloads with more computation (CPU bound), one-sided is better since it bypasses the remote CPU. Its advantage grows with increasing computation workloads.
+    \item 
+    %We can different conclusion for ONESIDED and RPC version to choose protocols. 
+   % For one-sided, we should trade off between the simplicity and the flexibility of the protocols considering the conflict rate. 
+   More advanced protocols reduce abort rate while launching more RDMA one-sided operations. 
+   For RPC, they are better in all condition because the protocols will only increase the number of local operations while reducing the abort rate.
+    \item For workloads with less computation and low contention, one-sided \occ is the best
+    due to its simple and low number
+    of network operations.
+    For workloads with higher contention, protocols like one-sided \mvcc and \sundial are better choices because they have optimization to reduce read-write conflict.
+    %and nearly the same cost with other protocols when abort.
+    %\red{With higher contention, ...}
+    \item For workloads bounded by network with low contention, increasing the number of
+    co-routines leads to higher throughput.
+    \item Even if ConnectX-3 has poor support for RDMA one-sided operations, increasing the number of co-routines is still beneficial 
+    when transactions have more computation.
+\end{itemize}
+\end{comment}
+
+
+
+
+
+%For each selected protocol in \system, we implemented both two-sided RPC version and one-sided version and leveraged existing optimization techniques like co-routines and door-bell batching to intensively optimize the performance. We evaluated all protocols in \system\ on two clusters with different RDMA network capabilities against three  OLTP (Online Transaction Processing) workloads: banking, TPC-C, YCSB and identified a preferable method of communication.
+
+
+% several recently 
+% proposed protocols.... similar to VLDB. 
+% We leveraged the existing optimization techniques
+% such as ... (co-routine, door bell, etc.) to 
+% intensively optimize the performance of each
+% protocol. 
+% We identified the best option (RPC vs. RDMA) for different phases in each protocol and provide two
+% implementations: RPC-only and mostly RDMA with 
+% some operations in RPC. 
+
+% performance of OCC. 
+% Different protocols have different phases,
+
+% how to achieve the best performance is far from trivial. OSDI shows the design and optimization
+% for OCC, but not other protocols. Thus, 
+% the suitability of RDMA on the existing concurrency
+% control protocols and the best design and optimization for each are unknown. 
+
+% -- We ask the following 
+% questions: 
+% (1) what's the best way to implement
+% each protocol, RPC or RDMA or hybrid? What are the detailed implementations? (OSDI only
+% answers it for OCC).
+% (2) can we perform the fair and apple-to-apple
+% comparison of the protocol implementations with 
+% RDMA in a unified framework? (VLDB only compares
+% the implementations based on RPC and stored procedure).
+% (3) what's the implication of RDMA network performance on protocols' behavior? (OSDI only 
+% shows results based on one RDMA setting)
+% All these questions are open problems 
+% unanswered in the existing work.
+
+% -- We attempt to answer these questions by building
+% the first unified RDMA-based framework for distributed 
+% transactions. We consider several recently 
+% proposed protocols.... similar to VLDB. 
+% We leveraged the existing optimization techniques
+% such as ... (co-routine, door bell, etc.) to 
+% intensively optimize the performance of each
+% protocol. 
+% We identified the best option (RPC vs. RDMA) for different phases in each protocol and provide two
+% implementations: RPC-only and mostly RDMA with 
+% some operations in RPC. 
+
+% -- Emphasize it is the first such framework. 
+% Compared to OSDI, ...
+% Compared to VLDB, ...
+% In the evaluation, we use **two** clusters
+% with different RDMA network performance and 
+% XXX applications to 
+% investigate the implications for RDMA-based
+% implementations and different protocols. 
+% It is also the first paper that perform such 
+% study on two cluster. 
+
+%-- Summarize our key findings. 
+%(1) RPC vs. RDMA (mostly), which one is better? In which condition? (With high network performance, RDMA is better? Otherwise, RPC?)
+%(2) Not all phases are suitable for RDMA? For example, .. mention all findings. 
+%(3) Which optimizations are important?
+%(4) .... (write more based on the results).
+
+%To conclude, for applications with little execution workload(small bank), RPC is the better choice for 
+
+%-- Paper structure.
+
+

@@ -1,0 +1,81 @@
+%\vspace{-2mm}
+\section{Background}
+%
+
+%\vspace{-2mm}
+\subsection{RDMA and Its Primitives}
+%\vspace{-2mm}
+
+%-- Similar to OSDI's corresponding section. 
+
+RDMA (Remote Direct Memory Access) is a network technology featuring high bandwidth and 
+low latency data transfer with low CPU overhead. 
+%transfer data in  low latency and high bandwidth while incurring low CPU overhead. 
+It is widely considered suitable for large data centers. RDMA operations, a.k.a, \textbf{verbs}, can be classified into two types:
+(1) {\em two-sided} operations including RDMA
+\texttt{SEND/RECV}; and 
+(2) {\em one-sided} operations including RDMA
+\texttt{READ/WRITE/ATOMIC}.
+The latter provides the unique capability to directly access the memory of remote machines without involving remote CPU. 
+This feature makes one-sided operations suitable for distributed applications with high CPU utilization. 
+Although having similar semantics with TCP's send/receive over bound sockets,
+%These are the build in .. for tpc (\blue{TODO: there is a sentence in another section which describe the relationship between tcp and two-sided well, i didn't find it}). 
+RDMA two-sided operations bypass the tranditional network stack and the OS kernel, 
+making the performance of 
+RPC implementation over RDMA much higher than
+that over TCP/IP.
+
+
+%The first type is one-sided operations including RDMA READ, RDMA WRITE and RDMA ATOMIC. One-sided operations are special in RDMA since they can directly access the memory of a remote machine without involving the remote CPU. This feature makes one-sided operations suitable for distributed applications with high CPU utilization. 
+%The other type is two-sided RDMA operations, including RDMA SEND and RDMA RECV. Although having similar semantics with TCP's send/receive over bound sockets,
+%These are the build in .. for tpc (\blue{TODO: there is a sentence in another section which describe the relationship between tcp and two-sided well, i didn't find it}). 
+%they bypass the tranditional network stack and the OS kernel, making the RPC implementation over RDMA outperform that over TCP/IP.
+
+Queue pairs (QPs) must be set up for RDMA communication. A QP consists of a send queue and a receive queue. When a sender posts an one-sided RDMA request to the send queue, the local QP will transfer data to some remote QP, and the sender can poll for completion information from the completion queue associated with the QP.
+%once the operation is completed. 
+The receiver's CPU is not aware of the one-sided operations performed by receiver's RNIC without checking the changes in memory. For a sender to post a two-sided operation, the receiver QP has to post RDMA \texttt{RECV} for the corresponding RDMA \texttt{SEND} in advance. It polls the request from the receive queue to obtain the incoming data.
+
+QP has three different transport modes: Reliable Connection (RC), Unreliable Connection (UC) and Unreliable Datagram (UD). One RC QP can send messages reliably to exactly one another connected RC QP; a UD QP can either uni-cast to one or multi-cast to many UD QPs without delivery guarantee. One-sided operations are only fully supported between two RC QPs, while two-sided operations must be used for UD QPs. To set up a reliable connection, a node has to maintain a cluster-size number of QPs in its RDMA-enabled NIC (RNIC) at least, each connected with one remote node. On contrary, a node just needs to maintain one UD QP to send/receive data across the cluster, thus saving system resources.
+
+%\vspace{-2mm}
+\subsection{RDMA-enabled Distributed Transactions}
+%\vspace{-2mm}
+%-- Similar to OSDI's corresponding section. 
+
+Distributed transaction systems are popular applications with demanding network operations. 
+Intensive research has been conducted
+on using RDMA to support distributed transactions. \cite{chen2016fast} uses pure one-sided operations to transfer and update records. \cite{kalia2016fasst} uses UD to implement RPC in its transaction framework. \cite{wei2018deconstructing} brings up a hybrid of one-sided and two-sided operations for different stages of transactions. All these frameworks focus on some variant of \occ~\cite{kung1981optimistic}.
+
+%\blue{osdi here follows the introduction for occ, we do not need it}
+
+%\subsection{Concurrency Control Protocols}
+
+%-- Summarize the protocols we implemented in this paper. No need to discuss implementation details, but use 1-2 sentences for each to provide the insights
+%and main goal for each protocol. 
+
+\begin{comment}
+As transactions are executed concurrently,
+concurrency control algorithms are designed 
+to guarantee the correct semantics, e.g. atomicity and serializability. 
+Two main design goals of various algorithms 
+are reducing abort and increasing throughput.
+As examples of 2PL algorithms,
+\nowait and \waitdie both resolve conflicts 
+by aborting one of transactions, also 
+avoiding deadlock. 
+\waitdie assigns priority to transactions
+and makes abort decisions based on it to 
+avoid unnecessary aborts. 
+%When acquiring the locks, NOWAIT will abort immediately when finding a record already locked. While WAITDIE has a global consensus about the priority. The one with higher priority will keep waiting for the lock to be released and the one with lower priority will abort at once. This avoids some unnecessary aborts. 
+Different from 2PL, \occ reads data without locking and optimistically assumes 
+that the conflicts between transactions are low.
+It performs validation before commit. 
+
+%\occ first reads data without locking,
+%after execution with the data, 
+%it will validate the data by reading write lock, and commit transaction 
+%write time stamp and write back the updated data after acquiring the lock. If therr is low contention, OCC works very well. But it will be rather worse if the contention is high because it can only validate the data after execution, which leads to high abort cost. 
+\sundial is a combination of 2PL and OCC algorithm. It does not use read lock. Instead, it preserves the read lease and dynamically changes it. It validates the reads based on write time stamp. However, by preserving the read lease and locking the writes, it can validate the transaction before the execution, which makes the abort in Sundial less costly.
+
+\end{comment}
+

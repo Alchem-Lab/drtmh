@@ -1,0 +1,247 @@
+NOCC started with program [noccsundial-rpc]. at 12-08-2019 12:31:39
+[tpcc] settings:
+  new_order_remote_item_pct    : 1
+  uniform_item_dist            : 0
+  micro dist :20
+[bench_runner.cc:327] Use TCP port 8825
+[0m[bench_runner.cc:349] use scale factor: 24; with total 8 threads.
+[0m[view.h:48] Start with 0 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0mTxn NewOrder, 100
+Remote counts: 100
+NAIVE: 4[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0m[librdma] get device name mlx4_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:154] Total logger area 0.00390625G.
+[0m[bench_runner.cc:165] add RDMA store size 9.76562G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.15816G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[TPCC loader] total 96 warehouses
+[tpcc_loader.cc:55] loading warehouses.
+[0m[tpcc_loader.cc:192] [TPCC] finished loading district.
+[0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
+[0m[tpcc_loader.cc:122] [TPCC] finished loading warehouse.
+[0m[tpcc_loader.cc:123] [TPCC]   * average warehouse record length: 101 bytes.
+[0m[TPCC] finished loading item
+[TPCC]   * average item record length: 84.1739 bytes
+[TPCC] finished loading stock
+[TPCC]   * average stock record length: 9 bytes
+[tpcc_loader.cc:319] [TPCC] finished loading customer.
+[0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.244 bytes.
+[0m[Runner] local db size: 2316.18 MB
+[Runner] Cache size: 0 MB
+[Tpcc] n_ware_per_worker: 3
+worker: 0 binding 0
+worker: 1 binding 1
+worker: 2 binding 2
+worker: 3 binding 3
+worker: 4 binding 4
+worker: 5 binding 5
+worker: 6 binding 6
+[bench_listener2.cc:64] try log results to ./results/noccsundial-rpc_tpcc_4_8_11_100.log
+[0mregisterring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 138831462406: 1 out of 4 qps connected. Retry connecting qps...
+4: 1 out of 4 qps connected. Retry connecting qps...
+1: 1 out of 4 qps connected. Retry connecting qps...
+3: 1 out of 4 qps connected. Retry connecting qps...
+0: 1 out of 4 qps connected. Retry connecting qps...
+7: 1 out of 4 qps connected. Retry connecting qps...
+5: 1 out of 4 qps connected. Retry connecting qps...
+2: 1 out of 4 qps connected. Retry connecting qps...
+worker: 7 binding 7
+[bench_listener2.cc:73] New monitor running!
+[0mregisterring 1388314624010: 1 out of 4 qps connected. Retry connecting qps...
+threadid=4: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=10: all 4 qps connected
+[bench_worker.h:160] Use RDMA for logging.
+[0m[sundial_rdma.h:221] Use one-sided for read.
+[0m[bench_listener2.cc:119] All workers has initilized.
+[0m[rworker.cc:47] Worker 10 on cpu 3with cor id 0
+[0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0mmerge data 253.546000 K from nerv15
+merge data 255.911000 K from nerv16
+merge data 253.918000 K from nerv14
+my throughput 257.744000 K, abort 1991203, commit 258002, abort ratio 0.885292
+merge data 257.744000 K from nerv13
+[tpcc_worker.h:144] read lat: 277778 ;counts 41145
+[0m[occ_statistics.h:58] lock lat: 31645.6 ;counts 62807
+[0m[occ_statistics.h:61] log lat: 0 ;counts 1
+[0m[occ_statistics.h:64] commit lat: 51063 ;counts 3755
+[0m[occ_statistics.h:67] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:80] release_write lat: 60.3948 ;counts 21178
+[0m@1 System throughput 1.021119 M, abort 0.883196
+[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0mmerge data 278.781000 K from nerv15
+merge data 276.975000 K from nerv16
+merge data 279.054000 K from nerv14
+my throughput 278.839000 K, abort 2018650, commit 278839, abort ratio 0.878633
+merge data 278.839000 K from nerv13
+[tpcc_worker.h:144] read lat: 265999 ;counts 42686
+[0m[occ_statistics.h:58] lock lat: 31448.8 ;counts 63633
+[0m[occ_statistics.h:61] log lat: 0 ;counts 1
+[0m[occ_statistics.h:64] commit lat: 45528.6 ;counts 3867
+[0m[occ_statistics.h:67] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:80] release_write lat: 66.5018 ;counts 21020
+[0m@2 System throughput 1.113649 M, abort 0.879807
+[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0m[global_lock_manager.h:127] fail change lock
+[0mmerge data 277.843000 K from nerv15
+merge data 276.108000 K from nerv16
+merge data 276.952000 K from nerv14
+my throughput 276.546000 K, abort 2019392, commit 276546, abort ratio 0.879550
+merge data 276.546000 K from nerv13
+[tpcc_worker.h:144] read lat: 266123 ;counts 42775
+[0m[occ_statistics.h:58] lock lat: 31555.6 ;counts 63495
+[0m[occ_statistics.h:61] log lat: 0 ;counts 1
+[0m[occ_statistics.h:64] commit lat: 45392.4 ;counts 3901
+[0m[occ_statistics.h:67] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:80] release_write lat: 63.5048 ;counts 20618
+[0m@3 System throughput 1.107449 M, abort 0.880667
+[bench_listener2.cc:260] start to exit.
+[0mstats for worker 0:
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+[bench_listener2.cc:279] Medium latency 0.198647ms, 90th latency 0.466322ms, 99th latency 1.0569ms; average latency: 0.255436ms.
+[0mNewOrder executed 126619, latency: 0.257662, rw_size -nan, m 0.198670, 90 0.466324, 99 1.056914
+succs ratio 0.153629
+[tpcc_worker.h:152] worker exit.
+[0m[tpcc_worker.h:155] read time: 0.112474ms
+[0m[occ_statistics.h:39] read_lat time: 0ms
+[0m[occ_statistics.h:40] lock time: 0.013144ms
+[0m[occ_statistics.h:41] release_write time: 2.62472e-05ms
+[0m[occ_statistics.h:42] renew_lease time: 0ms
+[0m[occ_statistics.h:43] commit time: 0.0197179ms
+[0m[occ_statistics.h:45] 0
+[0m[occ_statistics.h:46] 0.013144
+[0m[occ_statistics.h:47] 2.62472e-05
+[0m[occ_statistics.h:48] 0
+[0m[occ_statistics.h:49] 0.0197179
+[0m[occ_statistics.h:51] log time: 0
+[0m[occ_statistics.h:52] temp time: 0ms
+[0m[occ_statistics.h:53] release_read time: 0ms
+[0m[bench_worker.cc:388] 0: 0
+[0m[bench_worker.cc:388] 1: 0
+[0m[bench_worker.cc:388] 2: 0
+[0m[bench_worker.cc:388] 3: 0
+[0m[bench_worker.cc:388] 4: 0
+[0m[bench_worker.cc:388] 5: 0
+[0m[bench_worker.cc:388] 6: 0
+[0m[bench_worker.cc:388] 7: 0
+[0m[bench_worker.cc:388] 8: 0
+[0m[bench_worker.cc:388] 9: 0
+[0m[bench_worker.cc:388] 10: 0
+[0m[bench_worker.cc:388] 11: 0
+[0m[bench_worker.cc:388] 12: 0
+[0m[bench_worker.cc:388] 13: 0
+[0m[bench_worker.cc:388] 14: 0
+[0m[bench_worker.cc:388] 15: 0
+[0m[bench_worker.cc:388] 16: 0
+[0m[bench_worker.cc:388] 17: 0
+[0m[bench_worker.cc:388] 18: 0
+[0m[bench_worker.cc:388] 19: 0
+[0m[bench_worker.cc:388] 20: 0
+[0m[bench_worker.cc:388] 21: 0
+[0m[bench_worker.cc:388] 22: 0
+[0m[bench_worker.cc:388] 23: 0
+[0m[bench_worker.cc:388] 24: 0
+[0m[bench_worker.cc:388] 25: 0
+[0m[bench_worker.cc:388] 26: 0
+[0m[bench_worker.cc:388] 27: 0
+[0m[bench_worker.cc:388] 28: 0
+[0m[bench_worker.cc:388] 29: 0
+[0m[bench_worker.cc:388] 30: 0
+[0m[bench_worker.cc:388] 31: 0
+[0m[bench_worker.cc:388] 32: 0
+[0m[bench_worker.cc:388] 33: 0
+[0m[bench_worker.cc:388] 34: 0
+[0m[bench_worker.cc:388] 35: 0
+[0m[bench_worker.cc:388] 36: 0
+[0m[bench_worker.cc:388] 37: 0
+[0m[bench_worker.cc:388] 38: 0
+[0m[bench_worker.cc:388] 39: 0
+[0m[TPCC]: check consistency.
+master routine exit...
+[bench_listener2.cc:291] benchmark ends
+[0m[bench_runner.cc:299] main runner ends.
+[0m

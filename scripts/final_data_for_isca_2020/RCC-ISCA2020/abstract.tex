@@ -1,0 +1,49 @@
+\begin{abstract}
+
+On-line transaction processing (OLTP) applications
+require efficient distributed transaction 
+execution. When a transaction accesses 
+multiple records in remote machines, 
+network performance is a crucial factor 
+affecting transaction latency and throughput.
+Due to its high bandwidth and very low
+latency, RDMA (Remote Direct Memory Access) has achieved much higher performance 
+for distributed transactions than traditional TCP-based systems. 
+RDMA provides primitives for 
+both two-sided and one-sided communication.
+Although recent works have intensively studied
+the benefits of RDMA in
+distributed transaction systems,
+they either focus on
+primitive-level comparison of two 
+communication models (one-sided vs. two-sided) or 
+only study one concurrency control protocol.
+Comprehensive understanding of the implication
+of RDMA for various concurrency control protocols
+is an open problem. 
+
+In this paper, we build {\em \projectname}, the first
+unified and comprehensive RDMA-enabled distributed transaction processing framework supporting 
+six concurrency control protocols 
+using either two-sided or one-sided primitives.
+We intensively optimize the performance
+of each protocol without bias,
+using known techniques such as co-routines, outstanding requests, and
+doorbell batching.
+Based on \projectname, we conduct the first
+and most comprehensive
+(to the best of our knowledge) study
+of the six representative distributed
+concurrency control protocols 
+on two clusters with different 
+RDMA network capabilities.
+
+
+
+
+
+%Distributed database management systems (DBMS) have long been using concurrency control protocols like 2-phase locking (2PL)~\cite{Bernstein:1981:CCD:356842.356846}, multi-version CC (MVCC)~\cite{bernstein1983multiversion} and Optimistic Concurrency Control (OCC)~\cite{kung1981optimistic} to ensure atomicity and serializability of distributed transactions. Other concurrency control protocols like CALVIN\cite{Thomson:2012:CFD:2213836.2213838}, 
+% MaaT~\cite{mahmoud2014maat} 
+%and Sundial~\cite{yu2018sundial} have also been proposed in recent years. Meanwhile, High-speed network technology like Remote Direct Memory Access (RDMA) is getting popular and used by recent transaction processing systems like DrTM~\cite{wei2015fast} and RTX~\cite{wei2018deconstructing} due to its low latency. Unfortunately, it is hard to compare and evaluate concurrency control protocols under the context of using RDMA. We developed RCC, a framework containing various representative build-in concurrency control protocols with RDMA support. we provide detailed designs and evaluations of each protocol in terms of both using RDMA-enabled RPC and using one-sided RDMA primitives. As far as we know, this is the first framework where researchers can compare different concurrency control protocols on one single system under the context of RDMA.
+
+\end{abstract}
