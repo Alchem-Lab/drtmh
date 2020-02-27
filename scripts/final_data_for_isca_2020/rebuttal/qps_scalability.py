@@ -51,8 +51,8 @@ for j,appname in enumerate(apps):
             rects_list.append(plt.plot(x_arr,num[x], ls='-', c=colors[x], lw=2, marker=markers[x], label=algs[x]))
 
         objs = [str(x) for x in x_arr]
-        # y_pos = np.arange(len(objs))*10 + 1
-        y_pos = np.arange(len(objs)) + 1
+        y_pos = np.arange(len(objs))*10 + 1
+        # y_pos = np.arange(len(objs)) + 1
 
         if j == 0:
             plt.title(version_format[version], fontsize=24, loc='center')
@@ -70,6 +70,6 @@ for j,appname in enumerate(apps):
         plt.yticks(fontsize=12)
         ax.yaxis.get_offset_text().set_size(2)
         ax.yaxis.set_ticks_position('left')
-        plt.ylim(ymin=0.225,ymax=0.425)
-    plt.legend(loc='lower right',ncol=2)
+        plt.ylim(ymin=0.175,ymax=0.425)
+    plt.legend(loc='lower right',ncol=2, fontsize=15)
     plt.savefig(out_path + '/' + 'qps_scalability' + '.pdf', bbox_inches='tight')

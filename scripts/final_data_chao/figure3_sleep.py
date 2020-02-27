@@ -87,16 +87,16 @@ for i, version in enumerate(versions):
     y_pos = np.arange(len(objs)) + 1
     plt.title(version_format[version], fontsize=24, loc='center')
     if i == 0:
-        plt.ylabel('Throughput (M txns/s)', fontsize=16)
-    plt.xlabel(r'Txn computation ($\mu s$)', fontsize=16)
+        plt.ylabel('Throughput (M txns/s)', fontsize=20)
+    plt.xlabel(r'Txn computation ($\mu s$)', fontsize=20)
     # plt.title(apps[wl]+'_'+str(server_cnt), fontsize=8, loc='right')
     ax.get_xaxis().set_tick_params(direction='in', width=1, length=0)
-    plt.xticks(y_pos, objs, fontsize=12, rotation=0)
+    plt.xticks(y_pos, objs, fontsize=16, rotation=0)
     ax.get_yaxis().set_tick_params(direction='in', width=0.5, length=2, pad=1)
-    plt.yticks(fontsize=12)
+    plt.yticks(fontsize=16)
     ax.yaxis.get_offset_text().set_size(2)
     ax.yaxis.set_ticks_position('left')
     plt.ylim(ymin=0,ymax=0.5)
 
-plt.legend(loc='lower left',ncol=2)
+plt.legend(ncol=1, bbox_to_anchor=(1,1.1),fontsize=20)
 plt.savefig(out_path + '/' + 'eval_exe_workload' + '.pdf', bbox_inches='tight')

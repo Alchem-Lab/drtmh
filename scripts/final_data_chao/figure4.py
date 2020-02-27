@@ -67,7 +67,7 @@ def get_res(filedir, num):
         return get_abort(filedir)
 
 # versions = ['rpc','onesided', 'hybrid']
-plt.figure(figsize=(10,7))
+plt.figure(figsize=(10,3))
 for j,appname in enumerate(apps):
     for i, version in enumerate(versions):
         ax = plt.subplot(2,2,j * 2 + i + 1)
@@ -103,21 +103,25 @@ for j,appname in enumerate(apps):
             plt.title(version_format[version], fontsize=24, loc='center')
         if i == 0:
             if j == 0:
-                plt.ylabel('SmallBank Tput (M txns/s)', fontsize=16)
+                plt.ylabel('SmallBank', fontsize=20)
             if j == 1:
-                plt.ylabel('YCSB Tput (M txns/s)', fontsize=16)
+                plt.ylabel('YCSB', fontsize=20)
         if j == 1:
-            plt.xlabel('# co-routines', fontsize=16)
+            plt.xlabel('# co-routines', fontsize=20)
         # plt.title(apps[wl]+'_'+str(server_cnt), fontsize=8, loc='right')
         ax.get_xaxis().set_tick_params(direction='in', width=1, length=0)
-        plt.xticks(y_pos, objs, fontsize=12, rotation=0)
+        if j == 0:
+            plt.xticks([],[])
+        else:
+            plt.xticks(y_pos, objs, fontsize=16, rotation=0)
         ax.get_yaxis().set_tick_params(direction='in', width=0.5, length=2, pad=1)
-        plt.yticks(fontsize=12)
+        plt.yticks(fontsize=20)
         ax.yaxis.get_offset_text().set_size(2)
         ax.yaxis.set_ticks_position('left')
         if j == 0:
             plt.ylim(ymin=0,ymax=16.5)
         else:
             plt.ylim(ymin=0,ymax=0.5)
-    plt.legend(loc='lower right',ncol=2)
+    if j == 1:
+        plt.legend(ncol=1, bbox_to_anchor=(1, 2.3, 0,0),fontsize=20)
     plt.savefig(out_path2 + '/' + 'eval_coroutines' + '.pdf', bbox_inches='tight')

@@ -89,17 +89,17 @@ for i, version in enumerate(versions):
     y_pos = np.arange(len(objs)) + 1
     plt.title(version_format[version], fontsize=24, loc='center')
     if i == 0:
-        plt.ylabel('Throughput (M txns/s)', fontsize=16)
-    plt.xlabel('Hot Access Probability (%)', fontsize=16)
+        plt.ylabel('Throughput (M txns/s)', fontsize=20)
+    plt.xlabel('Hot Access Probability (%)', fontsize=20)
     # plt.title(apps[wl]+'_'+str(server_cnt), fontsize=8, loc='right')
     ax.get_xaxis().set_tick_params(direction='in', width=1, length=0)
-    plt.xticks(y_pos, objs, fontsize=12, rotation=0)
+    plt.xticks(y_pos, objs, fontsize=16, rotation=0)
     ax.get_yaxis().set_tick_params(direction='in', width=0.5, length=2, pad=1)
-    plt.yticks(fontsize=12)
+    plt.yticks(fontsize=16)
     ax.yaxis.get_offset_text().set_size(2)
     ax.yaxis.set_ticks_position('left')
     plt.ylim(ymin=0,ymax=0.6)
 
-plt.legend(loc=3, bbox_to_anchor=(0.01, 0.05), ncol=2)
+plt.legend(bbox_to_anchor=(1, 1.1), ncol=1,fontsize=20)
 # plt.legend(loc=3, fontsize=16, bbox_to_anchor=(1, 0), ncol=1)
 plt.savefig(out_path + '/' + 'eval_conflict' + '.pdf', bbox_inches='tight')
