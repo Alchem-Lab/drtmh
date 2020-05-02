@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+import matplotlib
+matplotlib.use("pdf")
+matplotlib.rc('pdf', fonttype=42)
+
 import matplotlib.pyplot as plt
 import numpy as np
 import math

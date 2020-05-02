@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import matplotlib
 matplotlib.use("pdf")
+matplotlib.rc('pdf', fonttype=42)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,6 +16,7 @@ algs_legend = {'nowait':'NW', 'waitdie':'WD', 'occ':'OC', 'mvcc':'MV', 'sundial'
 out_path = sys.argv[1]
 out_path_seele = sys.argv[2]
 apps = ['bank', 'ycsb', 'tpcc']
+app_format = {'bank':'SmallBank', 'ycsb':'YCSB', 'tpcc':'TPC-C'}
 versions = ['rpc','onesided']
 version_format = {'rpc':'RPC', 'onesided':'onesided'}
 
@@ -123,7 +125,7 @@ for i, appname in enumerate(apps):
             plt.xticks([], [])
 
         if ptype == 0:
-            plt.ylabel(appname, fontsize=24)
+            plt.ylabel(app_format[appname], fontsize=24)
         ax.get_yaxis().set_tick_params(direction='in', width=0.5, length=2, pad=1)
         plt.yticks(fontsize=12)
         ax.yaxis.get_offset_text().set_size(2)

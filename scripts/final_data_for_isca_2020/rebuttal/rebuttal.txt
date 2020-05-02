@@ -1,0 +1,95 @@
+Thanks for the reviewers’ detailed comments on our RCC project. 
+
+
+## Common
+### Insights/results hold with much larger systems? (Rev-A/D)
+In order to understand how protocols perform with a much larger cluster, we run all protocols against the YCSB benchmark (10% write and 5us computation time) on several emulated larger EDR clusters, each equipped with enough QPs for $4*(10x+9)$ number of fully connected nodes where $x=0,1,2,..,9$. We show the throughput (M txns/s) in the following tables. Note that UD QPs are per-core for two-sided RPC while RC QPs are per-core and per-connection for one-sided primitives. Each RDMA op uses multiple QPs in a round-robin manner
+
+We can see that on the emulated larger EDR clusters, one-sided implementations maintain their superiority over RPC implementations on large clusters and up to a 396-node cluster yet the advantages are gradually reduced as cluster size increases. mvcc still dominates sundial by 9% to 12%. 
+
+RPC implementations
+
+| QPs. per-core              |  1  | 9   | 19   | 29   | 39   |  49  | 59 | 69 | 79 | 89 | 99 |
+      |:------------------------:|:---:|:---:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+      | Emulated cluster size  |  4  | 36   |  76  | 116   | 156   |  196  | 236 | 276 | 316 | 356 | 396 |
+      | occ         | 0.285 | 0.285 | 0.285 | 0.286 | 0.286 | 0.285 | 0.286 | 0.286 | 0.286 | 0.285 | 0.284 |
+      | nowait    | 0.27 | 0.268 | 0.269 | 0.27 | 0.269 | 0.268 | 0.27 | 0.269 | 0.271 | 0.27 | 0.271 |
+      | waitdie   | 0.289 | 0.292 | 0.287 | 0.288 | 0.291 | 0.291 | 0.289 | 0.291 | 0.289 | 0.291 | 0.29 |
+      | mvcc      | 0.38 | 0.379 | 0.379 | 0.379 | 0.379 | 0.378 | 0.378 | 0.381 | 0.381 | 0.381 | 0.38 |
+      | sundial   | 0.34 | 0.34 | 0.341 | 0.34 | 0.342 | 0.34 | 0.34 | 0.342 | 0.339 | 0.34 | 0.338 |
+
+One-sided implementations
+
+| QPs. per-core per-connection |  1  | 9     | 19   | 29   | 39   |  49  | 59 | 69 | 79 | 89 | 99 |
+      |:------------------------:|:---:|:---:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+      | Emulated cluster size               |  4  | 36   |  76  | 116   | 156   |  196  | 236 | 276 | 316 | 356 | 396 |
+      | occ         | 0.387 | 0.374 | 0.37 | 0.37 | 0.367 | 0.366 | 0.367 | 0.365 | 0.366 | 0.366 | 0.362 |
+      | nowait    | 0.346 | 0.32 | 0.315 | 0.313 | 0.308 | 0.307 | 0.303 | 0.305 | 0.303 | 0.3 | 0.299 |
+      | waitdie   | 0.358 | 0.334 | 0.333 | 0.328 | 0.327 | 0.326 | 0.321 | 0.323 | 0.321 | 0.319 | 0.317 |
+      | mvcc      | 0.418 | 0.401 | 0.396 | 0.397 | 0.394 | 0.393 | 0.391 | 0.39 | 0.39 | 0.39 | 0.385 |
+      | sundial   | 0.384 | 0.369 | 0.361 | 0.364 | 0.357 | 0.36 | 0.358 | 0.358 | 0.357 | 0.353 | 0.351 |
+
+### Is ISCA the right venue since little architecture content? (Rev-B/C/D/E)
+RDMA is a complex hardware-software co-designed technology that software optimizations stem from architecture level observations. For example, in RCC we heavily make use of 1) doorbell batching, which relies on the fact that memory-mapped IO not only consumes more CPU cycles (less CPU-efficient) but consumes more PCIe bandwidth than an equal-sized DMA read. 2) No unnecessary completion signaling, which saves PCIe transactions. 3) Inlining actual data to work queue element when possible which saves PCIe transactions. 4) Avoiding NIC cache misses by making use of 2M page size.
+
+In our RCC project, we not only leveraged known optimizations described above enabled by current computer architecture to speed up the implementations of representative concurrency control protocols, but we also found some other interesting new observations which potentially have new implications on RNIC architecture design. 
+
+Previous two tables envision a trend for large RDMA systems that an increasing number of QPs needed for larger clusters will cause performance loss due to limited NIC capabilities. As previous research has pointed out that NIC cache miss is an important factor contributing to the performance loss of large-scale RDMA transaction systems. We attribute the performance degradation of all protocols for one-sided implementations to QP state cache miss in the NIC SRAM. It can also be seen that the initial performance drop from 1 QP to 9 QPs is much higher than that of even larger clusters, which implies that NIC QPs are purged into DRAM frequently with 36 nodes or more. Therefore, for large clusters greater than 36 nodes, the architecture of RNIC may need to leverage multi-level caches to reduce the number of QP state cache misses. Meanwhile, we can see that the absolute performance drop for each protocol is roughly the same as the number of nodes in a cluster grows. However, as mvcc performs the best and nowait performs the worst, mvcc is the least sensitive protocol and nowait is the most sensitive protocol as more QPs are evicted from the NIC cache. The benefit of knowing this information comes in two folds: first, when given an RDMA-capable cluster of certain scale, protocol developers can understand which protocol is the most friendly (i.e., Non-susceptible to performance drop due to NIC QP miss); second, architecture designers are better able to identify the bottlenecks revealed by sensitive one-sided protocol implementations.
+
+## **Rev-A**
+### Why use two RPCs instead of one?
+We apologize that it was misinformation in the paper. We did exactly what you have mentioned: sending only one lock request RPC, which returns the locking status as well as the actual record upon successful lock in our current version of the framework. The figures and descriptions were outdated. We updated the figures and descriptions accordingly.
+
+### How is an RDMA CAS used in WAITDIE?
+We didn't use an initial READ before CAS. The RDMA CAS initially compares with 0. and If the CAS succeeds, it atomically writes its own timestamp on the remote lock. Otherwise, if the CAS fails, it will retrieve the last timestamp of the remote lock. After that the comparison will be done locally, deciding on whether to abort or to wait for the record to be unlocked.
+
+### 2.3x latency difference refers to a single op a whole transaction? latency on underloaded systems?
+This refers to the latency difference of single protocol operations. All our latency experiments are based on fully-loaded transaction systems executing protocols, where all thread and coroutines are busy. We suppose such scenarios can better reflect the performance difference of one-sided operations compared to RPCs under real applications.
+
+### Why is that onesided outperforms RPC for MVCC and OCC but not for others?
+The performance of protocols depends not only on the properties of the workload YCSB, where it is more compute-intensive, but it also depends on the protocol's inherent behavior as to how many aborts will be incurred when different protocols are used. Factors from workloads properties, protocols, and systems all contribute to the final results. This is why our work is not simply another confirmation of existing intuitions. 
+
+### 3x more packets per second instead of 2x?
+By saying twice more packages, we mean 3x more packages. FIxed in the paper.
+
+### How robust to say that SUNDIAL is always worse than MVCC?
+The data in Table-III is very rough since we cannot set up an exact system and exact configuration of system and workloads just from the descriptions of the state-of-the-art literature. You can also find other protocols where ours are 3x or 5x better than the state-of-the-art for the comparable TCP-based implementations. We show this data only as a reference point.
+
+### Co-routines should remain constant for V-F? 
+Our experiment for V-F intends to show the performance trends with an increasing amount of computation but not intends to find the best co-routine numbers corresponding to each computation/communication ratio. But we believe this is a good experiment that can reveal more insights, which we could work on if our paper gets accepted.
+
+
+## **Rev-B**
+### architectural insights and a better architecture design?
+Based on our scalability experiments, we found insights that can help guide the design of RNIC cache to reduce the performance loss due to QP state cache miss, see the answers for common questions for detail.
+
+## **Rev-C**
+### Too simple database model?
+We admit that database with variable-sized columns and logical/coarse-grained locks are important features for real database systems. However, as an extended experimental framework, we inherent the database model that was used by OSDI'18 paper by Wei et al, which discusses the suitability of two-sided versus one-sided operations for different stages of OCC protocol.  We didn't change this setup for now so that our paper's results for the other 5 protocols can be compatible with the results of the original OCC implementations.
+
+### Sub-optimal implementations?
+We optimized each protocol as best as we can. As the response for Rev-A Q1, we did use only one RPC to send the corresponding data with lock-acquisition notification in our later version of the code, however incorrectly reflected in the paper. 
+
+For the two implementations for MVCC, we enforce the RPC version of the MVCC implementation to use the same number of stale entries as the one-sided version because we deem the number of fetching entries as a high-level algorithmic parameter that differentiates MVCCs of different "capability", instead of random implementation choices. Since our goal is to compare two-sided RPC versus one-sided implementations, we want to make sure that they are equal implementations of the "same" capable MVCC protocol. 
+
+### Should compare RCC implementations with state-of-the-art RDMA-based implementations?
+We list implementation details for all five protocols because there haven't been detailed RDMA-based protocol implementations in one single framework yet. We refer to the best TCP implementations in Harding's VLDB'18 paper for all except SUNDIAL. For SUNDIAL, we refer to its original paper in VLDB'18.
+
+### Message is already well-known? 
+We admit that some results are already known and we confirmed them. But the main contribution of this paper is to provide a tool for readers to compare RDMA-based protocols using two types of communications under different scenarios, which was not possible without RCC. As a matter of fact, some interesting results emerge as mentioned by rev-D.
+
+### Used incomparable network environments to do experiments?
+We are not intending to solely compare the impact of the network bandwidth to the system performance. The FDR cluster differs from the EDR cluster not only on RNIC's network speed but also on other important factors that adversely affect one-sided operations. We use the FDR cluster to show that it doesn't support one-sided operations well enough as compared with two-sided operations. Such factors lie down in the Mellanox driver or lower levels that deserve full consideration when choosing a proper protocol and a communication type.
+
+
+### Results too obvious and no research impact?
+There has been some research work discussing the suitability of two-sided RDMA operations versus one-sided ones. However, as we make to the point in the introduction, they either only focus on low-level primitive level performance comparison or only compare both of the two types of communication under one concurrency control protocol, i.e., OCC. Since concurrency control protocols differ a lot from each other in terms of contention management and metadata usage. Which type of communication is good for which protocol under which condition is a very important question to answer to guide transaction system developers and inspire new protocol developers.
+
+### Are protocols representative?
+We choose both the classical protocols including the 2PL with different contention resolution techniques (NOWAIT and WAITDIE) and newly developed protocols in recent years like CALVIN and SUNDIAL covering different design goals. We refer to the previous paper, "An Evaluation of Distributed Concurrency Control" where five of our protocols are included. We borrowed their pick plus a new protocol SUNDIAL. We believe this set of protocols are sufficiently representative.
+
+### Why is the unified framework important for apple-to-apple comparison?
+Protocols usually are hard to compare with each other when they are not in the same execution environment. As we can see in Table III, even if we have implemented our TCP version of the protocols, they differ a lot from the previous state-of-the-art implementations since we cannot guarantee exactly the same system and execution environment. Real database systems are more complex and their performance depends not only on the concurrency control protocols used but also on query optimization, back-end storage architecture and many others. How our results will be affected is hard to know until all these protocols are evaluated on the target database system. However, we believe our results can inspire and guide those who want to develop new transaction systems.
+
+## **Rev-D**
+### What are the key takeaways that a database system designer should keep in mind in developing new protocols?
