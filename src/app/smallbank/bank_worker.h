@@ -78,8 +78,8 @@ class BankWorker : public BenchWorker {
 
 #if ENABLE_TXN_API
 #ifdef CALVIN_TX
-  txn_result_t txn_sp_new_api(calvin_request* req, yield_func_t &yield);
-  void txn_sp_new_api_gen_rwsets(char* buf, yield_func_t &yield);
+  txn_result_t txn_sp_new_api(det_request* req, yield_func_t &yield);
+  static void txn_sp_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield);
 #else
   txn_result_t txn_sp_new_api(yield_func_t &yield);  
 #endif
@@ -90,8 +90,8 @@ class BankWorker : public BenchWorker {
 
 #if ENABLE_TXN_API
 #ifdef CALVIN_TX
-  txn_result_t txn_dc_new_api(calvin_request* req, yield_func_t &yield);
-  void txn_dc_new_api_gen_rwsets(char* buf, yield_func_t &yield);  
+  txn_result_t txn_dc_new_api(det_request* req, yield_func_t &yield);
+  static void txn_dc_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield);  
 #else
   txn_result_t txn_dc_new_api(yield_func_t &yield);
 #endif
@@ -102,8 +102,8 @@ class BankWorker : public BenchWorker {
 
 #if ENABLE_TXN_API
 #ifdef CALVIN_TX
-  txn_result_t txn_balance_new_api(calvin_request* req, yield_func_t &yield);
-  void txn_balance_new_api_gen_rwsets(char* buf, yield_func_t &yield); 
+  txn_result_t txn_balance_new_api(det_request* req, yield_func_t &yield);
+  static void txn_balance_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield); 
 #else
   txn_result_t txn_balance_new_api(yield_func_t &yield);
 #endif
@@ -114,8 +114,8 @@ class BankWorker : public BenchWorker {
 
 #if ENABLE_TXN_API
 #ifdef CALVIN_TX
-  txn_result_t txn_ts_new_api(calvin_request* req, yield_func_t &yield);
-  void txn_ts_new_api_gen_rwsets(char* buf, yield_func_t &yield);   
+  txn_result_t txn_ts_new_api(det_request* req, yield_func_t &yield);
+  static void txn_ts_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield);   
 #else
   txn_result_t txn_ts_new_api(yield_func_t &yield);
 #endif
@@ -126,8 +126,8 @@ class BankWorker : public BenchWorker {
 
 #if ENABLE_TXN_API
 #ifdef CALVIN_TX
-  txn_result_t txn_wc_new_api(calvin_request* req, yield_func_t &yield);
-  void txn_wc_new_api_gen_rwsets(char* buf, yield_func_t &yield);     
+  txn_result_t txn_wc_new_api(det_request* req, yield_func_t &yield);
+  static void txn_wc_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield);     
 #else
   txn_result_t txn_wc_new_api(yield_func_t &yield);
 #endif
@@ -138,8 +138,8 @@ class BankWorker : public BenchWorker {
 
 #if ENABLE_TXN_API
 #ifdef CALVIN_TX
-  txn_result_t txn_amal_new_api(calvin_request* req, yield_func_t &yield);
-  void txn_amal_new_api_gen_rwsets(char* buf, yield_func_t &yield);  
+  txn_result_t txn_amal_new_api(det_request* req, yield_func_t &yield);
+  static void txn_amal_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield);  
 #else
   txn_result_t txn_amal_new_api(yield_func_t &yield);
 #endif
@@ -149,8 +149,8 @@ class BankWorker : public BenchWorker {
 #endif
 
 #ifdef CALVIN_TX
-  txn_result_t ycsb_func(calvin_request* req, yield_func_t &yield);
-  void ycsb_gen_rwsets(char* buf, yield_func_t &yield);
+  txn_result_t ycsb_func(det_request* req, yield_func_t &yield);
+  static void ycsb_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield);
 #else
   txn_result_t ycsb_func(yield_func_t &yield);
 #endif
@@ -185,7 +185,7 @@ class BankWorker : public BenchWorker {
 
 #ifdef CALVIN_TX
 
-  static txn_result_t TxnSendPayment(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+  static txn_result_t TxnSendPayment(BenchWorker *w, det_request *req, yield_func_t &yield) {
 #if ENABLE_TXN_API
     txn_result_t r = static_cast<BankWorker *>(w)->txn_sp_new_api(req, yield);
 #else
@@ -194,15 +194,15 @@ class BankWorker : public BenchWorker {
     return r;
   }
 
-  static void TxnSendPaymentGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+  static void TxnSendPaymentGenRWSets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
 #if ENABLE_TXN_API
-    static_cast<BankWorker *>(w)->txn_sp_new_api_gen_rwsets(buf, yield);
+    txn_sp_new_api_gen_rwsets(buf, rand_gen, yield);
 #else
     assert(false);
 #endif
   }
 
-  static txn_result_t TxnDepositChecking(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+  static txn_result_t TxnDepositChecking(BenchWorker *w, det_request *req, yield_func_t &yield) {
 #if ENABLE_TXN_API
     txn_result_t r = static_cast<BankWorker *>(w)->txn_dc_new_api(req, yield);    
 #else
@@ -211,15 +211,15 @@ class BankWorker : public BenchWorker {
     return r;
   }
 
-  static void TxnDepositCheckingGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+  static void TxnDepositCheckingGenRWSets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
 #if ENABLE_TXN_API
-    static_cast<BankWorker *>(w)->txn_dc_new_api_gen_rwsets(buf, yield);
+    txn_dc_new_api_gen_rwsets(buf, rand_gen, yield);
 #else
     assert(false);
 #endif
   }  
 
-  static txn_result_t TxnBalance(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+  static txn_result_t TxnBalance(BenchWorker *w, det_request *req, yield_func_t &yield) {
 #if ENABLE_TXN_API
     txn_result_t r = static_cast<BankWorker *>(w)->txn_balance_new_api(req, yield);
 #else
@@ -228,15 +228,15 @@ class BankWorker : public BenchWorker {
     return r;
   }
 
-  static void TxnBalanceGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+  static void TxnBalanceGenRWSets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
 #if ENABLE_TXN_API
-    static_cast<BankWorker *>(w)->txn_balance_new_api_gen_rwsets(buf, yield);
+    txn_balance_new_api_gen_rwsets(buf, rand_gen, yield);
 #else
     assert(false);
 #endif
   }  
 
-  static txn_result_t TxnTransactSavings(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+  static txn_result_t TxnTransactSavings(BenchWorker *w, det_request *req, yield_func_t &yield) {
 #if ENABLE_TXN_API
     txn_result_t r = static_cast<BankWorker *>(w)->txn_ts_new_api(req, yield);
 #else
@@ -245,15 +245,15 @@ class BankWorker : public BenchWorker {
     return r;
   }
 
-  static void TxnTransactSavingsGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+  static void TxnTransactSavingsGenRWSets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
 #if ENABLE_TXN_API
-    static_cast<BankWorker *>(w)->txn_ts_new_api_gen_rwsets(buf, yield);
+    txn_ts_new_api_gen_rwsets(buf, rand_gen, yield);
 #else
     assert(false);
 #endif
-  }  
+  }
 
-  static txn_result_t TxnWriteCheck(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+  static txn_result_t TxnWriteCheck(BenchWorker *w, det_request *req, yield_func_t &yield) {
 #if ENABLE_TXN_API
     txn_result_t r = static_cast<BankWorker *>(w)->txn_wc_new_api(req, yield);
 #else
@@ -262,15 +262,15 @@ class BankWorker : public BenchWorker {
     return r;
   }
 
-  static void TxnWriteCheckGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+  static void TxnWriteCheckGenRWSets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
 #if ENABLE_TXN_API
-    static_cast<BankWorker *>(w)->txn_wc_new_api_gen_rwsets(buf, yield);
+    txn_wc_new_api_gen_rwsets(buf, rand_gen, yield);
 #else
     assert(false);
 #endif
-  }  
+  }
 
-  static txn_result_t TxnAmal(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+  static txn_result_t TxnAmal(BenchWorker *w, det_request *req, yield_func_t &yield) {
 #if ENABLE_TXN_API
     txn_result_t r = static_cast<BankWorker *>(w)->txn_amal_new_api(req, yield);
 #else
@@ -279,15 +279,15 @@ class BankWorker : public BenchWorker {
     return r;
   }
 
-  static void TxnAmalGenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+  static void TxnAmalGenRWSets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
 #if ENABLE_TXN_API
-    static_cast<BankWorker *>(w)->txn_amal_new_api_gen_rwsets(buf, yield);
+    txn_amal_new_api_gen_rwsets(buf, rand_gen, yield);
 #else
     assert(false);
 #endif
   }
 
-  static txn_result_t YCSB_Transaction(BenchWorker *w, calvin_request *req, yield_func_t &yield) {
+  static txn_result_t YCSB_Transaction(BenchWorker *w, det_request *req, yield_func_t &yield) {
 #if ENABLE_TXN_API
     txn_result_t r = static_cast<BankWorker *>(w)->ycsb_func(req, yield);
 #else
@@ -296,13 +296,14 @@ class BankWorker : public BenchWorker {
     return r;
   }
 
-  static void YCSB_Transaction_GenRWSets(BenchWorker *w, char* buf, yield_func_t &yield) {
+  static void YCSB_Transaction_GenRWSets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
 #if ENABLE_TXN_API
-    static_cast<BankWorker *>(w)->ycsb_gen_rwsets(buf, yield);
+    ycsb_gen_rwsets(buf, rand_gen, yield);
 #else
     assert(false);
 #endif
   }
+
 #else
 
   static txn_result_t TxnSendPayment(BenchWorker *w, yield_func_t &yield) {

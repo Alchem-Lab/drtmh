@@ -12,13 +12,6 @@
 
 #include "rtx/logger.hpp"
 
-// #define MAX_CALVIN_REQ_CNTS (200*1000)
-#define MAX_CALVIN_REQ_CNTS (2000)
-// #define MAX_CALVIN_REQ_CNTS 1
-#define MAX_CALVIN_SETS_SUPPRTED_IN_BITS (5)
-#define MAX_CALVIN_SETS_SUPPORTED (1U<<(MAX_CALVIN_SETS_SUPPRTED_IN_BITS))  // 32 SETS
-#define CALVIN_REQ_INFO_SIZE 256
-
 #ifdef OCC_TX
 #include "rtx/occ.h"
 
@@ -47,7 +40,7 @@
 
 using namespace nocc::util;
 using namespace nocc::db;
-
+using namespace nocc::rtx;
 #define CS 0
 #define LOCAL_CLIENT 0
 
@@ -72,82 +65,8 @@ extern __thread rtx::SUNDIAL  **new_txs_;
 extern __thread rtx::MVCC  **new_txs_;
 #elif defined(CALVIN_TX)
 extern __thread rtx::CALVIN  **new_txs_;
-
-
-typedef uint64_t timestamp_t;
-struct calvin_request {
-  calvin_request(int req_idx, int req_initiator, timestamp_t timestamp) : 
-          req_idx(req_idx), req_initiator(req_initiator), timestamp(timestamp) {}
-
-  calvin_request(calvin_request* copy) :
-          req_idx(copy->req_idx), req_initiator(copy->req_initiator), timestamp(copy->timestamp) {
-          memcpy(req_info, copy->req_info, CALVIN_REQ_INFO_SIZE);
-  }
-
-  union {
-    int req_idx;
-    int req_seq;
-  };
-
-  int req_initiator;
-  
-  timestamp_t timestamp;
-
-  char req_info[CALVIN_REQ_INFO_SIZE];
-};
-
-struct calvin_header {
-  uint8_t node_id;
-  volatile uint8_t epoch_status;
-  uint64_t epoch_id;
-  volatile uint64_t batch_size; // the batch size
-  // union {
-  uint64_t chunk_size; // the number of calvin_requests in this rpc call
-  volatile uint64_t received_size;
-  // };
-};
-
-class calvin_request_compare {
-public:
-  bool operator()(const calvin_request* lhs, 
-                  const calvin_request* rhs) {
-    return lhs->timestamp < rhs->timestamp;
-  }
-};
-
-#define CALVIN_EPOCH_READY 53
-#define CALVIN_EPOCH_DONE  59
+extern __thread SingleQueue  **calvin_ready_requests;
 #endif
-
-#define MAX_VAL_LENGTH 128
-struct read_val_t {
-  uint32_t req_seq;
-  int read_or_write;
-  int index_in_set;
-  uint32_t len;
-  char value[MAX_VAL_LENGTH];
-  read_val_t(int req_seq, int rw, int index, uint32_t len, char* val) :
-    req_seq(req_seq),
-    read_or_write(rw),
-    index_in_set(index),
-    len(len) {
-      assert(len < MAX_VAL_LENGTH);
-      memcpy(value, val, len);
-    }
-  read_val_t(const read_val_t& copy) {
-    req_seq = copy.req_seq;
-    read_or_write = copy.read_or_write;
-    index_in_set = copy.index_in_set;
-    len = copy.len;
-    memcpy(value, copy.value, len);
-  }
-  read_val_t() {}
-};
-
-struct read_compact_val_t {
-  uint32_t len;
-  char value[MAX_VAL_LENGTH];
-};
 
 extern     RdmaCtrl *cm;
 
@@ -168,12 +87,12 @@ typedef std::pair<bool, double> txn_result_t;
 
 /* Registerered Txn execution function */
 #ifdef CALVIN_TX
-typedef txn_result_t (*calvin_txn_fn_t)(BenchWorker *, calvin_request *, yield_func_t &yield);
+typedef txn_result_t (*calvin_txn_fn_t)(BenchWorker *, det_request *, yield_func_t &yield);
 #else
 typedef txn_result_t (*txn_fn_t)(BenchWorker *,yield_func_t &yield);
 #endif
 
-typedef void (*txn_gensets_fn_t)(BenchWorker *, char*, yield_func_t &yield);
+typedef void (*txn_gensets_fn_t)(char*, util::fast_random &rand_gen, yield_func_t &yield);
 struct workload_desc {
   workload_desc() {}
 #ifdef CALVIN_TX
@@ -247,6 +166,8 @@ class BenchWorker : public RWorker {
   void check_schedule_done(int cid);
   void calvin_epoch_status_rpc_handler(int id, int cid, char *msg, void *arg);
   bool check_epoch_done();
+#elif defined(BOHM_TX)
+  void worker_routine_for_bohm(yield_func_t &yield);
 #endif
 
   void change_ctx(int cor_id) {
@@ -333,7 +254,8 @@ class BenchWorker : public RWorker {
 #elif defined(CALVIN_TX)
   rtx::CALVIN *rtx_;
   rtx::CALVIN *rtx_hook_ = NULL;
-  std::vector<calvin_request*>* deterministic_requests;
+
+  std::vector<det_request*>* deterministic_requests;
   bool* epoch_done_schedule;
   std::set<int>* mach_received;
 
@@ -347,6 +269,8 @@ class BenchWorker : public RWorker {
   std::vector<char*>* req_buffers;
   uint64_t** offsets_;
 #endif // ONE_SIDED_READ
+#elif defined(BOHM_TX)
+
 #endif
   
   //forwarded related structures are used by the CALVIN CLASS

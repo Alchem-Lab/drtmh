@@ -26,7 +26,7 @@ namespace rdmaio {
       Qp::IOStatus send_to(int key,char *msg,int len);
       Qp::IOStatus send_to(int node_id,int tid,char *msg,int len);
       Qp::IOStatus broadcast_to(int *node_ids, int num_of_node, char *msg,int len);
-
+      Qp::IOStatus broadcast_to(int *node_ids, int num_of_node, int server_tid, char *msg,int len);
       Qp::IOStatus prepare_pending();
       Qp::IOStatus post_pending(int node,char *msg,int len);
       Qp::IOStatus post_pending(int node_id,int tid,char *msg,int len);

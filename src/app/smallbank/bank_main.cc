@@ -13,6 +13,11 @@
 
 #ifdef CALVIN_TX
 #include "db/txs/epoch_manager.hpp"
+#include "framework/sequencer.h"
+#include "framework/scheduler.h"
+#elif defined(BOHM_TX)
+#include "framework/sequencer.h"
+#include "framework/scheduler.h"
 #endif
 
 #include "framework/bench_runner.h"
@@ -50,6 +55,11 @@ extern RdmaCtrl *cm;       // global RDMA handler
 
 #ifdef CALVIN_TX
 extern db::EpochManager* epoch_manager;
+extern oltp::Sequencer* sequencer;
+extern oltp::Scheduler* scheduler;
+#elif defined(BOHM_TX)
+extern oltp::Sequencer* sequencer;
+extern oltp::Scheduler* scheduler;
 #endif
 
 namespace oltp {
@@ -168,7 +178,10 @@ void BankMainRunner::init_store(MemDB* &store){
   int meta_size = META_SIZE;
 #if 1
 // #if ONE_SIDED_READ
-#if MVCC_TX
+#if BOHM_TX
+  meta_size = 0;  // we don't need the meta header since the bohm record 
+                  // already contains the metadata of a version of record
+#elif MVCC_TX
   meta_size = sizeof(rtx::MVCCHeader);
 #else  
   meta_size = sizeof(rtx::RdmaValHeader);
@@ -262,6 +275,9 @@ class BankLoader : public BenchLoader {
       char *wrapper_acct(NULL), *wrapper_saving(NULL), *wrapper_check(NULL), *wrapper_ycsb(NULL);
 #if MVCC_TX
       int save_size = meta_size + MVCC_VERSION_NUM * sizeof(savings::value);
+#elif BOHM_TX
+      assert(sizeof(savings::value) < MAX_RECORD_LEN);
+      int save_size = meta_size + sizeof(BOHMRecord);
 #else
       int save_size = meta_size + sizeof(savings::value);
 #endif
@@ -269,6 +285,9 @@ class BankLoader : public BenchLoader {
       
 #if MVCC_TX
       int check_size = meta_size + MVCC_VERSION_NUM * sizeof(checking::value);
+#elif BOHM_TX
+      assert(sizeof(checking::value) < MAX_RECORD_LEN);
+      int check_size = meta_size + sizeof(BOHMRecord);
 #else
       int check_size = meta_size + sizeof(checking::value); 
 #endif
@@ -277,6 +296,9 @@ class BankLoader : public BenchLoader {
 
 #if MVCC_TX
       int ycsb_size = meta_size + MVCC_VERSION_NUM * sizeof(ycsb_record::value);
+#elif BOHM_TX
+      assert(sizeof(ycsb_record::value) < MAX_RECORD_LEN);
+      int ycsb_size = meta_size + sizeof(BOHMRecord);
 #else
       int ycsb_size = meta_size + sizeof(ycsb_record::value); 
 #endif
@@ -321,26 +343,43 @@ class BankLoader : public BenchLoader {
       float balance_c = (float)_RandomNumber(random_generator_, MIN_BALANCE, MAX_BALANCE);
       float balance_s = (float)_RandomNumber(random_generator_, MIN_BALANCE, MAX_BALANCE);
 
+#if BOHM_TX
+      BOHMRecord* record = (BOHMRecord*)(wrapper_saving + meta_size);
+      savings::value *s = (savings::value *)record->data;
+      s->s_balance = balance_s;
+      auto node = store_->Put(SAV,i,(uint64_t *)wrapper_saving,sizeof(BOHMRecord));
+#else
       savings::value *s = (savings::value *)(wrapper_saving + meta_size);
       s->s_balance = balance_s;
 #if MVCC_TX
       ((rtx::MVCCHeader *)wrapper_saving)->wts[0] = 1;
 #endif
-// here send the size of value instead of mvcc_version_num * sizeof(value), the value inside is of no use
       auto node = store_->Put(SAV,i,(uint64_t *)wrapper_saving,sizeof(savings::value));
+#endif
+// here send the size of value instead of mvcc_version_num * sizeof(value), the value inside is of no use
+
       if (is_primary_) {
       // if(is_primary_ && ONE_SIDED_READ) {
         node->off = (uint64_t)wrapper_saving - (uint64_t)(cm->conn_buf_);
         ASSERT(node->off % sizeof(uint64_t) == 0) << "saving value size " << save_size;
       }
-// TODO: MVCC may set the meta data to correct
+
+#if BOHM_TX
+      BOHMRecord* record = (BOHMRecord*)(wrapper_saving + meta_size);
+      checking::value *c = (checking::value *)record->data;
+      c->c_balance = balance_c;
+      assert(c->c_balance > 0);
+      node = store_->Put(CHECK,i,(uint64_t *)wrapper_check,sizeof(BOHMRecord));
+#else
       checking::value *c = (checking::value *)(wrapper_check + meta_size);
       c->c_balance = balance_c;
       assert(c->c_balance > 0);
 #if MVCC_TX
+      // TODO: MVCC may set the meta data to correct
       ((rtx::MVCCHeader *)wrapper_check)->wts[0] = 1; // first wts
 #endif
       node = store_->Put(CHECK,i,(uint64_t *)wrapper_check,sizeof(checking::value));
+#endif
 
       if(i == 0)
         LOG(3) << "check cv balance " << c->c_balance;
@@ -351,10 +390,15 @@ class BankLoader : public BenchLoader {
         ASSERT(node->off % sizeof(uint64_t) == 0) << "check value size " << check_size;
       }
 
+#if BOHM_TX
+      node = store_->Put(YCSB, i, (uint64_t*)wrapper_ycsb, sizeof(BOHMRecord));
+#else
 #if MVCC_TX
       ((rtx::MVCCHeader*)wrapper_ycsb)->wts[0] = 1;
 #endif
       node = store_->Put(YCSB, i, (uint64_t*)wrapper_ycsb, sizeof(ycsb_record::value));
+#endif
+
       if(is_primary_) {
         node->off = (uint64_t)wrapper_ycsb - (uint64_t)(cm->conn_buf_);
       }
@@ -414,6 +458,7 @@ std::vector<RWorker *> BankMainRunner::make_workers() {
   for(uint i = 0;i < nthreads;++i) {
     ret.push_back(new BankWorker(i,r.next(),store_,ops_per_worker,&barrier_a_,&barrier_b_,this));
   }
+
 #if SI_TX
   // add ts worker
   ts_manager = new TSManager(nthreads + nclients + 1,cm,0,0);
@@ -430,6 +475,20 @@ std::vector<RWorker *> BankMainRunner::make_workers() {
   // add epoch manager
   epoch_manager = new EpochManager(nthreads + nclients + 1,cm,0,0);
   ret.push_back(epoch_manager);
+
+  sequencer = new oltp::Sequencer(nthreads + nclients + 2, 0, BankWorker::_get_workload);
+  ret.push_back(sequencer);
+
+  scheduler = new oltp::Scheduler(nthreads + nclients + 3);
+  ret.push_back(scheduler);
+#endif
+
+#if defined(BOHM_TX)
+  sequencer = new oltp::Sequencer(nthreads + nclients + 2, 0, BankWorker::_get_workload);
+  ret.push_back(sequencer);
+
+  scheduler = new oltp::Scheduler(nthreads + nclients + 3);
+  ret.push_back(scheduler);
 #endif
 
 #if CS == 1

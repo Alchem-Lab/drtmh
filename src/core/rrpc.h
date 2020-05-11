@@ -164,9 +164,22 @@ class RRpc {
                                (char *)(msg - rpc_padding()),size + sizeof(rrpc_header));
   }
 
+  inline void broadcast_to(char *msg,
+                           int rpc_id, int size,int cid,int type,
+                           int *server_lists, int num, int server_tid) {
+    prepare_header(msg,rpc_id,size,cid,type);
+    msg_handler_->broadcast_to(server_lists,num,server_tid,
+                               (char *)(msg - rpc_padding()),size + sizeof(rrpc_header));
+  }
+
   inline void broadcast_to(char *msg,int rpc_id,int size,int cid,int type,const std::set<int> &server_set) {
     prepare_header(msg,rpc_id,size,cid,type);
     msg_handler_->broadcast_to(server_set,(char *)(msg - rpc_padding()),size + sizeof(rrpc_header));
+  }
+
+  inline void broadcast_to(char *msg,int rpc_id,int size,int cid,int type,const std::set<int> &server_set, int server_tid) {
+    prepare_header(msg,rpc_id,size,cid,type);
+    msg_handler_->broadcast_to(server_set, server_tid, (char *)(msg - rpc_padding()),size + sizeof(rrpc_header));
   }
 
   inline void send_reply(char *msg,int size,int server_id,int cid) {

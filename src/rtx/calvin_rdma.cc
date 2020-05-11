@@ -5,6 +5,10 @@ namespace nocc {
 
 namespace rtx {
 
+
+std::vector<ReadSetItem> CALVIN::read_set = std::move(std::vector<ReadSetItem>());
+std::vector<ReadSetItem> CALVIN::write_set = std::move(std::vector<ReadSetItem>());
+
 // return false I am not supposed to execute
 // the actual transaction logic. (i.e., I am either not participating or am just a passive participant)
 bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {

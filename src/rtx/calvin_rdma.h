@@ -23,12 +23,13 @@ namespace nocc {
 
 namespace rtx {
 
+typedef rwsets_t::ReadSetItem ReadSetItem;
+
 #if ENABLE_TXN_API
 class CALVIN : public TxnAlg {
 #else
 class CALVIN : public TXOpBase {
 #endif
-#include "occ_internal_structure.h"
 
 protected:
   // return the last index in the read-set
@@ -195,6 +196,14 @@ public:
     return index;
   }
 
+  // read2 is used only by the sequencer thread to generate the read set
+  static int read2(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
+    read_set.emplace_back(tableid,key,(MemNode *)NULL,(char*)NULL,
+                           0,
+                           len,pid);
+    return read_set.size() - 1;
+  }
+
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int read(int pid,uint64_t key,yield_func_t &yield) {
@@ -232,6 +241,14 @@ public:
     }
 
     return index;
+  }
+
+  // write2 is used only by the sequencer thread to generate the write set
+  static int write2(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
+    write_set.emplace_back(tableid,key,(MemNode *)NULL,(char*)NULL,
+                           0,
+                           len,pid);
+    return write_set.size() - 1;
   }
 
   template <int tableid,typename V>
@@ -410,6 +427,7 @@ public:
 
   // start a TX
   virtual void begin(yield_func_t &yield) {
+    assert(false);
     read_set_.clear();
     write_set_.clear();
     #if USE_DSLR
@@ -418,6 +436,19 @@ public:
     txn_start_time = rwlock::get_now();
     // the txn_end_time is approximated using the LEASE_TIME
     txn_end_time = txn_start_time + rwlock::LEASE_TIME;
+  }
+
+  void begin(det_request* req, yield_func_t &yield) {
+    read_set_.clear();
+    write_set_.clear();
+    rwsets_t* sets = (rwsets_t*)req->req_info;
+    int reads = sets->nReads, writes = sets->nWrites;
+    for (int i = 0; i < reads; i++) {
+      read_set_.push_back(sets->access[i]);
+    }
+    for (int i = 0; i < writes; i++) {
+      write_set_.push_back(sets->access[reads+i]);
+    }
   }
 
   // commit a TX
@@ -445,6 +476,10 @@ public:
   std::vector<ReadSetItem>  read_set_;
   std::vector<ReadSetItem>  write_set_;
 
+  // this two sets are used by the sequencer to generate for different benchmarks.
+  // they are not belonging to any CALVIN object and any execution threads' coroutines.
+  static std::vector<ReadSetItem> read_set;
+  static std::vector<ReadSetItem> write_set;
 protected:
   // helper to send batch read/write operations
   BatchOpCtrlBlock read_batch_helper_;

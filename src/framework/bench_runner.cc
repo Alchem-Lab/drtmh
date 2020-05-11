@@ -24,6 +24,17 @@
 
 /* global config constants */
 size_t nthreads = 1;                      // total server threads used
+
+#ifdef BOHM_TX
+size_t bohm_cc_threads = 1;               // the number of concurrency control thread
+                                          // for bohm transaction.
+size_t bohm_exe_threads = nthreads - bohm_cc_threads;              
+                                          // the number of execution threads 
+                                          // for handling bohm transaction execution
+static_assert(bohm_cc_threads + bohm_exe_threads == nthreads, 
+  "BOHM CC threads and execution threads must added up to the total number of transaction threads.");
+#endif
+
 size_t nclients = 1;                      // total client used
 size_t coroutine_num = 1;                 // number of concurrent request per worker
 
@@ -187,7 +198,7 @@ BenchRunner::run() {
   // TODO (chao): we may need to compress the size of each calvin_request
   // to fit into this area when large amounts of nodes/threads/coroutines
   // are involved. 
-  per_thread_calvin_request_buffer_sz = (sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS * sizeof(calvin_request)) * (2+coroutine_num) * net_def_.size();
+  per_thread_calvin_request_buffer_sz = (sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS * sizeof(det_request)) * (2+coroutine_num) * net_def_.size();
   calvin_request_buffer_sz = per_thread_calvin_request_buffer_sz * (nthreads + 1);
   calvin_request_buffer = rdma_buffer + total_sz;
   total_sz += calvin_request_buffer_sz;
