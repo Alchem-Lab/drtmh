@@ -16,18 +16,26 @@
 #include <vector>
 #include <string>
 #include <stdint.h>
-
 #include <zmq.hpp>
 
 using namespace rdmaio;
 using namespace rdmaio::udmsg;
+using namespace nocc::util;
 
 namespace nocc {
 
-namespace oltp {
+#ifdef CALVIN_TX
+extern __thread SingleQueue  **calvin_ready_requests;
+#endif
+
+namespace oltp {  
 
 #define INDIRECT_YIELD(yield) RWorker::thread_worker->indirect_yield(yield);
 #define DIRECT_YIELD(yield)   RWorker::thread_worker->yield_next(yield);
+
+#ifdef CALVIN_TX
+extern std::vector<SingleQueue*> locked_transactions;
+#endif
 
 // abstract worker
 class RWorker : public ndb_thread {
@@ -125,6 +133,12 @@ class RWorker : public ndb_thread {
     nocc::rtx::global_lock_manager[worker_id_].check_to_notify(worker_id_, rpc_);
 #elif defined(SUNDIAL_TX) && ONE_SIDED_READ != 1
     nocc::rtx::global_lock_manager[worker_id_].check_to_notify(worker_id_, rpc_);
+#elif defined(CALVIN_TX)
+    nocc::rtx::det_request req;
+    if(!locked_transactions.empty() && locked_transactions[worker_id_]->front((char*)&req)) {
+      calvin_ready_requests[req.req_seq % total_worker_coroutine+1]->enqueue((char*)&req, sizeof(nocc::rtx::det_request));
+      locked_transactions[worker_id_]->pop();
+    }
 #endif
 
     if(msg_handler_ != NULL){
@@ -142,6 +156,7 @@ class RWorker : public ndb_thread {
           // fprintf(stdout, "routine %d added back.\n", next_routine_array[i].id_);
       }
     }
+
 
   }
 

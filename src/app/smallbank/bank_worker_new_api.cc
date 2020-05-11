@@ -14,12 +14,15 @@ namespace nocc {
 namespace oltp {
 
 extern __thread util::fast_random   *random_generator;
+
 namespace bank {
 
 #if ENABLE_TXN_API
 
+using namespace nocc::rtx;
+
 #ifdef CALVIN_TX
-txn_result_t BankWorker::ycsb_func(calvin_request* req, yield_func_t &yield) {
+txn_result_t BankWorker::ycsb_func(det_request* req, yield_func_t &yield) {
 #else
 txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
 #endif
@@ -33,27 +36,13 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
   assert(func_size < MAX_CALVIN_SETS_SUPPORTED);
 #endif
   
-  bool is_write[func_size];
-  uint64_t ids[func_size];
-  int indexes[func_size];
   std::set<uint64_t> accounts;
   assert(rtx_ != NULL);
 
-  rtx_->begin(yield);
-
 #ifdef CALVIN_TX
-  const char* buf = req->req_info;
-  struct ycsb_req_info_t {
-  	uint64_t ids[10];
-  	bool is_write[10];
-  };
-
-  for(int i = 0; i < func_size; ++i) {
-  	ids[i] = ((ycsb_req_info_t*)buf)->ids[i];
-  	is_write[i] = ((ycsb_req_info_t*)buf)->is_write[i];
-    // is_write[i] = false;
-  }
+  rtx_->begin(req, yield);
 #else
+  rtx_->begin(yield);
   for(int i = 0; i < func_size; ++i) {
     is_write[i] = (random_generator[cor_id_].next() % ycsb_set_length) < ycsb_write_num;
     uint64_t id;
@@ -66,7 +55,6 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
     accounts.insert(id);
     ids[i] = id;
   }
-#endif
 
   for(int i = 0; i < func_size; ++i) {
     uint64_t id = ids[i];
@@ -78,38 +66,29 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
       index = rtx_->read(pid, YCSB, id, sizeof(ycsb_record::value), yield);
     }
     if(index < 0) return txn_result_t(false, 73);
-    indexes[i] = index;
   }
+#endif
 
 #ifdef CALVIN_TX
-  if (!rtx_->request_locks(yield)) {
-    return txn_result_t(false,73);
-  }
-
-  static_assert(sizeof(ycsb_record::value) <= MAX_VAL_LENGTH, "ycsb_record to large to fit to be forwarded.\n");
+  // static_assert(sizeof(ycsb_record::value) <= MAX_VAL_LENGTH, "ycsb_record to large to fit to be forwarded.\n");
   // fprintf(stdout, "show values before sync for request %d.\n", req->req_seq);
-  ycsb_record::value* val = NULL;
-  for(int i = 0; i < func_size; ++i) {
-    if(is_write[i]) {
-      val = (ycsb_record::value*)rtx_->load_write(indexes[i], sizeof(ycsb_record::value), yield);
-    }
-    else {
-      val = (ycsb_record::value*)rtx_->load_read(indexes[i], sizeof(ycsb_record::value), yield); 
-    }
-    // fprintf(stdout, "index %d's value addr: %p\n", i, val);
+  ycsb_record::value* val = NULL; 
+  rwsets_t* sets = (rwsets_t*)req->req_info;
+  for (int i = 0; i < sets->nReads; ++i) {
+      val = (ycsb_record::value*)rtx_->load_read(i, sizeof(ycsb_record::value), yield); 
+  }
+  for (int i = 0; i < sets->nWrites; ++i) {
+      val = (ycsb_record::value*)rtx_->load_write(i, sizeof(ycsb_record::value), yield);
   }
 
   if(!rtx_->sync_reads(req->req_seq, yield))
     return txn_result_t(true, 73);
 
-  for(int i = 0; i < func_size; ++i) {
-    if(is_write[i]) {
-      val = (ycsb_record::value*)rtx_->load_write(indexes[i], sizeof(ycsb_record::value), yield);
-    }
-    else {
-      val = (ycsb_record::value*)rtx_->load_read(indexes[i], sizeof(ycsb_record::value), yield); 
-    }
-    assert(val != NULL);
+  for (int i = 0; i < sets->nReads; ++i) {
+      val = (ycsb_record::value*)rtx_->load_read(i, sizeof(ycsb_record::value), yield); 
+  }
+  for (int i = 0; i < sets->nWrites; ++i) {
+      val = (ycsb_record::value*)rtx_->load_write(i, sizeof(ycsb_record::value), yield);
   }
 #else
   ycsb_record::value* val = NULL;
@@ -137,7 +116,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
 }
 
 #ifdef CALVIN_TX
-void BankWorker::ycsb_gen_rwsets(char* buf, yield_func_t &yield) {
+void BankWorker::ycsb_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
   int index = -1;
 
   const int func_size = ycsb_set_length;
@@ -145,35 +124,54 @@ void BankWorker::ycsb_gen_rwsets(char* buf, yield_func_t &yield) {
   bool is_write[func_size];
   uint64_t ids[func_size];
   std::set<uint64_t> accounts;
-  
-  struct ycsb_req_info_t {
-  	uint64_t ids[10];
-  	bool is_write[10];
-  };
 
   for(int i = 0; i < func_size; ++i) {
     //is_write[i] = (random_generator[cor_id_].next() % 2);
-    is_write[i] = (random_generator[cor_id_].next() % ycsb_set_length) < ycsb_write_num;
+    is_write[i] = (rand_gen.next() % ycsb_set_length) < ycsb_write_num;
     uint64_t id;
-    GetAccount(random_generator[cor_id_],&id);
+    GetAccount(rand_gen, &id);
     while(accounts.find(id) != accounts.end()) {
-      GetAccount(random_generator[cor_id_], &id);
+      GetAccount(rand_gen, &id);
     }
     accounts.insert(id);
     ids[i] = id;
   }
 
+  using namespace nocc::rtx;
+  int nReads = 0, nWrites = 0;
   for(int i = 0; i < func_size; ++i) {
-  	((ycsb_req_info_t*)buf)->ids[i] = ids[i];
-	((ycsb_req_info_t*)buf)->is_write[i] = is_write[i];  	
+    uint64_t id = ids[i];
+    int pid = AcctToPid(id);
+    if(is_write[i]) {
+      index = CALVIN::write2(pid, YCSB, id, sizeof(ycsb_record::value), yield);
+      nWrites += 1;
+    }
+    else {
+      index = CALVIN::read2(pid, YCSB, id, sizeof(ycsb_record::value), yield);
+      nReads += 1;
+    }
+    if(index < 0) assert(false);
   }
 
+  // buffer structure
+  // readset size: uint8_t
+  // writeset set: unit8_t
+  // readset array: ReadSetItem
+  // writeset array: ReadSetItem
+  ((rwsets_t*)buf)->nReads = nReads;
+  ((rwsets_t*)buf)->nWrites = nWrites;
+  for (int j = 0; j < nReads; j++) {
+    ((rwsets_t*)buf)->access[j] = CALVIN::read_set[j];
+  }
+  for (int j = 0; j < nWrites; j++) {
+    ((rwsets_t*)buf)->access[j+nReads] = CALVIN::write_set[j]; 
+  }
   return;
 }
 #endif
 
 #ifdef CALVIN_TX
-txn_result_t BankWorker::txn_sp_new_api(calvin_request* req, yield_func_t &yield) {
+txn_result_t BankWorker::txn_sp_new_api(det_request* req, yield_func_t &yield) {
 #else
 txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
 #endif
@@ -289,14 +287,14 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
 }
 
 #ifdef CALVIN_TX
-void BankWorker::txn_sp_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+void BankWorker::txn_sp_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
   int index = -1;
 
   // rtx_->clear_read_set();
   // rtx_->clear_write_set();
 
   uint64_t id0,id1;
-  GetTwoAccount(random_generator[cor_id_],&id0,&id1);  
+  GetTwoAccount(rand_gen,&id0,&id1);  
   // uint64_t id0 = 100, id1 = 101;
 
   //serialize read set and write set
@@ -314,7 +312,7 @@ void BankWorker::txn_sp_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
 #endif
 
 #ifdef CALVIN_TX
-txn_result_t BankWorker::txn_wc_new_api(calvin_request* req, yield_func_t &yield) {
+txn_result_t BankWorker::txn_wc_new_api(det_request* req, yield_func_t &yield) {
 #else
 txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
 #endif
@@ -377,14 +375,14 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
 }
 
 #ifdef CALVIN_TX
-void BankWorker::txn_wc_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+void BankWorker::txn_wc_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
   int index = -1;
 
   // rtx_->clear_read_set();
   // rtx_->clear_write_set();
 
   uint64_t id;
-  GetAccount(random_generator[cor_id_],&id);
+  GetAccount(rand_gen,&id);
   struct wc_req_info_t {
     uint64_t id;
   };
@@ -398,7 +396,7 @@ void BankWorker::txn_wc_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
 #endif
 
 #ifdef CALVIN_TX
-txn_result_t BankWorker::txn_dc_new_api(calvin_request* req, yield_func_t &yield) {
+txn_result_t BankWorker::txn_dc_new_api(det_request* req, yield_func_t &yield) {
 #else
 txn_result_t BankWorker::txn_dc_new_api(yield_func_t &yield) {
 #endif
@@ -448,14 +446,14 @@ txn_result_t BankWorker::txn_dc_new_api(yield_func_t &yield) {
 }
 
 #ifdef CALVIN_TX
-void BankWorker::txn_dc_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+void BankWorker::txn_dc_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
   int index = -1;
 
   // rtx_->clear_read_set();
   // rtx_->clear_write_set();
 
   uint64_t id;
-  GetAccount(random_generator[cor_id_],&id);
+  GetAccount(rand_gen,&id);
 
   struct dc_req_info_t {
     uint64_t id;
@@ -470,7 +468,7 @@ void BankWorker::txn_dc_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
 #endif
 
 #ifdef CALVIN_TX
-txn_result_t BankWorker::txn_ts_new_api(calvin_request* req, yield_func_t &yield) {
+txn_result_t BankWorker::txn_ts_new_api(det_request* req, yield_func_t &yield) {
 #else
 txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
 #endif
@@ -519,14 +517,14 @@ txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
 }
 
 #ifdef CALVIN_TX
-void BankWorker::txn_ts_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+void BankWorker::txn_ts_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
   int index = -1;
   
   // rtx_->clear_read_set();
   // rtx_->clear_write_set();
 
   uint64_t id;
-  GetAccount(random_generator[cor_id_],&id);
+  GetAccount(rand_gen,&id);
   struct ts_req_info_t {
     uint64_t id;
   };
@@ -540,7 +538,7 @@ void BankWorker::txn_ts_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
 #endif
 
 #ifdef CALVIN_TX
-txn_result_t BankWorker::txn_balance_new_api(calvin_request* req, yield_func_t &yield) {
+txn_result_t BankWorker::txn_balance_new_api(det_request* req, yield_func_t &yield) {
 #else
 txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
 #endif
@@ -594,13 +592,13 @@ txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
 }
 
 #ifdef CALVIN_TX
-void BankWorker::txn_balance_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+void BankWorker::txn_balance_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
   int index = -1;
   // rtx_->clear_read_set();
   // rtx_->clear_write_set();
 
   uint64_t id;
-  GetAccount(random_generator[cor_id_],&(id));
+  GetAccount(rand_gen,&(id));
   struct balance_req_info_t {
     uint64_t id;
   };
@@ -614,7 +612,7 @@ void BankWorker::txn_balance_new_api_gen_rwsets(char* buf, yield_func_t &yield) 
 #endif
 
 #ifdef CALVIN_TX
-txn_result_t BankWorker::txn_amal_new_api(calvin_request* req, yield_func_t &yield) {
+txn_result_t BankWorker::txn_amal_new_api(det_request* req, yield_func_t &yield) {
 #else
 txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
 #endif
@@ -677,13 +675,13 @@ txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
 }
 
 #ifdef CALVIN_TX
-void BankWorker::txn_amal_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+void BankWorker::txn_amal_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
   int index = -1;
   // rtx_->clear_read_set();
   // rtx_->clear_write_set();
   
   uint64_t id0,id1;
-  GetTwoAccount(random_generator[cor_id_],&id0,&id1);
+  GetTwoAccount(rand_gen,&id0,&id1);
 
   struct amal_req_info_t {
     uint64_t id0;

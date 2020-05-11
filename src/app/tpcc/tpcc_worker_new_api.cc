@@ -18,7 +18,7 @@ extern int g_new_order_remote_item_pct;
 #if ENABLE_TXN_API
 
 #ifdef CALVIN_TX
-txn_result_t TpccWorker::txn_new_order_new_api(calvin_request *req, yield_func_t &yield) {
+txn_result_t TpccWorker::txn_new_order_new_api(det_request *req, yield_func_t &yield) {
 
 #if CHECKS
   if(worker_id_ != 0 || current_partition != 0)
@@ -648,7 +648,7 @@ txn_result_t TpccWorker::txn_new_order_new_api(yield_func_t &yield) {
 #endif // CALVIN_TX
 
 #ifdef CALVIN_TX
-void TpccWorker::txn_new_order_new_api_gen_rwsets(char* buf, yield_func_t &yield) {
+void TpccWorker::txn_new_order_new_api_gen_rwsets(char* buf, util::fast_random& rand_gen, yield_func_t &yield) {
 #define MAX_ITEM 15
 
   struct new_order_req_info_t {
@@ -666,6 +666,8 @@ void TpccWorker::txn_new_order_new_api_gen_rwsets(char* buf, yield_func_t &yield
   
   static_assert(MAX_ITEM >= 5, "MAX_ITEM less than 5 causes wired (maybe buffer override) problems!");
 
+  /*
+  
   // generate the req parameters ////////////////////////////////////////
   const uint warehouse_id = PickWarehouseId(random_generator[cor_id_], warehouse_id_start_, warehouse_id_end_);
   ((new_order_req_info_t*)buf)->warehouse_id = warehouse_id;
@@ -735,7 +737,7 @@ void TpccWorker::txn_new_order_new_api_gen_rwsets(char* buf, yield_func_t &yield
         i--;
         continue;
       }
-      /* if possible, add remote stock to remote stocks */
+      // if possible, add remote stock to remote stocks
       if(WarehouseToPartition(supplier_warehouse_id) != current_partition) {
         remote_stocks[num_remote_stocks] = s_key;
         remote_supplies[num_remote_stocks] = supplier_warehouse_id;
@@ -770,6 +772,10 @@ void TpccWorker::txn_new_order_new_api_gen_rwsets(char* buf, yield_func_t &yield
     ((new_order_req_info_t*)buf)->ol_quantity[num_local_stocks+i] = ol_quantity;
   }
 
+  */
+
+
+
   // struct new_order_req_info_t {
   //   uint warehouse_id;
   //   uint districtID;
@@ -794,6 +800,7 @@ void TpccWorker::txn_new_order_new_api_gen_rwsets(char* buf, yield_func_t &yield
   //                   ((new_order_req_info_t*)buf)->ol_quantity[i]
   //                   );
   // }
+
   return;
 }
 #endif

@@ -14,6 +14,10 @@ struct ReadSetItem {
   uint64_t seq; // buffered seq
   uint8_t  pid;
 
+#if BOHM_TX
+  char* correct_record_version_to_read;
+#endif
+
   inline ReadSetItem() {}
   
   inline ReadSetItem(int tableid,uint64_t key,MemNode *node,char *data_ptr,uint64_t seq,int len,int pid):
@@ -25,6 +29,9 @@ struct ReadSetItem {
       len(len),
       pid(pid)
   {
+#if BOHM_TX
+    correct_record_version_to_read = NULL;
+#endif
   }
 
   inline ReadSetItem(const ReadSetItem &item) :
@@ -36,9 +43,22 @@ struct ReadSetItem {
       len(item.len),
       pid(item.pid)
   {
+#if BOHM_TX
+    correct_record_version_to_read = item.correct_record_version_to_read;
+#endif
   }
 
 }  __attribute__ ((aligned (8)));
+
+struct BOHMReadSetItem : public ReadSetItem {
+  BOHMRecord* version;  // this indicates the correct version of bohm record to read/write
+  inline BOHMReadSetItem(int tableid,uint64_t key,MemNode *node,char *data_ptr,uint64_t seq,
+    int len,int pid): ReadSetItem (tableid, key, node, data_ptr, seq, len, pid), version(NULL) {}
+
+  inline BOHMReadSetItem(const BOHMReadSetItem &item) : ReadSetItem(item) {
+    version = item.version;
+  }
+};
 
 struct SundialReadSetItem : public ReadSetItem {
   uint32_t wts = 0, rts = 0;

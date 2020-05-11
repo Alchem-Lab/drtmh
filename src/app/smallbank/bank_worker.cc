@@ -26,12 +26,15 @@ extern nocc::db::TSManager *ts_manager;
 extern int tx_hot;
 
 extern __thread RemoteHelper *remote_helper;
-
 extern size_t current_partition;
 
 namespace nocc {
 
 extern RdmaCtrl *cm;
+
+#ifdef CALVIN_TX
+extern __thread SingleQueue  **calvin_ready_requests;
+#endif
 
 namespace oltp {
 
@@ -475,6 +478,7 @@ void BankWorker::thread_local_init() {
 #elif defined(CALVIN_TX)
     new_txs_[i] = new rtx::CALVIN(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
+    calvin_ready_requests[i] = new SingleQueue();
 #elif defined(FARM)
     txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
 #elif defined(SI_TX)

@@ -23,7 +23,9 @@ namespace rdmaio {
       return send_to(node_id,msg,len);
     }
     virtual Qp::IOStatus broadcast_to(int *node_ids, int num_of_node, char *msg,int len) = 0;
-
+    virtual Qp::IOStatus broadcast_to(int *node_ids, int num_of_node, int server_tid, char *msg,int len) {
+        return broadcast_to(node_ids, num_of_node, msg, len);
+    }
     virtual Qp::IOStatus broadcast_to(const std::set<int> &server_set, char *msg,int len) {
         int* node_ids = new int[server_set.size()];
         int cnt = 0;
@@ -40,6 +42,22 @@ namespace rdmaio {
         delete node_ids;
     }
 
+    virtual Qp::IOStatus broadcast_to(const std::set<int> &server_set, int server_tid, char *msg,int len) {
+        int* node_ids = new int[server_set.size()];
+        int cnt = 0;
+        for (auto it = server_set.begin(); it != server_set.end();++it) {
+          node_ids[cnt++] = *it;
+        }
+        broadcast_to(node_ids, cnt, server_tid, msg, len);
+        // fprintf(stdout, "broadcasting using ud_msg.\n");
+        // prepare_pending();
+        // for(auto it = server_set.begin();it != server_set.end();++it) {
+        //   post_pending(*it,msg,len);
+        // }
+        // flush_pending();
+        delete node_ids;
+    }
+    
     // delayed send methods; the message shall be sent after flush_pending
     virtual Qp::IOStatus prepare_pending() {
 

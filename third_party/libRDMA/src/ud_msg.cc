@@ -251,6 +251,60 @@ Qp::IOStatus UDMsg::broadcast_to(int *node_ids, int num_of_node, char *msg,int l
   return Qp::IO_SUCC;
 }
 
+Qp::IOStatus UDMsg::broadcast_to(int *node_ids, int num_of_node, int server_tid, char *msg,int len) {
+#if 0
+  Qp *send_qp = (*send_qps)[send_qp_idx_];
+  int ret = (int) Qp::IO_SUCC;
+
+  assert(num_of_node < MAX_DOORBELL_SIZE);
+
+  for(uint i = 0;i < num_of_node;++i) {
+
+    sr_[i].wr.ud.ah = send_qp->ahs_[node_ids[i]];
+    sr_[i].wr.ud.remote_qpn  = send_qp->ud_attrs_[node_ids[i]].qpn;
+    sr_[i].wr.ud.remote_qkey = DEFAULT_QKEY;
+
+    sr_[i].sg_list = &ssge_[i];
+
+    sr_[i].send_flags = ((send_qp->first_send()) ? IBV_SEND_SIGNALED : 0)
+                        | ((len < 64) ? IBV_SEND_INLINE : 0);
+
+    ssge_[i].addr = (uint64_t)msg;
+    ssge_[i].length = len;
+
+    if(send_qp->need_poll())
+      ret |= send_qp->poll_completion();
+  }
+
+  sr_[num_of_node - 1].next = NULL;
+  ret |= ibv_post_send(send_qp->qp, &sr_[0], &bad_sr_);
+  sr_[num_of_node - 1].next = &sr_[num_of_node];
+
+  send_qp_idx_ = (send_qp_idx_ + 1) % total_send_qps_;
+#endif
+  // fprintf(stdout, "broadcasting using ud_msg.\n");
+  if (len <= recv_buf_size_) {
+    prepare_pending();
+    for(uint i = 0;i < num_of_node;++i) {
+      post_pending(node_ids[i],server_tid,msg,len);
+    }
+    flush_pending();
+  } else {
+    prepare_pending();
+    char* buf = msg;
+    while (buf-msg < len) {
+      uint sz = (msg+len)-buf < recv_buf_size_ ? 
+                                (msg+len)-buf : recv_buf_size_;
+      for (uint i = 0;i < num_of_node;++i) {
+        post_pending(node_ids[i],server_tid,buf,sz);
+      }
+      buf += sz;
+    }
+    flush_pending();
+  }
+  return Qp::IO_SUCC;
+}
+
 Qp::IOStatus UDMsg::prepare_pending() {
   send_qp_ = (*send_qps)[send_qp_idx_];
   if(unlikely(current_idx_ != 0)){
