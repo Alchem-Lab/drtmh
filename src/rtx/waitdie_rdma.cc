@@ -27,19 +27,20 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       RdmaValHeader *h = (RdmaValHeader *)local_buf;
 
       while(true) {
-                  req.set_lock_meta(off,0,lock_content,local_buf);
-                          req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader),(*it).len);
-                                  req.post_reqs(scheduler_,qp);
-                                          worker_->indirect_yield(yield);
+        req.set_lock_meta(off,0,lock_content,local_buf);
+        req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader),(*it).len);
+        req.post_reqs(scheduler_,qp);
+        abort_cnt[17]++;
+        worker_->indirect_yield(yield);
 
-                if (h->lock != 0) {
+        if (h->lock != 0) {
           if(lock_content < h->lock) {
             worker_->yield_next(yield);
             // old_state = h->lock;
             continue;
           }
           else {
-            END(lock);
+            // END(lock);
             // LOG(3) << lock_content << ' ' << h->lock << ' ' << old_state;
             // LOG(3) << index << ' ' << (*it).key;
             abort_cnt[1]++;
@@ -63,7 +64,7 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      R_LEASE(txn_start_time)))){
         #if !NO_ABORT
-        END(lock);
+        // END(lock);
         return false;
         #endif
       } // check local lock
@@ -96,9 +97,10 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
 
       while(true) {
         req.set_lock_meta(off,0,lock_content,local_buf);
-                req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader), (*it).len);
-                        req.post_reqs(scheduler_,qp);
-                                worker_->indirect_yield(yield);
+        req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader), (*it).len);
+        req.post_reqs(scheduler_,qp);
+        abort_cnt[17]++;
+        worker_->indirect_yield(yield);
 
         if(h->lock != 0) {
           if(lock_content < h->lock) {
@@ -108,7 +110,7 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
             continue;
           }
           else {
-            END(lock);
+            // END(lock);
             abort_cnt[2]++;
             return false;
           }
@@ -128,7 +130,7 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      R_LEASE(txn_start_time) + 1))){
         #if !NO_ABORT
-        END(lock);
+        // END(lock);
         return false;
         #endif
       } // check local lock
@@ -142,7 +144,7 @@ void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
   // can only work with lock_w_rdma
   START(release_write);
   uint64_t lock_content = R_LEASE(txn_start_time);
-
+  abort_cnt[19]+=read_set_.size();
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
     if((*it).pid != node_id_) {
       RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
@@ -162,6 +164,7 @@ void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
       while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
     } // check pid
   }   // for
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(release_write);
   return;
@@ -170,7 +173,7 @@ void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
 void WAITDIE::release_writes_w_rdma(yield_func_t &yield) {
   START(release_write);
   uint64_t lock_content =  R_LEASE(txn_start_time) + 1;
-
+  abort_cnt[19]+=write_set_.size();
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) {
       RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
@@ -190,6 +193,7 @@ void WAITDIE::release_writes_w_rdma(yield_func_t &yield) {
       while (!unlikely(local_try_release_op(it->tableid, it->key, lock_content))) ;
     } // check pid
   }   // for
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(release_write);
   return;
@@ -224,6 +228,7 @@ void WAITDIE::write_back_w_rdma(yield_func_t &yield) {
 
       // avoid send queue from overflow
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
       }
 
@@ -232,6 +237,7 @@ void WAITDIE::write_back_w_rdma(yield_func_t &yield) {
     } // check pid
   }   // for
   // gather results
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(commit);
 }
@@ -251,7 +257,7 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
                                (*it).pid,(*it).tableid,(*it).len,(*it).key,(*it).seq, 
                                txn_start_time
     );
-
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     END(lock);
 
@@ -319,7 +325,7 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
                                (*it).pid,(*it).tableid,(*it).len,(*it).key,(*it).seq, 
                                txn_start_time
     );
-
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     END(lock);
 
@@ -381,6 +387,7 @@ void WAITDIE::release_reads(yield_func_t &yield, bool release_all) {
   if(!release_all) {
     num -= 1;
   }
+  abort_cnt[19]+=num;
   start_batch_rpc_op(write_batch_helper_);
   for(int i = 0; i < num; ++i) {
     if(read_set_[i].pid != node_id_) { // remote case
@@ -394,6 +401,7 @@ void WAITDIE::release_reads(yield_func_t &yield, bool release_all) {
     }
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(release_write);
 }
@@ -405,6 +413,7 @@ void WAITDIE::release_writes(yield_func_t &yield, bool release_all) {
   if(!release_all) {
     num -= 1;
   }
+  abort_cnt[19]+=num;
   start_batch_rpc_op(write_batch_helper_);
   for(int i = 0; i < num; ++i) {
     if(write_set_[i].pid != node_id_) { // remote case
@@ -418,9 +427,68 @@ void WAITDIE::release_writes(yield_func_t &yield, bool release_all) {
     }
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(release_write);
 }
+
+void WAITDIE::prepare_write_contents() {
+    write_batch_helper_.clear_buf();
+
+    for(auto it = write_set_.begin();it != write_set_.end();++it) {
+        if(it->pid != node_id_) {
+            add_batch_entry_wo_mac<RtxWriteItem>(write_batch_helper_,
+                    (*it).pid,
+                    /* init write item */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+            memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
+            write_batch_helper_.req_buf_end_ += (*it).len;
+        }
+    }
+}
+
+void WAITDIE::log_remote(yield_func_t &yield) {
+
+  if(write_set_.size() > 0 && global_view->rep_factor_ > 0) {
+
+    // re-use write_batch_helper_'s data structure
+    BatchOpCtrlBlock cblock(write_batch_helper_.req_buf_,write_batch_helper_.reply_buf_);
+    cblock.batch_size_  = write_batch_helper_.batch_size_;
+    cblock.req_buf_end_ = write_batch_helper_.req_buf_end_;
+
+#if EM_FASST
+    global_view->add_backup(response_node_,cblock.mac_set_);
+    ASSERT(cblock.mac_set_.size() == global_view->rep_factor_)
+        << "FaSST should uses rep-factor's log entries, current num "
+        << cblock.mac_set_.size() << "; rep-factor " << global_view->rep_factor_;
+#else
+    for(auto it = write_batch_helper_.mac_set_.begin();
+        it != write_batch_helper_.mac_set_.end();++it) {
+      global_view->add_backup(*it,cblock.mac_set_);
+    }
+    // add local server
+    global_view->add_backup(current_partition,cblock.mac_set_);
+#endif
+
+#if CHECKS
+    LOG(3) << "log to " << cblock.mac_set_.size() << " macs";
+#endif
+
+    START(log);
+    logger_->log_remote(cblock,cor_id_);
+    abort_cnt[18]++;
+    worker_->indirect_yield(yield);
+    END(log);
+#if 1
+    cblock.req_buf_ = rpc_->get_fly_buf(cor_id_);
+    memcpy(cblock.req_buf_,write_batch_helper_.req_buf_,write_batch_helper_.batch_msg_size());
+    cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
+    //log ack
+    logger_->log_ack(cblock,cor_id_); // need to yield
+    worker_->indirect_yield(yield);
+#endif
+  } // end check whether it is necessary to log
+}
+
 
 
 void WAITDIE::write_back(yield_func_t &yield) {
@@ -443,6 +511,7 @@ void WAITDIE::write_back(yield_func_t &yield) {
   }
 
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID);
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(commit);
 }

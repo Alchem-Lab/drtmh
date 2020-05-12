@@ -82,7 +82,7 @@ protected:
 #if ONE_SIDED_READ
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    START(read_lat);
+    // START(read_lat);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
 
@@ -99,7 +99,7 @@ protected:
     data_ptr = data_ptr + sizeof(RdmaValHeader);
 #endif
     ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
-    END(read_lat);
+    // END(read_lat);
     read_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
                            seq,
                            len,pid);
@@ -291,6 +291,9 @@ protected:
   void release_reads(yield_func_t &yield, bool all = true);
   void release_writes(yield_func_t &yield, bool all = true);
 
+  void prepare_write_contents();
+  void log_remote(yield_func_t &yield);
+
   void write_back_w_rdma(yield_func_t &yield);
   void write_back(yield_func_t &yield);
 
@@ -443,6 +446,7 @@ public:
       START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
+      abort_cnt[18]++;
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
@@ -475,6 +479,7 @@ public:
       START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
+      abort_cnt[18]++;
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
@@ -527,6 +532,7 @@ public:
       START(read_lat);
       auto replies = send_batch_read();
       assert(replies > 0);
+      abort_cnt[18]++;
       worker_->indirect_yield(yield);
 
       parse_batch_result(replies);
@@ -604,10 +610,10 @@ public:
 
     asm volatile("" ::: "memory");
 
-    // prepare_write_contents();
-    // log_remote(yield); // log remote using *logger_*
+    prepare_write_contents();
+    log_remote(yield); // log remote using *logger_*
 
-    // asm volatile("" ::: "memory");
+    asm volatile("" ::: "memory");
 
 #if 1
 #if USE_DSLR
@@ -631,10 +637,16 @@ public:
 
 #else
   virtual bool commit(yield_func_t &yield) {
-  write_back(yield);
-  release_reads(yield);
-  abort_cnt[27]++;
-  return true;
+    asm volatile("" ::: "memory");
+
+    prepare_write_contents();
+    log_remote(yield); // log remote using *logger_*
+
+    asm volatile("" ::: "memory");
+    write_back(yield);
+    release_reads(yield);
+    abort_cnt[27]++;
+    return true;
 }
 
 

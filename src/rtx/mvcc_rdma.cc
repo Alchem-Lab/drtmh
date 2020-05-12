@@ -11,6 +11,7 @@ void MVCC::release_reads(yield_func_t &yield) {
 
 void MVCC::release_writes(yield_func_t &yield, bool all) {
   int release_num = write_set_.size();
+  abort_cnt[19]+=release_num;
   START(release_write);
   if(!all) {
     release_num -= 1;
@@ -26,6 +27,7 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
       unlock_req_->post_reqs(scheduler_, qp);
       need_yield = true;
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
         need_yield = false;
       }
@@ -41,12 +43,13 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
     }
   }
   if(need_yield) {
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
 #else
   start_batch_rpc_op(write_batch_helper_);
   bool need_send = false;
-
+  abort_cnt[19]+=release_num;
   for(int i = 0; i < release_num; ++i) {
     auto& item = write_set_[i];
     if(item.pid != node_id_) {
@@ -65,6 +68,7 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
   }
   if(need_send) {
     send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_RELEASE_RPC_ID);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
 #endif
@@ -81,6 +85,7 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
                                  rpc_op_send_buf_,reply_buf_,
                                  /*init RTXMVCCWriteRequestItem*/
                                  (*it).pid, (*it).key, (*it).tableid,(*it).len, txn_start_time);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     END(read_lat);
     uint8_t resp_status = *(uint8_t*)reply_buf_;
@@ -146,6 +151,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
                                rpc_op_send_buf_,reply_buf_,
                                /*init RTXMVCCWriteRequestItem*/
                                (*it).pid, (*it).key, (*it).tableid,(*it).len,txn_start_time);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     END(lock);
     // got the response
@@ -187,7 +193,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
       volatile uint64_t* lockptr = &(header->lock);
       if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, txn_start_time))) {
 #ifdef MVCC_NOWAIT
-        abort_cnt[17]++;
+        abort_cnt[13]++;
         abort_reason = 17;
         END(lock);
         return false;
@@ -274,10 +280,68 @@ bool MVCC::try_update_rpc(yield_func_t &yield) {
   }
   if(need_send) {
     send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
   END(commit);
   return true;
+}
+
+void MVCC::prepare_write_contents() {
+    write_batch_helper_.clear_buf();
+
+    for(auto it = write_set_.begin();it != write_set_.end();++it) {
+        if(it->pid != node_id_) {
+            add_batch_entry_wo_mac<RtxWriteItem>(write_batch_helper_,
+                    (*it).pid,
+                    /* init write item */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+            memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
+            write_batch_helper_.req_buf_end_ += (*it).len;
+        }
+    }
+}
+
+void MVCC::log_remote(yield_func_t &yield) {
+
+  if(write_set_.size() > 0 && global_view->rep_factor_ > 0) {
+
+    // re-use write_batch_helper_'s data structure
+    BatchOpCtrlBlock cblock(write_batch_helper_.req_buf_,write_batch_helper_.reply_buf_);
+    cblock.batch_size_  = write_batch_helper_.batch_size_;
+    cblock.req_buf_end_ = write_batch_helper_.req_buf_end_;
+
+#if EM_FASST
+    global_view->add_backup(response_node_,cblock.mac_set_);
+    ASSERT(cblock.mac_set_.size() == global_view->rep_factor_)
+        << "FaSST should uses rep-factor's log entries, current num "
+        << cblock.mac_set_.size() << "; rep-factor " << global_view->rep_factor_;
+#else
+    for(auto it = write_batch_helper_.mac_set_.begin();
+        it != write_batch_helper_.mac_set_.end();++it) {
+      global_view->add_backup(*it,cblock.mac_set_);
+    }
+    // add local server
+    global_view->add_backup(current_partition,cblock.mac_set_);
+#endif
+
+#if CHECKS
+    LOG(3) << "log to " << cblock.mac_set_.size() << " macs";
+#endif
+
+    START(log);
+    logger_->log_remote(cblock,cor_id_);
+    abort_cnt[18]++;
+    worker_->indirect_yield(yield);
+    END(log);
+#if 1
+    cblock.req_buf_ = rpc_->get_fly_buf(cor_id_);
+    memcpy(cblock.req_buf_,write_batch_helper_.req_buf_,write_batch_helper_.batch_msg_size());
+    cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
+    //log ack
+    logger_->log_ack(cblock,cor_id_); // need to yield
+    worker_->indirect_yield(yield);
+#endif
+  }
 }
 
 void MVCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
@@ -519,15 +583,15 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     Qp *qp = get_qp(item.pid);
     assert(qp != NULL);
     MVCCHeader* header = (MVCCHeader*)local_buf;
-
     scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
       sizeof(MVCCHeader), off, IBV_SEND_SIGNALED);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     int ret;
     if((ret = check_write(header, txn_start_time)) != 0) {
       cnt_timer = ret >> 10;
       abort_cnt[38]++;
-      END(lock);
+      // END(lock);
       return -1;
     }
     // step 2: lock remote
@@ -535,13 +599,14 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       //lock_req_->set_lock_meta(off, 0, txn_start_time, local_buf);
       //lock_req_->post_reqs(scheduler_, qp);
       //worker_->indirect_yield(yield);
-              req.set_lock_meta(off,0,txn_start_time,local_buf);
-                      req.set_read_meta(off+ sizeof(uint64_t), local_buf+ sizeof(uint64_t) , item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader)- sizeof(uint64_t));
-                              req.post_reqs(scheduler_,qp);
-                                      worker_->indirect_yield(yield);
+      req.set_lock_meta(off,0,txn_start_time,local_buf);
+      req.set_read_meta(off+ sizeof(uint64_t), local_buf+ sizeof(uint64_t) , item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader)- sizeof(uint64_t));
+      req.post_reqs(scheduler_,qp);
+      abort_cnt[17]++;
+      worker_->indirect_yield(yield);
 
       if(header->lock > txn_start_time) { // a newer write is processing
-        END(lock);
+        // END(lock);
         cnt_timer = header->lock >> 10;
         abort_cnt[0]++;
         abort_reason = 0;
@@ -549,7 +614,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       }
       else if(header->lock != 0) {
 #ifdef MVCC_NOWAIT
-        END(lock);
+        // END(lock);
         abort_cnt[1]++;
         // LOG(3) << "remote fail get lock " << header->lock << ' ' << item.key;
         abort_reason = 1;
@@ -725,6 +790,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     MVCCHeader* header = (MVCCHeader*)recv_ptr;
     scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, recv_ptr,
       sizeof(MVCCHeader) + MVCC_VERSION_NUM * item.len, off, IBV_SEND_SIGNALED);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     int pos = -1;
     if((pos = check_read(header, txn_start_time)) < 0) {
@@ -733,7 +799,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
         else
             abort_cnt[10]++;
       abort_reason = 9;
-      END(read_lat);
+      // END(read_lat);
       return false;
     }
     uint64_t before_reading_wts = header->wts[pos];
@@ -742,12 +808,13 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, recv_ptr,
       sizeof(MVCCHeader) /*+ MVCC_VERSION_NUM * item.len*/, off, 
       IBV_SEND_SIGNALED);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     int new_pos = check_read(header, txn_start_time);
     if(new_pos != pos || header->wts[new_pos] != before_reading_wts) {
       abort_cnt[10]++;
       abort_reason = 10;
-      END(read_lat);
+      // END(read_lat);
       return false;
     }
 
@@ -757,6 +824,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     while(compare < txn_start_time) {
       lock_req_->set_lock_meta(off + sizeof(uint64_t), compare, 
         txn_start_time, (char*)(&back));
+      abort_cnt[17]++;
       worker_->indirect_yield(yield);
       if(compare == back)
         break;
@@ -847,6 +915,7 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
       write_req_->post_reqs(scheduler_, qp);
       need_yield = true;
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
         need_yield = false;
       }
@@ -872,6 +941,7 @@ bool MVCC::try_update_rdma(yield_func_t &yield) {
     }
   }
   if(need_yield) {
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
   END(commit);

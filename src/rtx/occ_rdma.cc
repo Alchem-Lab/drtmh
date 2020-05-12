@@ -37,6 +37,7 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
 
       // two request need to be polled
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[17]++;
         worker_->indirect_yield(yield);
       }
       write_batch_helper_.mac_set_.insert(it->pid);
@@ -57,7 +58,7 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
       } // check seq
     }
   } // end for
-
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   // gather replies
   END(lock);
@@ -132,6 +133,7 @@ bool OCCR::lock_writes_w_FA_rdma(yield_func_t &yield) {
 
       // read request need to be polled
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
       }
 
@@ -155,7 +157,7 @@ bool OCCR::lock_writes_w_FA_rdma(yield_func_t &yield) {
       } // check seq
     }
   } // end for
-
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   // gather replies
   END(lock);
@@ -188,7 +190,7 @@ void OCCR::release_writes_w_rdma(yield_func_t &yield) {
   // can only work with lock_w_rdma
   START(release_write);
   uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
-
+  abort_cnt[19]+=write_set_.size();
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) {
 #if INLINE_OVERWRITE
@@ -209,6 +211,7 @@ void OCCR::release_writes_w_rdma(yield_func_t &yield) {
       assert(false); // not implemented
     } // check pid
   }   // for
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(release_write);
   return;
@@ -238,6 +241,7 @@ void OCCR::release_writes_w_FA_rdma(yield_func_t &yield) {
       assert(false); // not implemented
     } // check pid
   }   // for
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   return;
 }
@@ -274,6 +278,7 @@ void OCCR::write_back_w_rdma(yield_func_t &yield) {
 
       // avoid send queue from overflow
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
       }
 
@@ -282,6 +287,7 @@ void OCCR::write_back_w_rdma(yield_func_t &yield) {
     } // check pid
   }   // for
   // gather results
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(commit);
 }
@@ -319,6 +325,7 @@ void OCCR::write_back_w_FA_rdma(yield_func_t &yield) {
       req.post_reqs(scheduler_,qp);
       // avoid send queue from overflow
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
       }
       if(dslr_lock_manager->isLocked(std::make_pair(qp, (*it).off))) { // successfull locked
@@ -330,12 +337,13 @@ void OCCR::write_back_w_FA_rdma(yield_func_t &yield) {
     } // check pid
   }   // for
   // gather results
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(commit);
 }
 
 bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
-
+  START(renew_lease);
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
     if((*it).tableid == 7) continue;
     if((*it).pid != node_id_) {
@@ -365,8 +373,9 @@ bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
       }
     }
   }
-
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
+  END(renew_lease);
 
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
     if((*it).pid != node_id_) {
@@ -421,7 +430,7 @@ bool OCCR::validate_reads_w_FA_rdma(yield_func_t &yield) {
       }
     }
   }
-
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
 
   for(auto it = read_set_.begin();it != read_set_.end();++it) {

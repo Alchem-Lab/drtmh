@@ -36,12 +36,14 @@ protected:
 
   bool try_read_rdma(int index, yield_func_t &yield);
   int try_lock_read_rdma(int index, yield_func_t &yield);
-
-
+ 
   void release_reads(yield_func_t &yield);
   void release_writes(yield_func_t &yield, bool all = true);
   bool try_update_rdma(yield_func_t &yield);
 
+  void prepare_write_contents();
+  void log_remote(yield_func_t &yield);
+  
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     char* data_ptr = (char*)malloc(len);
     for(auto&item : write_set_) {
@@ -235,6 +237,8 @@ public:
   }
 
   virtual bool commit(yield_func_t &yield) {
+    prepare_write_contents();
+    log_remote(yield); // log remote using *logger_*
 #if ONE_SIDED_READ
     try_update_rdma(yield);
     abort_cnt[35]++;
@@ -282,6 +286,7 @@ protected:
   RDMAFAUnlockReq* unlock_req_ = NULL;
   RDMAWriteReq* write_req_ = NULL;
 
+  Logger *logger_       = NULL;
 
   char* Rmempool[100];
   int memptr = 0;
@@ -294,7 +299,7 @@ public:
     }
   }
 #include "occ_statistics.h"
-
+  void set_logger(Logger *log) { logger_ = log; }
   void register_default_rpc_handlers();
 private:
   void lock_read_rpc_handler(int id,int cid,char *msg,void *arg);

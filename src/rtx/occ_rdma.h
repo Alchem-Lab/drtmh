@@ -125,7 +125,7 @@ class OCCR : public OCC {
   }
 
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-
+    START(read_lat);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
 
@@ -141,6 +141,7 @@ class OCCR : public OCC {
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
 #endif
+    END(read_lat);
     ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
 
     write_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
@@ -199,7 +200,7 @@ class OCCR : public OCC {
 #if 1
     asm volatile("" ::: "memory");
     prepare_write_contents();
-    // log_remote(yield); // log remote using *logger_*
+    log_remote(yield); // log remote using *logger_*
 #if CHECKS
     RdmaChecker::check_log_content(this,yield);
 #endif
@@ -248,7 +249,7 @@ ABORT:
     gc_writeset();
     // clear the mac_set, used for the next time
     write_batch_helper_.clear();
-    END(commit);
+    // END(commit);
     return false;
   }
 

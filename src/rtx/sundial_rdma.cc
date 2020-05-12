@@ -25,6 +25,7 @@ bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
       req.post_reqs(scheduler_, qp);
       need_yield = true;
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
         need_yield = false;
       }
@@ -45,6 +46,7 @@ bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
     }
   }
   if(need_yield){
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
   END(commit);
@@ -75,11 +77,71 @@ bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
   }
   if(need_send) {
     send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
   END(commit);
   return true;
 }
+
+void SUNDIAL::prepare_write_contents() {
+    write_batch_helper_.clear_buf();
+
+    for(auto it = write_set_.begin();it != write_set_.end();++it) {
+        if(it->pid != node_id_) {
+            add_batch_entry_wo_mac<RtxWriteItem>(write_batch_helper_,
+                    (*it).pid,
+                    /* init write item */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+            memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
+            write_batch_helper_.req_buf_end_ += (*it).len;
+        }
+    }
+}
+
+void SUNDIAL::log_remote(yield_func_t &yield) {
+
+  if(write_set_.size() > 0 && global_view->rep_factor_ > 0) {
+
+    // re-use write_batch_helper_'s data structure
+    BatchOpCtrlBlock cblock(write_batch_helper_.req_buf_,write_batch_helper_.reply_buf_);
+    cblock.batch_size_  = write_batch_helper_.batch_size_;
+    cblock.req_buf_end_ = write_batch_helper_.req_buf_end_;
+
+#if EM_FASST
+    global_view->add_backup(response_node_,cblock.mac_set_);
+    ASSERT(cblock.mac_set_.size() == global_view->rep_factor_)
+        << "FaSST should uses rep-factor's log entries, current num "
+        << cblock.mac_set_.size() << "; rep-factor " << global_view->rep_factor_;
+#else
+    for(auto it = write_batch_helper_.mac_set_.begin();
+        it != write_batch_helper_.mac_set_.end();++it) {
+      global_view->add_backup(*it,cblock.mac_set_);
+    }
+    // add local server
+    global_view->add_backup(current_partition,cblock.mac_set_);
+#endif
+
+#if CHECKS
+    LOG(3) << "log to " << cblock.mac_set_.size() << " macs";
+#endif
+
+    START(log);
+    logger_->log_remote(cblock,cor_id_);
+    abort_cnt[18]++;
+    worker_->indirect_yield(yield);
+    END(log);
+#if 1
+    cblock.req_buf_ = rpc_->get_fly_buf(cor_id_);
+    memcpy(cblock.req_buf_,write_batch_helper_.req_buf_,write_batch_helper_.batch_msg_size());
+    cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
+    //log ack
+    logger_->log_ack(cblock,cor_id_); // need to yield
+    worker_->indirect_yield(yield);
+#endif
+  }
+}
+
+    
 
 void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
   RTX_ITER_ITEM(msg, sizeof(RTXUpdateItem)) {
@@ -123,6 +185,7 @@ bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) 
         sizeof(RdmaValHeader), item.off, IBV_SEND_SIGNALED);
       need_yield = true;
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
         need_yield = false;
       }
@@ -132,6 +195,7 @@ bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) 
     }
   }
   if(need_yield) {
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
   need_yield = false;
@@ -141,7 +205,7 @@ bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) 
     uint32_t node_wts = WTS(header->seq);
     if(item.wts != node_wts || (commit_id > node_rts && header->lock != 0)) {
       abort_cnt[36]++;
-      END(renew_lease);
+      // END(renew_lease);
       return false;
     }
     else {
@@ -156,12 +220,14 @@ bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) 
         req.post_reqs(scheduler_, qp);
         need_yield = true;
         if(unlikely(qp->rc_need_poll())) {
+          abort_cnt[18]++;
           worker_->indirect_yield(yield);
           need_yield = false;
         }
       }
     }
     if(need_yield) {
+      abort_cnt[18]++;
       worker_->indirect_yield(yield);
     }
   }
@@ -179,6 +245,7 @@ bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &
 
   scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
     sizeof(RdmaValHeader), item.off, IBV_SEND_SIGNALED);
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   uint64_t l = header->lock;
   uint64_t tss = header->seq;
@@ -186,7 +253,7 @@ bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &
   uint32_t node_rts = RTS(tss);
   if(item.wts != node_wts || (commit_id > node_rts && l != 0)) { // !!
     abort_cnt[35]++;
-    END(renew_lease);
+    // END(renew_lease);
     return false;
   }
   else {
@@ -198,6 +265,7 @@ bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &
         sizeof(uint64_t));
       req.post_reqs(scheduler_, qp);
       // if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
       // }
     }
@@ -253,6 +321,7 @@ bool SUNDIAL::try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, ui
                                  rpc_op_send_buf_,reply_buf_,
                                  /*init RTXRenewLeaseItem*/
                                  pid, tableid, key, wts, commit_id);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     END(renew_lease);
 
@@ -302,6 +371,7 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
                                  rpc_op_send_buf_,reply_buf_,
                                  /*init RTXSundialReadItem*/
                                  (*it).pid, (*it).key, (*it).tableid,(*it).len, txn_start_time);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
 
     uint8_t resp_status = *(uint8_t*)reply_buf_;
@@ -310,7 +380,7 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
       return true;
     }
     else if (resp_status == LOCK_FAIL_MAGIC){
-      END(read_lat);
+      // END(read_lat);
       return false;
     }
     assert(false);
@@ -373,15 +443,16 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
       //lock_req_->post_reqs(scheduler_, qp);
       //worker_->indirect_yield(yield);
               req.set_lock_meta(off,0,txn_start_time,local_buf);
-                      req.set_read_meta(off + sizeof(uint64_t), local_buf + sizeof(uint64_t),(*it).len + sizeof(RdmaValHeader)- sizeof(uint64_t));
-                              req.post_reqs(scheduler_,qp);
-                                      worker_->indirect_yield(yield);
+              req.set_read_meta(off + sizeof(uint64_t), local_buf + sizeof(uint64_t),(*it).len + sizeof(RdmaValHeader)- sizeof(uint64_t));
+              req.post_reqs(scheduler_,qp);
+              abort_cnt[17]++;
+              worker_->indirect_yield(yield);
 
       // if(false) {
       volatile uint64_t newlock = *(uint64_t*)local_buf;
       if(newlock != 0) {
 #ifdef SUNDIAL_NOWAIT
-        END(lock);
+        // END(lock);
         abort_cnt[0]++;
         return false;
         
@@ -397,7 +468,7 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
         //   // LOG(3) << txn_start_time;
         // }
         else {
-          END(lock);
+          // END(lock);
           abort_cnt[32]++;
           return false;
         }
@@ -466,6 +537,7 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
                                rpc_op_send_buf_,reply_buf_,
                                /*init RTXSundialReadItem*/
                                (*it).pid, (*it).key, (*it).tableid,(*it).len,txn_start_time);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     END(lock);
     // got the response
@@ -618,6 +690,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
 #if ONE_SIDED_READ
   // the back of write set fail to get lock, no need to unlock
   bool need_yield = false;
+  abort_cnt[19]+=release_num;
   for(int i = 0; i < release_num; ++i) {
     auto& item = write_set_[i];
     // if(item.pid != response_node_) {
@@ -627,6 +700,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
       unlock_req_->post_reqs(scheduler_, qp);
       need_yield = true;
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
         need_yield = false;
       }
@@ -641,6 +715,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
     }
   }
   if(need_yield) {
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
 #else
@@ -649,6 +724,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
   bool need_send = false;
 
   // for(auto it = write_set_.begin();it != write_set_.end();++it) {
+  abort_cnt[19]+=release_num;
   for(int i = 0; i < release_num; ++i) {
     auto& item = write_set_[i];
     if(item.pid != node_id_) { // remote case
@@ -666,6 +742,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
   if(need_send) {
     // LOG(3) << "release write once";
     send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
   }
 #endif

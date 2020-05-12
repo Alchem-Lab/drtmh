@@ -45,6 +45,10 @@ protected:
   void release_writes(yield_func_t &yield, bool all = true);
 
 
+  void prepare_write_contents();
+  void log_remote(yield_func_t &yield); // log remote using *logger_*
+
+
   bool renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id);
 
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
@@ -83,6 +87,7 @@ protected:
       Qp *qp = get_qp(pid);
       scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, data_ptr, 
           sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
+      abort_cnt[18]++;
       worker_->indirect_yield(yield);
       if(WTS(header->seq) != read_set_.back().wts) {
         abort_cnt[33]++;
@@ -110,6 +115,7 @@ protected:
     commit_id_ = std::max(commit_id_, read_set_.back().wts);
     END(read_lat);
 #else
+    START(read_lat);
     if(!try_read_rpc(index, yield)) {
       // abort
       abort_cnt[14]++;
@@ -118,6 +124,7 @@ protected:
       return -1;
     }
     process_received_data(reply_buf_, read_set_.back(), false);
+    END(read_lat);
 #endif
     return index;
   }
@@ -345,6 +352,8 @@ public:
     return true;
   }
   virtual bool commit(yield_func_t &yield) {
+    prepare_write_contents();
+    log_remote(yield); // log remote using *logger_*
     #if ONE_SIDED_READ
     abort_cnt[15]++;
     return try_update_rdma(yield);
@@ -369,6 +378,8 @@ protected:
   const int cor_id_;
   const int response_node_;
 
+  Logger *logger_       = NULL;
+  
   char* rpc_op_send_buf_;
   char reply_buf_[MAX_MSG_SIZE];
 
@@ -378,6 +389,7 @@ protected:
 public:
 #include "occ_statistics.h"
 
+  void set_logger(Logger *log) { logger_ = log; }
   void register_default_rpc_handlers();
 private:
 // rpc handlers

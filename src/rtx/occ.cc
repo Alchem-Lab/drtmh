@@ -70,7 +70,7 @@ bool OCC::commit(yield_func_t &yield) {
   }
 
   prepare_write_contents();
-  // log_remote(yield); // log remote using *logger_*
+  log_remote(yield); // log remote using *logger_*
 
   // write the modifications of records back
   write_back_oneshot(yield);
@@ -79,7 +79,7 @@ bool OCC::commit(yield_func_t &yield) {
   return true;
 ABORT:
   release_writes(yield);
-  END(commit);
+  // END(commit);
   return false;
 }
 
@@ -255,6 +255,7 @@ void OCC::write_back(yield_func_t &yield) {
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID,PA);
   assert(write_batch_helper_.mac_set_.size() > 0);
 #if PA == 0
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
 #else
   write_batch_helper_.req_buf_ = rpc_->get_fly_buf(cor_id_); // update the buf to avoid on-flight overwrite
@@ -279,7 +280,7 @@ void OCC::write_back_oneshot(yield_func_t &yield) {
     }
   }
   rpc_->flush_pending();
-
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(commit);
 }
@@ -287,6 +288,7 @@ void OCC::write_back_oneshot(yield_func_t &yield) {
 bool OCC::release_writes(yield_func_t &yield) {
   START(release_write);
   start_batch_rpc_op(write_batch_helper_);
+  abort_cnt[19]+=write_set_.size();
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) { // remote case
       add_batch_entry<RtxLockItem>(write_batch_helper_, (*it).pid,
@@ -297,6 +299,7 @@ bool OCC::release_writes(yield_func_t &yield) {
     }
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(release_write);
 }
@@ -330,6 +333,7 @@ void OCC::log_remote(yield_func_t &yield) {
 
     START(log);
     logger_->log_remote(cblock,cor_id_);
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
     END(log);
 #if 1
@@ -338,6 +342,7 @@ void OCC::log_remote(yield_func_t &yield) {
     cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
     //log ack
     logger_->log_ack(cblock,cor_id_); // need to yield
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
 #endif
   } // end check whether it is necessary to log
@@ -361,6 +366,7 @@ bool OCC::validate_reads(yield_func_t &yield) {
     }
   }
   send_batch_rpc_op(read_batch_helper_,cor_id_,RTX_VAL_RPC_ID);
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
 
   // parse the results
@@ -401,7 +407,7 @@ bool OCC::lock_writes(yield_func_t &yield) {
     }
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_LOCK_RPC_ID);
-
+  abort_cnt[18]++;
   worker_->indirect_yield(yield);
   END(lock);
 

@@ -511,17 +511,21 @@ void BankWorker::thread_local_init() {
 #elif defined(NOWAIT_TX)
     new_txs_[i] = new rtx::NOWAIT(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
+    new_txs_[i]->set_logger(new_logger_);
 #elif defined(SUNDIAL_TX)
     assert(new_txs_ != NULL);
     new_txs_[i] = new rtx::SUNDIAL(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
+    new_txs_[i]->set_logger(new_logger_);
 #elif defined(MVCC_TX)
     assert(new_txs_ != NULL);
     new_txs_[i] = new rtx::MVCC(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
+    new_txs_[i]->set_logger(new_logger_);
 #elif defined(WAITDIE_TX)
     new_txs_[i] = new rtx::WAITDIE(this,store_,rpc_,current_partition,worker_id_,i,-1,
                                    cm,rdma_sched_,total_partition);
+    new_txs_[i]->set_logger(new_logger_);
 #elif defined(FARM)
     txs_[i] = new DBFarm(cm,rdma_sched_,store_,worker_id_,rpc_,i);
 #elif defined(SI_TX)

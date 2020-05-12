@@ -30,7 +30,7 @@ static const int per_socket_cores = -1;// no hyper thread//TODO!! hard coded
 #else
 
 //methods for set affinity
-static const int per_socket_cores = 10;//TODO!! hard coded
+static const int per_socket_cores = 12;//TODO!! hard coded
 //const int per_socket_cores = 8;//reserve 2 cores
 
  static int socket_0[] =  {
