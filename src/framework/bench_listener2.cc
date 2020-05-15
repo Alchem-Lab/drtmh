@@ -18,6 +18,13 @@ extern size_t distributed_ratio;
 extern std::string exe_name;
 extern std::string bench_type;
 
+#if CALVIN
+#include "framework/sequencer.h"
+#include "framework/scheduler.h"
+extern oltp::Sequencer* sequencer;
+extern oltp::Scheduler* scheduler;
+#endif
+
 namespace nocc {
 
 extern RdmaCtrl *cm;

@@ -16,13 +16,16 @@ namespace rdmaio {
     const int RECV_QP_IDX = 0; // receive qp starts at 0, since there may be multiple send_qps
 
     bool bootstrap_ud_qps(RdmaCtrl *cm,int tid,int total,int dev_id,int port_idx,int send_qp_num);
-
+    bool bootstrap_ud_qps(RdmaCtrl *cm,int tid, std::vector<int>& tids, int dev_id,int port_idx,int send_qp_num);
+    
     class UDMsg : public MsgHandler {
 
     public:
 
       UDMsg(RdmaCtrl *cm,int tid,int total, uint64_t max_recv_num,msg_func_t func,int dev_id,int port_id,int send_num);
-
+      UDMsg(RdmaCtrl *cm,int tid,std::vector<int>& threads,
+                    uint64_t max_recv_num,msg_func_t fun,
+                    int dev_id,int port_idx,int send_qp_num);
       Qp::IOStatus send_to(int key,char *msg,int len);
       Qp::IOStatus send_to(int node_id,int tid,char *msg,int len);
       Qp::IOStatus broadcast_to(int *node_ids, int num_of_node, char *msg,int len);

@@ -65,7 +65,7 @@ extern __thread rtx::SUNDIAL  **new_txs_;
 extern __thread rtx::MVCC  **new_txs_;
 #elif defined(CALVIN_TX)
 extern __thread rtx::CALVIN  **new_txs_;
-extern __thread SingleQueue  **calvin_ready_requests;
+extern __thread std::vector<SingleQueue*> calvin_ready_requests;
 #endif
 
 extern     RdmaCtrl *cm;
@@ -160,14 +160,12 @@ class BenchWorker : public RWorker {
   void req_rpc_handler(int id,int cid,char *msg,void *arg);
 
 #ifdef CALVIN_TX
-  void init_calvin();
-  void worker_routine_for_calvin(yield_func_t &yield);
-  void calvin_schedule_rpc_handler(int id,int cid,char *msg,void *arg);
-  void check_schedule_done(int cid);
-  void calvin_epoch_status_rpc_handler(int id, int cid, char *msg, void *arg);
-  bool check_epoch_done();
+  // void init_calvin();
+  // void calvin_schedule_rpc_handler(int id,int cid,char *msg,void *arg);
+  // void check_schedule_done(int cid);
+  // void calvin_epoch_status_rpc_handler(int id, int cid, char *msg, void *arg);
+  // bool check_epoch_done();
 #elif defined(BOHM_TX)
-  void worker_routine_for_bohm(yield_func_t &yield);
 #endif
 
   void change_ctx(int cor_id) {

@@ -55,6 +55,45 @@ bool bootstrap_ud_qps(RdmaCtrl *cm,int tid,int total,int dev_id,int port_idx,int
   return true; //FIXME!! no error detection
 }
 
+bool bootstrap_ud_qps(RdmaCtrl *cm, int mythreadID, std::vector<int>& tids, int dev_id,int port_idx,int send_qp_num) {
+  int total = tids.size();
+  assert(send_qp_num + 1 <= cm->num_ud_qps_); // +1 is the qp used to recv
+  assert(total >= 1);
+
+  for(uint j = 0;j < send_qps->size();++j) {
+
+    Qp *send_qp = (*send_qps)[j];
+    while(1) {
+      int connected = 0;
+      for(uint i = 0;i < cm->get_num_nodes();++i) {
+        if(total == 1) {
+          if(send_qp->get_ud_connect_info_specific(i,tids[0],RECV_QP_IDX))
+            connected += 1;
+          else {
+            usleep(20000);
+          }
+        } else {
+
+          for(uint k = 0; k < total; ++k) {
+            int tid = tids[i];
+            if(send_qp->get_ud_connect_info_specific(i,tid,RECV_QP_IDX)) {
+              connected += 1;
+            }
+            else
+              usleep(20000);
+          }
+        } // end multi connection case
+      }
+      if(connected == cm->get_num_nodes() * total)
+        goto UD_QP_CREATE_END;
+    }
+ UD_QP_CREATE_END:
+    j += 0; // dummy place holder
+  }
+
+  return true; //FIXME!! no error detection
+}
+
 UDMsg::UDMsg(RdmaCtrl *cm,int thread_id,int total_threads,
              uint64_t max_recv_num,msg_func_t fun,
              int dev_id,int port_idx,int send_qp_num)
@@ -84,7 +123,43 @@ UDMsg::UDMsg(RdmaCtrl *cm,int thread_id,int total_threads,
   cm_->register_dgram_mr(NULL,0,dev_id);
 
   init();
+  assert(total_threads == 1); // this construction only supports connecting to all
+                              // other machines with the same thread id as me.
   bootstrap_ud_qps(cm,thread_id_,total_threads,dev_id,port_idx,send_qp_num); // make connections
+  // bootstrap_ud_qps(cm,thread_id_,total_threads,dev_id,port_idx,send_qp_num); // make connections
+}
+
+UDMsg::UDMsg(RdmaCtrl *cm, int thread_id, std::vector<int>& threads,
+             uint64_t max_recv_num,msg_func_t fun,
+             int dev_id,int port_idx,int send_qp_num)
+    : cm_(cm),
+      recv_qp_(cm->create_ud_qp(thread_id,dev_id,port_idx,RECV_QP_IDX)),
+      thread_id_(thread_id),
+      num_nodes_(cm->get_num_nodes()),
+      my_node_id_(cm->get_nodeid()),
+      max_recv_num_(max_recv_num),
+      callback_(fun),
+      send_qp_idx_(0),
+      total_send_qps_(send_qp_num),
+      // statics init
+      total_costs_(0),pre_total_costs_(0),
+      counts_(0),pre_counts_(0),
+      current_idx_(0)
+{
+  assert(recv_qp_ != NULL);
+  send_qps = new std::vector<Qp *>();
+
+  for(uint i = 0;i < send_qp_num;++i) {
+    send_qps->push_back(cm->create_ud_qp(thread_id,dev_id,port_idx,SEND_QP_IDX + i));
+  }
+
+  assert(max_recv_num_ <= MAX_RECV_SIZE);
+
+  cm_->register_dgram_mr(NULL,0,dev_id);
+
+  init();
+
+  bootstrap_ud_qps(cm, thread_id, threads,dev_id,port_idx,send_qp_num); // make connections
 }
 
 void UDMsg::init() {
@@ -150,6 +225,9 @@ inline void UDMsg::post_recvs(uint64_t recv_num) {
   tail_rr->next = NULL;
 
   int rc = ibv_post_recv(recv_qp_->qp,head_rr,&bad_rr_);
+  if (rc != 0) {
+    printf("[UDMSG] qp: Failed to post_recvs!");
+  }
   CE_1(rc, "[UDMSG] qp: Failed to post_recvs, %s\n", strerror(errno));
 
   recv_head_ = tail;

@@ -15,6 +15,9 @@ using namespace rdmaio;
 
 extern     RdmaCtrl *cm;
 
+#define RPC_DET_BACKUP 28
+#define RPC_DET_SEQUENCE 29
+
 namespace nocc {
 
 	using namespace util;
@@ -25,23 +28,28 @@ namespace nocc {
 		
 		class Sequencer : public RWorker {
 		public:
-			Sequencer(unsigned worker_id, unsigned seed, get_workload_func_t get_wl_func);
+			Sequencer(unsigned worker_id, RdmaCtrl *cm, unsigned seed, get_workload_func_t get_wl_func);
 			~Sequencer();
   			virtual void run();
   			virtual void worker_routine(yield_func_t &yield);
   			virtual void exit_handler();
 		private:
 			std::vector<det_request> batch;
+			std::vector<char*> backup_buffers; // the backup batch for current epoch
+
 			get_workload_func_t get_workload_func;
 			BreakdownTimer timer_;
 			void thread_local_init();
-
+			void logging(char* buffer_start, char* buffer_end, yield_func_t &yield);
+			void broadcast(char* buffer_start, char* buffer_end, yield_func_t &yield);
 		public:
 			#include "rtx/occ_statistics.h"
 
 		private:
 			//backup rpc handler
 			void logging_rpc_handler(int id,int cid,char *msg,void *arg);
+			//sequence rpc handler
+			void sequence_rpc_handler(int id,int cid,char *msg,void *arg);
 		};
 	}
 

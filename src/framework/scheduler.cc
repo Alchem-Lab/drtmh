@@ -1,3 +1,7 @@
+#include "rocc_config.h"
+#include "tx_config.h"
+#include "config.h"
+
 #include "bench_worker.h"
 #include "scheduler.h"
 #include "ralloc.h"
@@ -7,7 +11,9 @@
 #include "ud_msg.h"
 
 /* global config constants */
+extern size_t coroutine_num;
 extern size_t nthreads;
+extern size_t nclients;
 extern size_t scale_factor;
 extern size_t current_partition;
 extern size_t total_partition;
@@ -18,37 +24,52 @@ namespace nocc {
 
 namespace oltp {
 
-#define SEQUENCER_THREAD_ID 100
-#define SCHEDULER_THREAD_ID 101
-
-
-SingleQueue* queue; // use to buffer request batch from local Sequencer
-std::vector<SingleQueue*> locked_transactions;
-
-Scheduler::Scheduler(unsigned worker_id):
-  RWorker(worker_id,cm) {
-
-  // assert that each backup thread can clean at least one remote thread's log
-  assert(worker_id_ < nthreads);
+Scheduler::Scheduler(unsigned worker_id, RdmaCtrl *cm, MemDB * db):
+  RWorker(worker_id,cm), db_(db) {
+  for (int i = 0; i < nthreads; i++) {
+    locks_4_locked_transactions.push_back(new SpinLock());
+    std::vector<std::queue<det_request>* >* qv = new std::vector<std::queue<det_request>* >();
+    for (int j = 0; j < coroutine_num + 1; j++) {
+      qv->push_back(new std::queue<det_request>());
+    }
+    locked_transactions.push_back(*qv);
+  }
 }
 
-Scheduler::~Scheduler() {
-
-}
-
-#define RPC_DET_SEQUENCE 28
+Scheduler::~Scheduler() {}
 
 void Scheduler::run() {
   BindToCore(worker_id_);
+  //binding(worker_id_);
 
 #if USE_RDMA
+  printf("scheduler in init rdma; id = %d\n", worker_id_);
   init_rdma();
+  create_qps();
 #endif
+
   init_routines(1);
 
-  ROCC_BIND_STUB(rpc_, &Scheduler::sequencer_rpc_handler, this, RPC_DET_SEQUENCE);
+#if USE_TCP_MSG == 1
+  assert(local_comm_queues.size() > 0);
+  create_tcp_connections(local_comm_queues[worker_id_],tcp_port,send_context);
+#else
+  MSGER_TYPE type;
 
-  thread_local_init();
+#if USE_UD_MSG == 1
+  type = UD_MSG;
+  int total_connections = 1;
+
+  create_rdma_ud_connections(total_connections);
+#else
+  create_rdma_rc_connections(rdma_buffer + HUGE_PAGE_SZ,
+                             total_ring_sz,ring_padding);
+#endif
+
+#endif
+
+  // this->init_new_logger(backup_stores_);
+  this->thread_local_init();   // application specific init
 
   // waiting for master to start workers
   this->inited = true;
@@ -64,42 +85,60 @@ void Scheduler::run() {
   return;
 }
 
-#define MAX_REQUESTS_NUM 10
-
 void Scheduler::worker_routine(yield_func_t &yield) {
 
-  while (true) {
+  LOG(3) << "Running Scheduler routine.on worker " << worker_id_;
+
+  while (true)
+  {
     deterministic_plan.clear();
     
     int i = 0;
     for (; i < cm_->get_num_nodes(); i++) {
-      if (i != cm_->get_nodeid()) {
+      if (true) {
+        sequence_lock.Lock();
         if (req_buffers[i].empty()) {
-          indirect_yield(yield);
+          sequence_lock.Unlock();
+          cpu_relax();
           i--;
           continue;
         }
 
         char* buf_end = req_buffers[i][0];
+        calvin_header* h = (calvin_header*)buf_end;
+        if (h->chunk_id < h->nchunks-1) {
+          sequence_lock.Unlock();
+          cpu_relax();
+          i--;
+          continue;
+        }
+
         req_buffers[i].erase(req_buffers[i].begin());
-        for (int i = 0; i < MAX_REQUESTS_NUM; i++) {
-          deterministic_plan.push_back(*(det_request*)buf_end);
-          deterministic_plan.back().req_seq = deterministic_plan.size()-1;
-          buf_end += sizeof(det_request);
-        }
-      } else {
-        char* buf_end = req_buffers[i][0];
-        if (!queue->front(buf_end)) {
-          indirect_yield(yield);
-          i--;
-          continue;
-        }
+        sequence_lock.Unlock();
+        cpu_relax();
 
+        buf_end += sizeof(calvin_header);
         for (int j = 0; j < MAX_REQUESTS_NUM; j++) {
           deterministic_plan.push_back(*(det_request*)buf_end);
           deterministic_plan.back().req_seq = deterministic_plan.size()-1;
           buf_end += sizeof(det_request);
         }
+
+        free(buf_end);
+      } else {
+        // for the case when buffer is fullfilled by the sequencer on my machine.
+        // char* buf_end = req_buffers[i][0];
+        // if (!queue->front(buf_end)) {
+        //   indirect_yield(yield);
+        //   i--;
+        //   continue;
+        // }
+
+        // for (int j = 0; j < MAX_REQUESTS_NUM; j++) {
+        //   deterministic_plan.push_back(*(det_request*)buf_end);
+        //   deterministic_plan.back().req_seq = deterministic_plan.size()-1;
+        //   buf_end += sizeof(det_request);
+        // }
       }
     }
 
@@ -109,7 +148,8 @@ void Scheduler::worker_routine(yield_func_t &yield) {
       printf("%d\n", c.req_initiator);
     }
 
-#ifdef CALVIN_TX
+#if CALVIN_TX
+    std::set<int> out_of_waitinglist;
     for(i = 0; !waitinglist.empty() || i < deterministic_plan.size(); i++) {
 
         // check waiting list first
@@ -118,15 +158,32 @@ void Scheduler::worker_routine(yield_func_t &yield) {
           assert(!waiter->second.empty());
           int req_seq = waiter->second.front();
           det_request& req = deterministic_plan[req_seq];
-          if (request_lock(req.req_seq)) {
+
+          if (out_of_waitinglist.find(req.req_seq) != out_of_waitinglist.end()) {
             waiter->second.pop();
             if (waiter->second.empty())
               waiter = waitinglist.erase(waiter);
             else
               ++waiter;
+              continue;  
+          }
+
+          if (request_lock(req.req_seq, true)) {
+            waiter->second.pop();
+            if (waiter->second.empty())
+              waiter = waitinglist.erase(waiter);
+            else
+              ++waiter;
+
+            out_of_waitinglist.insert(req.req_seq);
+            fprintf(stderr, "request %d locked.\n", req.req_seq);
             // put transaction into threads to execute in a round-robin manner.
             int tid = req_seq % nthreads;
-            locked_transactions[tid]->enqueue((char *)(&req),sizeof(det_request));            
+            int cid = req_seq % coroutine_num + 1;
+            locks_4_locked_transactions[tid]->Lock();
+            locked_transactions[tid][cid]->push(req);
+            locks_4_locked_transactions[tid]->Unlock();
+            sleep(10000);
           } else
             ++waiter;
         }
@@ -136,14 +193,21 @@ void Scheduler::worker_routine(yield_func_t &yield) {
 
         // request locks for each transaction
         det_request& req = deterministic_plan[i];
-        if (!request_lock(req.req_seq)) {
-          indirect_yield(yield);
+        if (!request_lock(req.req_seq, false)) {
+          // indirect_yield(yield);
+          cpu_relax();
           continue;
         }
 
+        fprintf(stderr, "request %d locked.\n", req.req_seq);
         // put transaction into threads to execute in a round-robin manner.
         int tid = i % nthreads;
-        locked_transactions[tid]->enqueue((char *)(&req),sizeof(det_request));
+        int cid = i % coroutine_num + 1; // note that the coroutine 0 is the message handler
+        locks_4_locked_transactions[tid]->Lock();
+        fprintf(stderr, "enqueue to thread%d, coroutine%d\n", tid, cid);
+        locked_transactions[tid][cid]->push(req);
+        locks_4_locked_transactions[tid]->Unlock(); 
+        sleep(10000);
       }
 
 #elif defined(BOHM_TX)
@@ -163,31 +227,13 @@ void Scheduler::exit_handler() {
 
 }
 
-void Scheduler::sequencer_rpc_handler(int id,int cid,char *msg,void *arg) {
-  printf("scheduler received from machine %d.\n", id);
-  assert(id < req_buffers.size() && id != cm_->get_nodeid());
-  char* buf = (char*)malloc(MAX_REQUESTS_NUM*sizeof(det_request));
-  memcpy(buf, msg, MAX_REQUESTS_NUM*sizeof(det_request));
-  req_buffers[id].push_back(buf);
-}
-
 void Scheduler::thread_local_init() {
   for (int i = 0; i < cm_->get_num_nodes(); i++) {
       req_buffers.push_back(std::vector<char*>());
   }
-
-  char* buf = (char*)malloc(MAX_REQUESTS_NUM*sizeof(det_request));
-  req_buffers[cm_->get_nodeid()].push_back(buf);
-  queue = new SingleQueue();
-
-  if(locked_transactions.size() == 0) {
-    // only create once
-    for(uint i = 0;i < nthreads; ++i)
-      locked_transactions.push_back(new SingleQueue());
-  }
 }
 
-bool Scheduler::request_lock(int req_seq) {
+bool Scheduler::request_lock(int req_seq, bool from_waitinglist) {
   using namespace nocc::rtx::rwlock;
   START(lock);
 
@@ -195,39 +241,68 @@ bool Scheduler::request_lock(int req_seq) {
   uint8_t nReads = ((rwsets_t*)req.req_info)->nReads;
   uint8_t nWrites = ((rwsets_t*)req.req_info)->nWrites;
 
+  int success = 1;
   for (auto i = 0; i < nReads + nWrites; i++) {
     ReadSetItem& item = ((rwsets_t*)req.req_info)->access[i];
     auto it = &item;
     if (it->pid != cm_->get_nodeid())  // skip remote read
       continue;
 
+    if (it->node == NULL) {
+      MemNode *node = db_->stores_[it->tableid]->Get(it->key);
+      assert(node != NULL);
+      assert(node->value != NULL);
+      it->node = node;
+    }
+
+    // fprintf(stderr, "requesting lock for req %d: table %d, key %d\n", req_seq, it->tableid, it->key);
     // fprintf(stderr, "locking write. key = %d\n", it->key);
-    assert (it->node != NULL);
+    std::vector<uint64_t*> locked;
     while (true) {
-      volatile uint64_t* l = &it->node->lock;
-      if (*l == LOCKED(cm_->get_nodeid()))
+      volatile uint64_t *lockptr = &(it->node->lock);
+      volatile uint64_t l = *lockptr;
+      // already locked by me previously
+      if (l == LOCKED(req_seq)) 
         break;
-      if ((*l & 0x1) == W_LOCKED) {
-        if (waitinglist.find(l) == waitinglist.end())
-          waitinglist[l] = std::move(std::queue<int>());
-        waitinglist[l].push(req_seq);
-        return false;
+      
+      // locked by other txn
+      if (l & 1 == 1) {
+        if (from_waitinglist)
+          return false;
+
+        if (waitinglist.find(lockptr) == waitinglist.end())
+          waitinglist[lockptr] = std::move(std::queue<int>());
+        waitinglist[lockptr].push(req_seq);
+        // requesting other read/write, but remember to mark this function as failure.
+        success &= 0;
+        break;
+      }
+
+      if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                   LOCKED(req_seq)))) {
+        continue;
       } else {
-          volatile uint64_t *lockptr = &(it->node->lock);
-          if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                       LOCKED(cm_->get_nodeid())))) {
-            continue;
-          } else {
-            // fprintf(stderr, "locked read %d %d\n", it->tableid, it->key);
-            break; // lock the next local read
-          }
+        // fprintf(stderr, "locked read %d %d\n", it->tableid, it->key);
+        break; // lock the next local read
       }
     }
   }
 
   END(lock);
-  return true;
+  
+  return (success == 1) ? true : false;
 }
+
+// void Scheduler::check_to_notify(int worker_id_, std::vector<SingleQueue*> ready_reqs) {
+//     nocc::rtx::det_request req;
+//     if (locks_4_locked_transactions[worker_id_].Trylock()) {
+//       if(!locked_transactions.empty() && locked_transactions[worker_id_]->front((char*)&req)) {
+//         ready_reqs[req.req_seq % ready_reqs.size()]->enqueue((char*)&req, sizeof(nocc::rtx::det_request));
+//         locked_transactions[worker_id_]->pop();
+//       }
+//       locks_4_locked_transactions[worker_id_].UnLock();
+//     }
+// }
 
 } // namespace oltp
 } // namespace nocc

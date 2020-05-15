@@ -32,6 +32,15 @@ struct MVCCHeader {
  
 #define MAX_RECORD_LEN 64
 
+
+struct rwsets_t {
+  #include "occ_internal_structure.h"
+  uint8_t nReads;
+  uint8_t nWrites;
+  ReadSetItem access[MAX_CALVIN_SETS_SUPPORTED];
+};
+
+#if BOHM
 struct BOHMRecord {
   uint begin_ts;
   uint end_ts;
@@ -39,16 +48,10 @@ struct BOHMRecord {
   char data[MAX_RECORD_LEN]; // record length. FIXME: do not use hard coded number
   struct BHOMRecord* prev;
 };
+#endif
 
 struct ReplyHeader {
   uint16_t num;
-};
-
-struct rwsets_t {
-  #include "occ_internal_structure.h"
-  uint8_t nReads;
-  uint8_t nWrites;
-  ReadSetItem access[MAX_CALVIN_SETS_SUPPORTED];
 };
 
 typedef uint64_t timestamp_t;
@@ -71,6 +74,14 @@ struct det_request {
   char req_info[sizeof(rwsets_t)];
 };
 
+class det_request_compare {
+public:
+  bool operator()(const det_request* lhs, 
+                  const det_request* rhs) {
+    return lhs->timestamp < rhs->timestamp;
+  }
+};
+
 struct calvin_header {
   uint8_t node_id;
   volatile uint8_t epoch_status;
@@ -78,16 +89,10 @@ struct calvin_header {
   volatile uint64_t batch_size; // the batch size
   // union {
   uint64_t chunk_size; // the number of det_requests in this rpc call
+  int chunk_id;
+  int nchunks;
   volatile uint64_t received_size;
   // };
-};
-
-class det_request_compare {
-public:
-  bool operator()(const det_request* lhs, 
-                  const det_request* rhs) {
-    return lhs->timestamp < rhs->timestamp;
-  }
 };
 
 struct read_val_t {

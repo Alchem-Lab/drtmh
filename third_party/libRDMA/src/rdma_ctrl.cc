@@ -247,7 +247,7 @@ void RdmaCtrl::register_connect_mr(int dev_id) {
     }
     rdma_device->conn_buf_mr = ibv_reg_mr(rdma_device->pd,(char *)conn_buf_, conn_buf_size_,
                                           DEFAULT_PROTECTION_FLAG);
-    fprintf(stderr, "registerring %lld", conn_buf_size_); 
+    fprintf(stderr, "register_connect_mr %lld via ibv_reg_mr.\n", conn_buf_size_); 
     CE_2(!rdma_device->conn_buf_mr,
          "[librdma]: Connect Memory Region failed at dev %d, err %s\n",dev_id,strerror(errno));
 }
@@ -349,7 +349,7 @@ Qp *RdmaCtrl::create_ud_qp(int tid,int dev_id,int port_idx,int idx) {
     if(qps_.find(qid) != qps_.end()) {
         res = qps_[qid];
         mtx_->unlock();
-        assert(false);
+        // assert(false);
         return res;
     }
 
@@ -536,6 +536,7 @@ void* RdmaCtrl::recv_thread(void *arg){
                 continue;
             }
 
+            // printf("%d %d\n", arg.nid, rdma->node_id_);
             // check that the arg is correct
             assert(arg.sign = MAGIC_NUM);
             assert(arg.get_checksum() == arg.checksum);

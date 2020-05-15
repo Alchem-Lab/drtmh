@@ -50,6 +50,7 @@ struct ReadSetItem {
 
 }  __attribute__ ((aligned (8)));
 
+#if BOHM
 struct BOHMReadSetItem : public ReadSetItem {
   BOHMRecord* version;  // this indicates the correct version of bohm record to read/write
   inline BOHMReadSetItem(int tableid,uint64_t key,MemNode *node,char *data_ptr,uint64_t seq,
@@ -59,6 +60,7 @@ struct BOHMReadSetItem : public ReadSetItem {
     version = item.version;
   }
 };
+#endif
 
 struct SundialReadSetItem : public ReadSetItem {
   uint32_t wts = 0, rts = 0;

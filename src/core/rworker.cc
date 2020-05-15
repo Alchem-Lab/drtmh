@@ -91,6 +91,7 @@ int RWorker::choose_rnic_port() {
     use_port_ = 0;
   }
 #endif
+  // fprintf(stdout, "in choosing RNIC: use_port_ = %d\n", use_port_);
   return use_port_;
 }
 
@@ -103,10 +104,13 @@ void RWorker::init_rdma() {
   choose_rnic_port();
 
   // get the device id and port id used on the nic.
+  // fprintf(stdout, "init_rdma: worker_id: %d use_port_: %d\n", worker_id_, use_port_);
+
   int dev_id = cm_->get_active_dev(use_port_);
   int port_idx = cm_->get_active_port(use_port_);
   ASSERT(port_idx > 0) << "worker " << worker_id_
                        << " get port idx " << port_idx;
+
 
   // open the specific RNIC handler, and register its memory
   cm_->open_device(dev_id);
@@ -119,7 +123,7 @@ void RWorker::create_qps(int num) {
     return;
   }
 
-  LOG(1) << "using RDMA device: " << use_port_ << " to create qps @" << worker_id_;
+  LOG(3) << "using RDMA device: " << use_port_ << " to create qps @" << worker_id_;
   assert(use_port_ >= 0); // check if init_rdma has been called
 
   int dev_id = cm_->get_active_dev(use_port_);
@@ -209,6 +213,8 @@ void RWorker::create_rdma_ud_connections(int total_connections) {
 
   assert(cm_ != NULL);
 
+  // fprintf(stdout, "worker id: %d, use_port_: %d\n", worker_id_, use_port_);
+
   int dev_id = cm_->get_active_dev(use_port_);
   int port_idx = cm_->get_active_port(use_port_);
 
@@ -218,6 +224,31 @@ void RWorker::create_rdma_ud_connections(int total_connections) {
 
   using namespace rdmaio::udmsg;
   msg_handler_ = new UDMsg(cm_,worker_id_,total_connections,
+                           // 2048*32, // max concurrent msg received
+                           rdmaio::udmsg::MAX_RECV_SIZE,
+                           std::bind(&RRpc::poll_comp_callback,rpc_,
+                                     std::placeholders::_1,std::placeholders::_2,std::placeholders::_3),
+                           dev_id,port_idx,1);
+  rpc_->set_msg_handler(msg_handler_);
+
+  server_type_ == UD_MSG;
+}
+
+void RWorker::create_rdma_ud_connections(std::vector<int>& threads) {
+
+  assert(cm_ != NULL);
+
+  // fprintf(stdout, "worker id: %d, use_port_: %d\n", worker_id_, use_port_);
+
+  int dev_id = cm_->get_active_dev(use_port_);
+  int port_idx = cm_->get_active_port(use_port_);
+
+  assert(USE_RDMA);
+
+  rpc_ = new RRpc(worker_id_,total_worker_coroutine);
+
+  using namespace rdmaio::udmsg;
+  msg_handler_ = new UDMsg(cm_, worker_id_, threads,
                            // 2048*32, // max concurrent msg received
                            rdmaio::udmsg::MAX_RECV_SIZE,
                            std::bind(&RRpc::poll_comp_callback,rpc_,

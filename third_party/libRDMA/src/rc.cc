@@ -39,6 +39,8 @@ bool Qp::connect_rc() {
 		// cannot establish the connection, shall retry
 		return false;
 	}
+
+	// fprintf(stderr, "arg.tid = %d, arg.nid = %d\n", arg.tid, arg.nid);
 	auto n = send(socket,(char *)(&arg),sizeof(QPConnArg),0);
 	if(n != sizeof(QPConnArg)) {
 		shutdown(socket,SHUT_RDWR);

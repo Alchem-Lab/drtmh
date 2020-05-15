@@ -5,7 +5,6 @@
 #include "time.h"
 #include "./utils/thread.h"
 #include "./utils/util.h"
-
 #include "rrpc.h"
 #include "commun_queue.hpp"
 #include "ud_msg.h"
@@ -25,17 +24,18 @@ using namespace nocc::util;
 namespace nocc {
 
 #ifdef CALVIN_TX
-extern __thread SingleQueue  **calvin_ready_requests;
+extern __thread std::vector<SingleQueue*> calvin_ready_requests;
 #endif
 
-namespace oltp {  
+namespace oltp {
 
 #define INDIRECT_YIELD(yield) RWorker::thread_worker->indirect_yield(yield);
 #define DIRECT_YIELD(yield)   RWorker::thread_worker->yield_next(yield);
 
-#ifdef CALVIN_TX
-extern std::vector<SingleQueue*> locked_transactions;
-#endif
+// #ifdef CALVIN_TX
+// extern std::vector<SingleQueue*> locked_transactions;
+// extern std::vector<Spinlock*> locks_4_locked_transactions;
+// #endif
 
 // abstract worker
 class RWorker : public ndb_thread {
@@ -83,7 +83,8 @@ class RWorker : public ndb_thread {
   void create_qps(int num  = 0); // depends init_rdma
 
   void create_rdma_ud_connections(int total_connections = 1);
-
+  void create_rdma_ud_connections(std::vector<int>& threads);
+  
   void create_rdma_rc_connections(char *start_buffer,uint64_t total_ring_sz,uint64_t total_ring_padding);
 
   void create_tcp_connections(util::SingleQueue *queue, int tcp_port, zmq::context_t &context);
@@ -134,11 +135,7 @@ class RWorker : public ndb_thread {
 #elif defined(SUNDIAL_TX) && ONE_SIDED_READ != 1
     nocc::rtx::global_lock_manager[worker_id_].check_to_notify(worker_id_, rpc_);
 #elif defined(CALVIN_TX)
-    nocc::rtx::det_request req;
-    if(!locked_transactions.empty() && locked_transactions[worker_id_]->front((char*)&req)) {
-      calvin_ready_requests[req.req_seq % total_worker_coroutine+1]->enqueue((char*)&req, sizeof(nocc::rtx::det_request));
-      locked_transactions[worker_id_]->pop();
-    }
+    // nocc::oltp::Scheduler::check_to_notify(worker_id_, calvin_ready_requests);
 #endif
 
     if(msg_handler_ != NULL){

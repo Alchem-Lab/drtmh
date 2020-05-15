@@ -468,22 +468,25 @@ std::vector<RWorker *> BankMainRunner::make_workers() {
 #endif
 
 #if defined(CALVIN_TX)
-  // add epoch manager
+  // // add epoch manager
   epoch_manager = new EpochManager(nthreads + nclients + 1,cm,0,0);
   ret.push_back(epoch_manager);
 
-  sequencer = new oltp::Sequencer(nthreads + nclients + 2, 0, BankWorker::_get_workload);
+  // note that the thread id nthreads + nclients + 2 is already occupied 
+  // by the BenchLocalListener
+
+  sequencer = new oltp::Sequencer(nthreads + nclients + 3,cm,0,BankWorker::_get_workload);
   ret.push_back(sequencer);
 
-  scheduler = new oltp::Scheduler(nthreads + nclients + 3);
+  scheduler = new oltp::Scheduler(nthreads + nclients + 4,cm,store_);
   ret.push_back(scheduler);
 #endif
 
 #if defined(BOHM_TX)
-  sequencer = new oltp::Sequencer(nthreads + nclients + 2, 0, BankWorker::_get_workload);
+  sequencer = new oltp::Sequencer(nthreads + 1, 0, BankWorker::_get_workload);
   ret.push_back(sequencer);
 
-  scheduler = new oltp::Scheduler(nthreads + nclients + 3);
+  scheduler = new oltp::Scheduler(nthreads + 2);
   ret.push_back(scheduler);
 #endif
 

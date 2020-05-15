@@ -84,6 +84,7 @@ void Qp::init_rc(RdmaDevice *rdma_device, int port_id){
 #endif
 	CE(!qp,"qp failure!!!");
 
+	printf("QP of tid=%d nid=%d ready2init\n", tid, nid);
 	rc_ready2init(qp, port_id);
 }
 
@@ -156,6 +157,7 @@ void Qp::change_qp_states(RCQPAttr *remote_qp_attr, int dev_port_id) {
 	assert(dev_port_id >= 1);
 
 	if(qp->qp_type == IBV_QPT_RC){
+		printf("QP of tid=%d nid=%d init2rtr\n", tid, nid);
 		rc_init2rtr(qp, dev_port_id, remote_qp_attr->connection_attr_);
 		rc_rtr2rts(qp);
 	} else if(qp->qp_type == IBV_QPT_UC){
