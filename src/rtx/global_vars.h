@@ -6,8 +6,8 @@
 #define MVCC_VERSION_NUM 4
 
 // #define MAX_CALVIN_REQ_CNTS (200*1000)
-#define MAX_CALVIN_REQ_CNTS (2000)
-// #define MAX_CALVIN_REQ_CNTS 1
+// #define MAX_CALVIN_REQ_CNTS (2000)
+#define MAX_CALVIN_REQ_CNTS 1
 #define MAX_CALVIN_SETS_SUPPRTED_IN_BITS (5)
 #define MAX_CALVIN_SETS_SUPPORTED (1U<<(MAX_CALVIN_SETS_SUPPRTED_IN_BITS))  // 32 SETS
 #define CALVIN_REQ_INFO_SIZE 256  // obselete, to be deleted.
@@ -87,12 +87,12 @@ struct calvin_header {
   volatile uint8_t epoch_status;
   uint64_t epoch_id;
   volatile uint64_t batch_size; // the batch size
-  // union {
+
   uint64_t chunk_size; // the number of det_requests in this rpc call
   int chunk_id;
   int nchunks;
+
   volatile uint64_t received_size;
-  // };
 };
 
 struct read_val_t {

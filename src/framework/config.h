@@ -1,7 +1,7 @@
 #ifndef NOCC_FRAMEWORK_CONFIG_H_
 #define NOCC_FRAMEWORK_CONFIG_H_
 
-#define MASTER_EPOCH 10 // runtime of test
+#define MASTER_EPOCH 3 // runtime of test
 
 // rdma related stuffs
 #define HUGE_PAGE  1
@@ -24,9 +24,9 @@
 // print statements
 #define LOG_RESULTS           // log results to a file
 #define LISTENER_PRINT_PERF 1 // print the results to the screen
-#define PER_THREAD_LOG 0      // per thread detailed log
+#define PER_THREAD_LOG 1      // per thread detailed log
 #define POLL_CYCLES    0      // print the polling cycle
-#define CALCULATE_LAT  1
+#define CALCULATE_LAT  0
 #define LATENCY 0 // 1: global latency report; 0: workload specific report
 
 #if USE_TCP_MSG == 1

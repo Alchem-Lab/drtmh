@@ -300,7 +300,7 @@ public:
 
     assert(idx < set.size());
     ASSERT(len == set[idx].len) <<
-        "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx;
+        "excepted size " << (int)(set[idx].len)  << " for table " << (int)(set[idx].tableid) << "; idx " << idx << " however len = " << len;
 
     // note that we must use response_node_ here to indicate the actual
     // node id.
@@ -358,7 +358,6 @@ public:
   }
 
   bool sync_reads(int req_idx, yield_func_t &yield);
-  bool request_locks(yield_func_t &yield);
 
 #else
 
@@ -439,6 +438,8 @@ public:
   }
 
   void begin(det_request* req, yield_func_t &yield) {
+    fprintf(stderr, "executing txn with ts %lx of type %d. \n", req->timestamp, req->req_idx);
+    req_ = req;
     read_set_.clear();
     write_set_.clear();
     rwsets_t* sets = (rwsets_t*)req->req_info;
@@ -469,13 +470,14 @@ public:
     release_writes(yield);
     gc_readset();
     gc_writeset();
+    fprintf(stderr, "txn with timestamp %lx committed.\n", req_->timestamp);
     return true;
   }
 
 public:
   std::vector<ReadSetItem>  read_set_;
   std::vector<ReadSetItem>  write_set_;
-
+  det_request* req_ = NULL;
   // this two sets are used by the sequencer to generate for different benchmarks.
   // they are not belonging to any CALVIN object and any execution threads' coroutines.
   static std::vector<ReadSetItem> read_set;

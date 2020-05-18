@@ -36,12 +36,17 @@ namespace nocc {
 		private:
 			std::vector<det_request> batch;
 			std::vector<char*> backup_buffers; // the backup batch for current epoch
-
 			get_workload_func_t get_workload_func;
 			BreakdownTimer timer_;
+			#if ONE_SIDED_READ == 0
+			  uint8_t* epoch_status_;
+			#else
+			  uint64_t** offsets_;
+			#endif // ONE_SIDED_READ
 			void thread_local_init();
 			void logging(char* buffer_start, char* buffer_end, yield_func_t &yield);
 			void broadcast(char* buffer_start, char* buffer_end, yield_func_t &yield);
+			void epoch_sync(yield_func_t &yield);
 		public:
 			#include "rtx/occ_statistics.h"
 
@@ -50,6 +55,8 @@ namespace nocc {
 			void logging_rpc_handler(int id,int cid,char *msg,void *arg);
 			//sequence rpc handler
 			void sequence_rpc_handler(int id,int cid,char *msg,void *arg);
+			//epoch sync rpc handler
+			void epoch_sync_rpc_handler(int id,int cid,char *msg,void *arg);
 		};
 	}
 

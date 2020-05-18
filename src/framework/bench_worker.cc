@@ -162,6 +162,127 @@ void BenchWorker::init_tx_ctx() {
   workloads = new workload_desc_vec_t[server_routine + 2];
 }
 
+
+#ifdef CALVIN_TX
+void BenchWorker::init_calvin() {
+  // batch_size_for_current_epoch = new std::map<int, uint64_t>[1 + server_routine];
+  // epoch_done_schedule = new bool[1 + server_routine];
+  // memset(epoch_done_schedule, 0, sizeof(bool)*(1 + server_routine));
+  // mach_received = new std::set<int>[1 + server_routine];
+
+#if ONE_SIDED_READ == 0
+
+  // epoch_status_ = new uint8_t*[1 + server_routine];
+  // for (int i = 0; i < server_routine+1; i++) {
+  //   epoch_status_[i] = new uint8_t[cm_->get_num_nodes()];
+  //   for (int j = 0; j < cm_->get_num_nodes(); j++)
+  //     epoch_status_[i][j] = CALVIN_EPOCH_READY;
+  // }
+
+  // req_buffers = new std::vector<char*>[1 + server_routine];
+  // int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
+  // for (int i = 0; i < server_routine+1; i++) {
+  //   for (int j = 0; j < cm_->get_num_nodes(); j++)
+  //     req_buffers[i].push_back((char*)malloc(buf_len));
+  // }
+
+  // send_buffers = new char*[1 + server_routine];
+  // for (int i = 0; i < server_routine+1; i++)
+  //   send_buffers[i] = rpc_->get_static_buf(MAX_MSG_SIZE);
+
+  forwarded_values = new std::map<uint64_t, read_val_t>[1 + server_routine];
+
+#elif ONE_SIDED_READ == 1
+
+  const char *start_ptr = (char *)(cm_->conn_buf_);
+  LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
+
+  /*set up req_buffer and req offsets*/
+  req_buffers = new std::vector<char*>[1+server_routine];
+  int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
+  char* req_base_ptr_ = oltp::calvin_request_buffer + 
+                    per_thread_calvin_request_buffer_sz * worker_id_;
+  // uint64_t req_base_offset_ = req_base_ptr_ - start_ptr;
+  for (int i = 0; i < server_routine+1; i++) {
+    LOG(3) << "routine " << i;
+    for (int j = 0; j < cm_->get_num_nodes(); j++) {
+      char* buf = req_base_ptr_ + buf_len * i * cm_->get_num_nodes() + buf_len * j;
+      req_buffers[i].push_back(buf);
+      calvin_header* ch = (calvin_header*)req_buffers[i][req_buffers[i].size()-1];
+      ch->epoch_status = CALVIN_EPOCH_READY;
+      LOG(3) << "node " << j << "'s addrs: " << static_cast<void*>(req_buffers[i][j]);
+    }
+  }
+
+  LOG(3) << "offsets:";
+  offsets_ = new uint64_t*[1 + server_routine];
+  for (int i = 0; i < server_routine+1; i++) {
+    offsets_[i] = new uint64_t[cm_->get_num_nodes()];
+    LOG(3) << "routine " << i;
+    for (int j = 0; j < cm_->get_num_nodes(); j++) {
+      offsets_[i][j] = req_buffers[i][j] - start_ptr;
+        LOG(3) << "node " << j << "'s offset: " << offsets_[i][j];
+    }
+  }
+
+  /* set up forward addresses and offsets */
+  forward_addresses = new char*[1 + server_routine];
+  forward_offsets_ = new uint64_t[1 + server_routine];
+
+  char* forward_base_ptr_ = oltp::calvin_forward_buffer + 
+                        per_thread_calvin_forward_buffer_sz * worker_id_;
+  // uint64_t forward_base_offset_ = forward_base_ptr_ - start_ptr;
+  LOG(3) << "forward offsets:";
+  for (int i = 0; i < server_routine+1; i++) {
+    LOG(3) << "routine " << i;
+    int n_forwarded = MAX_CALVIN_REQ_CNTS << MAX_CALVIN_SETS_SUPPRTED_IN_BITS;
+    forward_addresses[i] = forward_base_ptr_ + i * n_forwarded * sizeof(read_compact_val_t);
+    forward_offsets_[i] = forward_addresses[i] - start_ptr;
+    LOG(3) << "forward_address " << static_cast<void*>(forward_addresses[i]);
+    LOG(3) << "forward_offset " << forward_offsets_[i];
+  }
+
+#elif ONE_SIDED_READ == 2 // hybrid (onesided broadcast + rpc forward)
+
+  // const char *start_ptr = (char *)(cm_->conn_buf_);
+  // LOG(3) << "start_ptr = " << (void*)start_ptr;
+
+  // /*set up req_buffer and req offsets*/
+  // req_buffers = new std::vector<char*>[1 + server_routine];
+  // int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
+  // char* req_base_ptr_ = oltp::calvin_request_buffer + 
+  //                   per_thread_calvin_request_buffer_sz * worker_id_;
+  // uint64_t req_base_offset_ = req_base_ptr_ - start_ptr;
+  // LOG (3) << "req_base_offset for thread " << worker_id_ << ": " << req_base_offset_;
+  // LOG(3) << "addresses:";
+  // for (int i = 0; i < server_routine+1; i++) {
+  //   LOG(3) << "routine " << i;
+  //   for (int j = 0; j < cm_->get_num_nodes(); j++) {
+  //     char* buf = req_base_ptr_ + buf_len * i * cm_->get_num_nodes() + buf_len * j;
+  //     req_buffers[i].push_back(buf);
+  //     calvin_header* ch = (calvin_header*)req_buffers[i][req_buffers[i].size()-1];
+  //     ch->epoch_status = CALVIN_EPOCH_READY;
+  //     LOG(3) << "node " << j << "'s addrs: " << static_cast<void*>(req_buffers[i][j]);
+  //   }
+  // }
+
+  // LOG(3) << "offsets:";
+  // offsets_ = new uint64_t*[1 + server_routine];
+  // for (int i = 0; i < server_routine+1; i++) {
+  //   offsets_[i] = new uint64_t[cm_->get_num_nodes()];
+  //   LOG(3) << "routine " << i;
+  //   for (int j = 0; j < cm_->get_num_nodes(); j++) {
+  //     offsets_[i][j] = req_buffers[i][j] - start_ptr;
+  //       LOG(3) << "node " << j << "'s offset: " << offsets_[i][j];
+  //   }
+  // }
+
+  forwarded_values = new std::map<uint64_t, read_val_t>[1 + server_routine]; 
+#endif
+
+}
+#endif
+
 void BenchWorker::run() {
 
   // create connections
@@ -220,7 +341,7 @@ void BenchWorker::run() {
 #endif
 
 #ifdef CALVIN_TX
-  // init_calvin();
+  init_calvin();
   // ROCC_BIND_STUB(rpc_, &BenchWorker::calvin_schedule_rpc_handler, this, RPC_CALVIN_SCHEDULE);
   // ROCC_BIND_STUB(rpc_, &BenchWorker::calvin_epoch_status_rpc_handler, this, RPC_CALVIN_EPOCH_STATUS);
 #endif
@@ -253,7 +374,10 @@ BenchWorker::worker_routine(yield_func_t &yield) {
     LOG(3) << "running calvin routine on worker " << worker_id_ << " coroutine " << cor_id_;
 
     while(true) {
-        det_request req;    
+        det_request req;
+        // req.req_idx = 0;                              // for mocking req
+        // req.req_initiator = cm_->get_nodeid();        // for mocking req
+
         if (scheduler->locked_transactions.size() < nthreads) {
           // LOG(3) << "aaaa";
           cpu_relax();
@@ -288,25 +412,73 @@ BenchWorker::worker_routine(yield_func_t &yield) {
         if (req.req_initiator == cm_->get_nodeid())
           ntxn_executed_ += 1;
 
-        fprintf(stdout, "executing txn %d. \n", req.req_idx);
-        auto ret = workload[req.req_idx].fn(this, &req, yield);
-        // usleep(5);
+        // mock releasing locks
+        // std::vector<ReadSetItem> rs;
+        // std::vector<ReadSetItem> ws;
+        // rwsets_t* sets = (rwsets_t*)req.req_info;
+        // int reads = sets->nReads, writes = sets->nWrites;
+        // for (int i = 0; i < reads; i++) {
+        //   rs.push_back(sets->access[i]);
+        // }
+        // for (int i = 0; i < writes; i++) {
+        //   ws.push_back(sets->access[reads+i]);
+        // }
+
+        // actual workload
+        // auto ret = workload[req.req_idx].fn(this, &req, yield);
+        usleep(5);
+
+        // for(auto it = rs.begin();it != rs.end();++it) {
+        //   if((*it).pid != cm_->get_nodeid())  // remote case
+        //     continue;
+        //   else {
+        //     assert(it->node != NULL);
+        //     volatile uint64_t* lock_ptr = &it->node->lock;
+        //     // assert ((*lock_ptr & 0x1) == 0x1);
+        //     // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
+        //     *lock_ptr = 0;
+        //   }
+        // }
+
+        // for(auto it = ws.begin();it != ws.end();++it) {
+        //   if((*it).pid != cm_->get_nodeid())  // remote case
+        //     continue;
+        //   else {
+        //     assert(it->node != NULL);
+        //     volatile uint64_t* lock_ptr = &it->node->lock;
+        //     // assert ((*lock_ptr & 0x1) == 0x1);
+        //     // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
+        //     *lock_ptr = 0;
+        //   }
+        // }
         auto ret = txn_result_t(true, 73);
+        // fprintf(stderr, "txn with ts %lx committed.\n", req.timestamp);
     #if NO_ABORT == 1
         ret.first = true;
     #endif
         // if(current_partition == 0){
         if(likely(ret.first)) {
           // commit case
+// #if CALCULATE_LAT == 1
+//       if(cor_id_ == 1) {
+//         //#if LATENCY == 1
+//         latency_timer_.end();
+//         //#else
+//         workload[tx_idx].latency_timer.end();
+//         //#endif
+//       }
+// #endif
+          __atomic_fetch_add(&scheduler->req_fullfilled, 1, __ATOMIC_SEQ_CST);
           retry_count = 0;
           if (req.req_initiator == cm_->get_nodeid())
             ntxn_commits_ += 1;
           // self_generated requests
           assert(CS == 0);
         } else {
+          assert(false);
           retry_count += 1;
     #if DEBUG_RETRY_TXN
-          fprintf(stdout, "%d: retry transaction.\n", cor_id_);
+          fprintf(stderr, "%d: retry transaction.\n", cor_id_);
     #endif
           ntxn_aborts_ += 1;
           yield_next(yield);
@@ -528,7 +700,7 @@ BenchWorker::worker_routine(yield_func_t &yield) {
   //not to block the scheduling of following coroutines in the
   //coroutine schedule list, a.k.a, the the routineMeta list.
   indirect_must_yield(yield);
-  fprintf(stdout, "%d: ends.\n", cor_id_);
+  fprintf(stderr, "%d: ends.\n", cor_id_);
 }
 
 #endif // routine functions for CALVIN, BOHM or non-det protocols

@@ -15,7 +15,37 @@ using namespace std;
 using namespace rdmaio;
 
 extern     RdmaCtrl *cm;
-#define MAX_REQUESTS_NUM 10
+#define MAX_REQUESTS_NUM MAX_CALVIN_REQ_CNTS
+
+// struct QNode {
+// 	volatile struct QNode* next;
+// 	char* _buf;
+// 	QNode(char* buf) {
+// 		_buf = buf;
+// 		next = NULL;
+// 	}
+// };
+
+// struct ConcurrentQ {
+// 	ConcurrentQ() {
+// 		head = tail = NULL;
+// 		dummyHead = new QNode(head);
+// 	}
+// public:
+// 	void enqueue(char* buf) {
+// 		assert(buf != NULL);
+// 		QNode* n = new QNode(buf);
+// 		n->next = head;
+
+// 	}
+// 	dequeue() {
+
+// 	}
+// private:
+// 	struct QNode* dummyHead;	//always points to the first dummy node.
+// 	volatile struct QNode* head;
+// 	volatile struct QNode* tail;	
+// };
 
 namespace nocc {
 
@@ -33,8 +63,18 @@ namespace nocc {
   			// static void chseck_to_notify(int worker_id_, std::vector<SingleQueue*>& ready_reqs);
 		private:
 			SpinLock sequence_lock;
-			std::vector<std::vector<char*> > req_buffers;
+			
+			enum {
+				BUFFER_INIT = 0,
+				BUFFER_RECVED = 1,
+				BUFFER_READY = 2
+			} BufferState;
+			char** req_buffers;
+			volatile int* req_buffer_state;
+
 			std::vector<det_request> deterministic_plan;
+			volatile int req_fullfilled = 0;
+			volatile int epoch_done = -1;
 			std::vector<std::vector<std::queue<det_request>* > > locked_transactions;
 			std::vector<SpinLock*> locks_4_locked_transactions;
 			volatile int det_batch_ready = 0;

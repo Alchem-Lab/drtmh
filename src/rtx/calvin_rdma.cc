@@ -53,7 +53,7 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
     release_writes(yield);
     gc_readset();
     gc_writeset();
-    return false;
+    return false; // false means that I am neither a active nor passive participant. I should skip instead.
   }
 
 // #if 1
@@ -63,17 +63,17 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   // If I am an active participant, only send to *other* active participants
 
   start_batch_rpc_op(read_batch_helper_);
-  // broadcast the active participants ONLY.
+  // broadcast the to active participants ONLY.
   
   for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
-    if (*itr != response_node_)
+    if (*itr != cm_->get_nodeid())
       add_mac(read_batch_helper_, *itr);
   }
 
 
   if (!read_batch_helper_.mac_set_.empty()) {
     for (int i = 0; i < read_set_.size(); ++i) {
-      if (read_set_[i].pid == response_node_) {
+      if (read_set_[i].pid == cm_->get_nodeid()) {
         // fprintf(stdout, "forward read idx %d\n", i);
         assert(read_set_[i].data_ptr != NULL);
         add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
@@ -86,7 +86,7 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   
     // fprintf(stdout, "forward read start to machine: \n");
     // for (auto m : read_batch_helper_.mac_set_)
-    //   fprintf(stdout, "%d ", m);
+    //    fprintf(stdout, "%d ", m);
     // fprintf(stdout, "\n");
     auto replies = send_batch_rpc_op(read_batch_helper_,cor_id_,RTX_CALVIN_FORWARD_RPC_ID);
     assert(replies > 0);
@@ -100,13 +100,13 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   start_batch_rpc_op(read_batch_helper_);
 
   for (auto itr = active_participants.begin(); itr != active_participants.end(); itr++) {
-    if (*itr != response_node_)
+    if (*itr != cm_->get_nodeid())
       add_mac(read_batch_helper_, *itr);
   }
 
   if (!read_batch_helper_.mac_set_.empty()) {
     for (int i = 0; i < write_set_.size(); ++i) {
-      if (write_set_[i].pid == response_node_) {
+      if (write_set_[i].pid == cm_->get_nodeid()) {
         // fprintf(stdout, "forward write idx %d\n", i);
         assert(write_set_[i].data_ptr != NULL);
         add_batch_entry_wo_mac<read_val_t>(read_batch_helper_,
@@ -137,6 +137,7 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
     gc_writeset();
     return false;
   }
+
   // phase 4: check if all read_set and write_set has been collected.
   //          if not, wait.
   // fprintf(stdout, "collecting missing reads and writes...\n");
@@ -310,155 +311,18 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
   return am_I_active_participant;
 }
 
-bool CALVIN::request_locks(yield_func_t &yield) {
-using namespace nocc::rtx::rwlock;
-  assert(read_set_.size() > 0 || write_set_.size() > 0);
-
-  // lock local reads
-  // for (auto i = 0; i < read_set_.size(); i++) {
-  //   if (read_set_[i].pid != response_node_)  // skip remote read
-  //     continue;
-
-  //   auto it = read_set_.begin() + i;
-  //   // fprintf(stderr, "locking read. key = %d\n", it->key);
-  //   assert(it->node != NULL);
-  //   while(true) {
-  //     volatile uint64_t l = it->node->lock;
-  //     if(l & 0x1 == W_LOCKED) {
-  //       release_reads(yield);
-  //       release_writes(yield);
-  //       P[0]++;
-  //       return false;
-  //     } else {
-  //       if (EXPIRED(END_TIME(l))) {
-  //         volatile uint64_t *lockptr = &(it->node->lock);
-  //         if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-  //                      R_LEASE(txn_end_time)))) {
-  //           worker_->yield_next(yield);       
-  //           continue;
-  //         } else {
-  //           break; // lock the next local read
-  //         }
-  //       } else {
-  //         break;
-  //       }
-  //     }
-  //   }
-  // }
-
-  // // lock local writes
-  // for (auto i = 0; i < write_set_.size(); i++) {
-  //   if (write_set_[i].pid != response_node_)  // skip remote read
-  //     continue;
-
-  //   auto it = write_set_.begin() + i;
-  //   // fprintf(stderr, "locking write. key = %d\n", it->key);
-  //   assert (it->node != NULL);
-  //   while (true) {
-  //     volatile uint64_t l = it->node->lock;
-  //     if(l & 0x1 == W_LOCKED) {
-  //       release_reads(yield);
-  //       release_writes(yield);
-  //       P[2]++;
-  //       return false;
-  //     } else {
-  //       if (EXPIRED(END_TIME(l))) {
-  //         volatile uint64_t *lockptr = &(it->node->lock);
-  //         if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-  //                      LOCKED(response_node_)))) {
-  //           worker_->yield_next(yield);
-  //           continue;
-  //         } else {
-  //           break; // lock the next local read
-  //         }
-  //       } else { //read locked
-  //         release_reads(yield);
-  //         release_writes(yield);
-  //         P[3]++;
-  //         return false;
-  //       }
-  //     }
-  //   }
-  // }
-
-
-  // local local reads
-  for (auto i = 0; i < read_set_.size(); i++) {
-    if (read_set_[i].pid != response_node_)  // skip remote read
-      continue;
-
-    auto it = read_set_.begin() + i;
-    // fprintf(stderr, "locking write. key = %d\n", it->key);
-    assert (it->node != NULL);
-    while (true) {
-      volatile uint64_t l = it->node->lock;
-      if((l & 0x1) == W_LOCKED) {
-        release_reads(yield);
-        release_writes(yield);
-        P[1]++;
-        return false;
-      } else {
-          volatile uint64_t *lockptr = &(it->node->lock);
-          if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                       LOCKED(response_node_)))) {
-            worker_->yield_next(yield);
-            continue;
-          } else {
-            // fprintf(stderr, "locked read %d %d\n", it->tableid, it->key);
-            break; // lock the next local read
-          }
-      }
-    }
-  }
-
-  // lock local writes
-  for (auto i = 0; i < write_set_.size(); i++) {
-    if (write_set_[i].pid != response_node_)  // skip remote read
-      continue;
-
-    auto it = write_set_.begin() + i;
-    // fprintf(stderr, "locking write. key = %d\n", it->key);
-    assert (it->node != NULL);
-    while (true) {
-      volatile uint64_t l = it->node->lock;
-      if((l & 0x1) == W_LOCKED) {
-        release_reads(yield);
-        release_writes(yield);
-        P[2]++;
-        return false;
-      } else {
-        volatile uint64_t *lockptr = &(it->node->lock);
-        if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-                     LOCKED(response_node_)))) {
-          worker_->yield_next(yield);
-          continue;
-        } else {
-          // fprintf(stderr, "locked write %d %d\n", it->tableid, it->key);
-          break; // lock the next local read
-        }
-      }
-    }
-  }
-
-  return true;
-}
-
 void CALVIN::release_reads(yield_func_t &yield) {
   using namespace rwlock;
 
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
-    if((*it).pid != response_node_)  // remote case
+    if((*it).pid != cm_->get_nodeid())  // remote case
       continue;
     else {
       assert(it->node != NULL);
-      volatile uint64_t l = it->node->lock;
-      if ((l & 0x1) == W_LOCKED) {
-        // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
-        // auto res = local_try_release_op(it->tableid,it->key,
-        //                           R_LEASE(txn_start_time + LEASE_TIME));
-        auto res = local_try_release_op(it->tableid,it->key,
-                                      LOCKED(it->pid));
-      }
+      volatile uint64_t* lock_ptr = &it->node->lock;
+      assert ((*lock_ptr & 0x1) == W_LOCKED);
+      // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
+      *lock_ptr = 0;
     }
   }
 }
@@ -467,16 +331,14 @@ void CALVIN::release_writes(yield_func_t &yield) {
   using namespace rwlock;
 
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != response_node_)  // remote case
+    if((*it).pid != cm_->get_nodeid())  // remote case
       continue;
     else {
       assert(it->node != NULL);
-      volatile uint64_t l = it->node->lock;
-      if ((l & 0x1) == W_LOCKED) {
-        // fprintf(stderr, "releasing write %d %d\n", it->tableid, it->key);
-        auto res = local_try_release_op(it->tableid,it->key,
-                                    LOCKED(it->pid));
-      }
+      volatile uint64_t* lock_ptr = &it->node->lock;
+      assert ((*lock_ptr & 0x1) == W_LOCKED);
+      // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
+      *lock_ptr = 0;
     }
   }
 }
@@ -486,8 +348,8 @@ void CALVIN::write_back(yield_func_t &yield) {
   // ignore remote writes since they will be viewed as local writes
   // at some apropriate node.
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
-    if((*it).pid != response_node_) { // ignore remote write
-    }
+    if((*it).pid != cm_->get_nodeid()) // ignore remote write
+      continue;
     else {
       // fprintf(stdout, "write back %f@%p with len = %d for table %d key %d\n", *(float*)(it->data_ptr), it->data_ptr, it->len, it->tableid, it->key);
       assert(it->node != NULL);
@@ -507,7 +369,7 @@ void CALVIN::forward_rpc_handler(int id,int cid,char *msg,void *arg) {
   
   // fprintf(stdout, "in calvin forward rpc handler.\n");
   
-  assert(id != response_node_);
+  assert(id != cm_->get_nodeid());
 
   int num_returned(0);
   RTX_ITER_ITEM(msg,sizeof(read_val_t)) {

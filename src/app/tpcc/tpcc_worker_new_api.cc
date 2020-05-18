@@ -254,9 +254,11 @@ rtx_->begin(yield);
   // show read/write sets;
   // rtx_->display_sets();
 
-  if (!rtx_->request_locks(yield)) {
-    return txn_result_t(false,73);
-  }
+  // no requesting locks any more when using the new sequencer and scheduler. 
+  // [TODO: re-write TPCC new order for CALVIN]
+  // if (!rtx_->request_locks(yield)) {
+  //   return txn_result_t(false,73);
+  // }
 
   // fprintf(stdout, "After local load_reads and local load_writes for %d:\n", req->req_seq);
   district::value *d_value = rtx_->get_writeset<district::value>(d_value_idx,yield);

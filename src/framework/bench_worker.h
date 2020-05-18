@@ -160,7 +160,7 @@ class BenchWorker : public RWorker {
   void req_rpc_handler(int id,int cid,char *msg,void *arg);
 
 #ifdef CALVIN_TX
-  // void init_calvin();
+  void init_calvin();
   // void calvin_schedule_rpc_handler(int id,int cid,char *msg,void *arg);
   // void check_schedule_done(int cid);
   // void calvin_epoch_status_rpc_handler(int id, int cid, char *msg, void *arg);
@@ -252,29 +252,16 @@ class BenchWorker : public RWorker {
 #elif defined(CALVIN_TX)
   rtx::CALVIN *rtx_;
   rtx::CALVIN *rtx_hook_ = NULL;
-
-  std::vector<det_request*>* deterministic_requests;
-  bool* epoch_done_schedule;
-  std::set<int>* mach_received;
-
-  // the following data structures should be allocated using Rmalloc
-  // when using one-sided ops.
-#if ONE_SIDED_READ == 0
-  uint8_t** epoch_status_; // per-routine status
-  std::vector<char*>* req_buffers;     // per-routine buffers
-  char** send_buffers;
-#else
-  std::vector<char*>* req_buffers;
-  uint64_t** offsets_;
-#endif // ONE_SIDED_READ
-#elif defined(BOHM_TX)
-
-#endif
   
   //forwarded related structures are used by the CALVIN CLASS
+#if ONE_SIDED_READ == 0
   std::map<uint64_t, read_val_t>* forwarded_values;
+#else
   uint64_t* forward_offsets_;
   char** forward_addresses;
+#endif
+
+#endif
 
   LAT_VARS(yield);
 
