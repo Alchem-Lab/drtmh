@@ -276,14 +276,21 @@ void TpccMainRunner::init_store(MemDB* &store){
 void TpccMainRunner::init_backup_store(MemDB* &store){
   store = new MemDB();
   int meta_size = META_SIZE;
-#if MVCC_TX
-  assert(false);
-#endif
+  int mvcc_meta_size = sizeof(rtx::MVCCHeader);
+  assert(scale_factor > 0);
   // store as DrTM kv
+#if MVCC_TX
+  store->AddSchema(WARE,TAB_HASH,sizeof(uint64_t),MVCC_VERSION_NUM * sizeof(warehouse::value),mvcc_meta_size,scale_factor * 2);
+  store->AddSchema(DIST,TAB_HASH,sizeof(uint64_t),MVCC_VERSION_NUM * sizeof(district::value),mvcc_meta_size,
+                   scale_factor * NumDistrictsPerWarehouse() * 2);
+  store->AddSchema(STOC,TAB_HASH,sizeof(uint64_t),MVCC_VERSION_NUM * sizeof(stock::value),mvcc_meta_size,
+                   NumItems() * scale_factor);
+#else
   store->AddSchema(WARE,TAB_HASH,sizeof(uint64_t),sizeof(warehouse::value),meta_size,scale_factor * 2);
   store->AddSchema(DIST,TAB_HASH,sizeof(uint64_t),sizeof(district::value),meta_size,scale_factor * 2 * NumDistrictsPerWarehouse());
   store->AddSchema(STOC,TAB_HASH,sizeof(uint64_t),sizeof(stock::value),meta_size,
                    NumItems() * scale_factor);
+#endif
 
   store->AddSchema(CUST,TAB_BTREE,sizeof(uint64_t),sizeof(customer::value),meta_size);
   store->AddSchema(HIST,TAB_BTREE,sizeof(uint64_t),sizeof(history::value),meta_size);
