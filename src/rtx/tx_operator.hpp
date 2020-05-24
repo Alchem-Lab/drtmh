@@ -115,11 +115,9 @@ class TXOpBase {
   uint64_t pending_rdma_read_val(int pid,int tableid,uint64_t key,int len,char *val,yield_func_t &yield,int meta_len = 0, bool need_get_msg = true);
   int dummy_work(int len, int num) {
     int ret = 0;
-    START(log);
     for(int i = 0; i < len; ++i) {
       ret += num % 3000;
     }
-    END(log);
     return ret;
   }
 

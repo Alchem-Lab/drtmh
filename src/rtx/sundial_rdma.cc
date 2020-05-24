@@ -314,7 +314,6 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
 
 bool SUNDIAL::try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield) {
   // if(pid != response_node_) {
-  START(log);
   if(pid != node_id_) {
     START(renew_lease);
     rpc_op<RTXRenewLeaseItem>(cor_id_, RTX_RENEW_LEASE_RPC_ID, pid,
@@ -335,7 +334,6 @@ bool SUNDIAL::try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, ui
     assert(node != NULL);
     return renew_lease_local(node, wts, commit_id);
   }
-  END(log);
 }
 
 

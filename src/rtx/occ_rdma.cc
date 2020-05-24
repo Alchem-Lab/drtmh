@@ -343,7 +343,6 @@ void OCCR::write_back_w_FA_rdma(yield_func_t &yield) {
 }
 
 bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
-  START(renew_lease);
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
     if((*it).tableid == 7) continue;
     if((*it).pid != node_id_) {
@@ -375,7 +374,6 @@ bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
   }
   abort_cnt[18]++;
   worker_->indirect_yield(yield);
-  END(renew_lease);
 
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
     if((*it).pid != node_id_) {
