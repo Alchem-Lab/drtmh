@@ -17,6 +17,7 @@ uint64_t TXOpBase::rdma_lookup_op(int pid,int tableid,uint64_t key,char *val,
 inline __attribute__ ((always_inline))
 uint64_t TXOpBase::rdma_read_val(int pid,int tableid,uint64_t key,int len,char *val,yield_func_t &yield,int meta_len, bool need_all_msg) {
   auto data_off = pending_rdma_read_val(pid,tableid,key,len,val,yield,meta_len);
+  abort_cnt[18]++;
   worker_->indirect_yield(yield); // yield for waiting for NIC's completion
   return data_off;
 }
@@ -40,6 +41,7 @@ uint64_t TXOpBase::pending_rdma_read_val(int pid,int tableid,uint64_t key,int le
                             IBV_WR_RDMA_READ,val,len + meta_len,data_off, IBV_SEND_SIGNALED);
 
       if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
       }
   }
