@@ -400,7 +400,7 @@ bool OCC::lock_writes(yield_func_t &yield) {
       }
       if(unlikely(!local_validate_op(it->node,it->seq))) {
 #if !NO_ABORT
-        abort_cnt[18]++;
+        abort_cnt[23]++;
         return false;
 #endif
       }

@@ -30,7 +30,7 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
         req.set_lock_meta(off,0,lock_content,local_buf);
         req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader), (*it).len);
         req.post_reqs(scheduler_,qp);
-        abort_cnt[17]++;
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
         
         if (h->lock != 0) {
@@ -100,7 +100,7 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
         req.set_lock_meta(off,0,lock_content,local_buf);
         req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader), (*it).len);
         req.post_reqs(scheduler_,qp);
-        abort_cnt[17]++;
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
 
         if(h->lock != 0) {

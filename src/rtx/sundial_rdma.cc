@@ -136,6 +136,7 @@ void SUNDIAL::log_remote(yield_func_t &yield) {
     cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
     //log ack
     logger_->log_ack(cblock,cor_id_); // need to yield
+    abort_cnt[18]++;
     worker_->indirect_yield(yield);
 #endif
   }
@@ -443,7 +444,7 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
               req.set_lock_meta(off,0,txn_start_time,local_buf);
               req.set_read_meta(off + sizeof(uint64_t), local_buf + sizeof(uint64_t),(*it).len + sizeof(RdmaValHeader)- sizeof(uint64_t));
               req.post_reqs(scheduler_,qp);
-              abort_cnt[17]++;
+              abort_cnt[18]++;
               worker_->indirect_yield(yield);
 
       // if(false) {

@@ -194,7 +194,7 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
       if(unlikely(!__sync_bool_compare_and_swap(lockptr, 0, txn_start_time))) {
 #ifdef MVCC_NOWAIT
         abort_cnt[13]++;
-        abort_reason = 17;
+        abort_reason = 13;
         END(lock);
         return false;
 #else
@@ -206,8 +206,8 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
         if(header->rts > txn_start_time) {
           cnt_timer = header->rts >> 10;
           *lockptr = 0;
-          abort_cnt[18]++;
-          abort_reason = 18;
+          // abort_cnt[18]++;
+          // abort_reason = 18;
           END(lock);
           return false;
         }
@@ -339,6 +339,7 @@ void MVCC::log_remote(yield_func_t &yield) {
     cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
     //log ack
     logger_->log_ack(cblock,cor_id_); // need to yield
+    abort_cnt[18]++;    
     worker_->indirect_yield(yield);
 #endif
   }
@@ -602,7 +603,7 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
       req.set_lock_meta(off,0,txn_start_time,local_buf);
       req.set_read_meta(off+ sizeof(uint64_t), local_buf+ sizeof(uint64_t) , item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader)- sizeof(uint64_t));
       req.post_reqs(scheduler_,qp);
-      abort_cnt[17]++;
+      abort_cnt[18]++;
       worker_->indirect_yield(yield);
 
       if(header->lock > txn_start_time) { // a newer write is processing
@@ -824,7 +825,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     while(compare < txn_start_time) {
       lock_req_->set_lock_meta(off + sizeof(uint64_t), compare, 
         txn_start_time, (char*)(&back));
-      abort_cnt[17]++;
+      // abort_cnt[18]++;
       worker_->indirect_yield(yield);
       if(compare == back)
         break;

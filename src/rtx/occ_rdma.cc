@@ -37,7 +37,7 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
 
       // two request need to be polled
       if(unlikely(qp->rc_need_poll())) {
-        abort_cnt[17]++;
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
       }
       write_batch_helper_.mac_set_.insert(it->pid);

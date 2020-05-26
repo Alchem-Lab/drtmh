@@ -30,7 +30,7 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
         req.set_lock_meta(off,0,lock_content,local_buf);
         req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader),(*it).len);
         req.post_reqs(scheduler_,qp);
-        abort_cnt[17]++;
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
 
         if (h->lock != 0) {
@@ -99,7 +99,7 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
         req.set_lock_meta(off,0,lock_content,local_buf);
         req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader), (*it).len);
         req.post_reqs(scheduler_,qp);
-        abort_cnt[17]++;
+        abort_cnt[18]++;
         worker_->indirect_yield(yield);
 
         if(h->lock != 0) {
@@ -484,6 +484,7 @@ void WAITDIE::log_remote(yield_func_t &yield) {
     cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
     //log ack
     logger_->log_ack(cblock,cor_id_); // need to yield
+    abort_cnt[18]++;    
     worker_->indirect_yield(yield);
 #endif
   } // end check whether it is necessary to log
