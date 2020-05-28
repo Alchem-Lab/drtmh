@@ -1,0 +1,36 @@
+NOCC started with program [/noccmvcc-onesided]. at 19-05-2020 05:33:18
+[bench_runner.cc:327] Use TCP port 8870
+[0m[bench_runner.cc:349] use scale factor: 24; with total 8 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot10num_hot1000num_accounts 100000
+[0m[bank_main.cc:143] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16, 0
+[util.cc:161] malloc_huge_pages: size = 6442450944huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[librdma] get device name mlx4_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:154] Total logger area 0.00390625G.
+[0m[bench_runner.cc:165] add RDMA store size 4.88281G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 1.11128G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[bank_main.cc:243] finish loading zipfian 0
+[0mnoccmvcc-onesided: /home/chao/git_repos/drtmh/src/app/smallbank/bank_main.cc:300: virtual void nocc::oltp::bank::BankLoader::load(): Assertion `wrapper_check != __null' failed.
+[Bank], total 9600000 accounts loaded
+stack trace:
+  ../noccmvcc-onesided() [0x476a58]
+  /lib64/libc.so.6 : ()+0x35270
+  /lib64/libc.so.6 : gsignal()+0x37
+  /lib64/libc.so.6 : abort()+0x148
+  /lib64/libc.so.6 : ()+0x2e266
+  /lib64/libc.so.6 : ()+0x2e312
+  ../noccmvcc-onesided : nocc::oltp::bank::BankLoader::load()+0x59e
+  ../noccmvcc-onesided : ndb_thread::pthread_bootstrap(void*)+0xf
+  /lib64/libpthread.so.0 : ()+0x7e25
+  /lib64/libc.so.6 : clone()+0x6d
+[NOCC] Meet an assertion failure!

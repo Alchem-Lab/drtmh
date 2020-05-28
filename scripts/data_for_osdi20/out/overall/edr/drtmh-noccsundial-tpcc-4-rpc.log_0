@@ -1,9 +1,9 @@
-NOCC started with program [/noccsundial-rpc]. at 20-05-2020 02:10:10
+NOCC started with program [/noccsundial-rpc]. at 26-05-2020 02:40:53
 [tpcc] settings:
   new_order_remote_item_pct    : 1
   uniform_item_dist            : 0
   micro dist :20
-[bench_runner.cc:327] Use TCP port 8852
+[bench_runner.cc:327] Use TCP port 8894
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
@@ -15,7 +15,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [librdma] : Device 0 has 1 ports
 [bench_runner.cc:154] Total logger area 0.00390625G.
 [0m[bench_runner.cc:165] add RDMA store size 6.34766G.
-[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64646G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64648G.
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -34,7 +34,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [TPCC]   * average stock record length: 9 bytes
 [tpcc_loader.cc:319] [TPCC] finished loading customer.
 [0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
-[0m[Runner] local db size: 2883.21 MB
+[0m[Runner] local db size: 2884.79 MB
 [Runner] Cache size: 0 MB
 [util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
@@ -49,7 +49,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[0] for 2 size: 370.227 MB
+[bench_runner.cc:255] [Runner] Backup DB[0] for 2 size: 368.512 MB
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -63,12 +63,12 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 366.465 MB
+[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 368.395 MB
 [0m[Tpcc] n_ware_per_worker: 3
 worker: 0 binding 0
 worker: 2 binding 4
-worker: 1 binding 2
 worker: 3 binding 6
+worker: 1 binding 2
 worker: 4 binding 8
 worker: 5 binding 10
 worker: 6 binding 12
@@ -77,88 +77,78 @@ worker: 8 binding 16
 worker: 9 binding 18
 [bench_listener2.cc:64] try log results to ./results//noccsundial-rpc_tpcc_4_10_10_100.log
 [0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[bench_listener2.cc:73] New monitor running!
-[0mregisterring 10737418240registerring 107374182402: 1 out of 4 qps connected. Retry connecting qps...
-4: 1 out of 4 qps connected. Retry connecting qps...
-8: 1 out of 4 qps connected. Retry connecting qps...
-5: 1 out of 4 qps connected. Retry connecting qps...
-1: 1 out of 4 qps connected. Retry connecting qps...
-6: 1 out of 4 qps connected. Retry connecting qps...
-0: 1 out of 4 qps connected. Retry connecting qps...
-7: 1 out of 4 qps connected. Retry connecting qps...
-9: 1 out of 4 qps connected. Retry connecting qps...
-3: 1 out of 4 qps connected. Retry connecting qps...
-12: 1 out of 4 qps connected. Retry connecting qps...
-threadid=2: all 4 qps connected
-threadid=6: all 4 qps connected
-threadid=1: all 4 qps connected
-threadid=8: all 4 qps connected
-threadid=4: all 4 qps connected
-threadid=5: all 4 qps connected
+[0mregisterring 10737418240registerring 10737418240threadid=6: all 4 qps connected
 threadid=9: all 4 qps connected
-threadid=3: all 4 qps connected
-threadid=0: all 4 qps connected
 threadid=7: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=0: all 4 qps connected
+12: 2 out of 4 qps connected. Retry connecting qps...
 threadid=12: all 4 qps connected
 [bench_worker.h:154] Use RPC for logging.
 [0m[sundial_rdma.h:230] Use one-sided for read.
 [0m[bench_listener2.cc:119] All workers has initilized.
-[0m[rworker.cc:47] Worker 12 on cpu 23with cor id 0
+[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
 [0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
-[rworker.cc:47] Worker 7 on cpu 14with cor id 0
-[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
 [0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
 [0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
-[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
-[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
 [0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
-[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
-[0m[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
-[0mmerge data 235.355000 K from gorgon5
-merge data 226.815000 K from gorgon4
-merge data 230.553000 K from gorgon3
-my throughput 229.701000 K, abort 1904667, commit 229701, abort ratio 0.892380
-merge data 229.701000 K from gorgon2
-[tpcc_worker.h:144] read lat: 346069 ;counts 24502
-[0m[occ_statistics.h:58] lock lat: 39890.8 ;counts 42078
-[0m[occ_statistics.h:61] log lat: 55250.1 ;counts 2476
-[0m[occ_statistics.h:64] commit lat: 57350.6 ;counts 2476
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0mmerge data 216.383000 K from gorgon6
+merge data 210.273000 K from gorgon7
+merge data 189.168000 K from gorgon8
+my throughput 220.084000 K, abort 2069485, commit 220084, abort ratio 0.903875
+merge data 220.084000 K from gorgon5
+[tpcc_worker.h:144] read lat: 353266 ;counts 24407
+[0m[occ_statistics.h:58] lock lat: 38047.5 ;counts 43358
+[0m[occ_statistics.h:61] log lat: 57951.3 ;counts 2385
+[0m[occ_statistics.h:64] commit lat: 64574.6 ;counts 2385
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 92.2248 ;counts 14721
-[0m@1 System throughput 922.424000 K, abort 0.892580
-merge data 235.535000 K from gorgon5
-merge data 228.012000 K from gorgon4
-merge data 230.910000 K from gorgon3
-my throughput 229.642000 K, abort 1895156, commit 229642, abort ratio 0.891923
-merge data 229.642000 K from gorgon2
-[tpcc_worker.h:144] read lat: 340709 ;counts 24868
-[0m[occ_statistics.h:58] lock lat: 40378.6 ;counts 41781
-[0m[occ_statistics.h:61] log lat: 56883.1 ;counts 2490
-[0m[occ_statistics.h:64] commit lat: 55448.7 ;counts 2490
+[0m[occ_statistics.h:80] release_write lat: 208.262 ;counts 16701
+[0m@1 System throughput 835.908000 K, abort 0.901951
+merge data 222.864000 K from gorgon6
+merge data 217.115000 K from gorgon7
+merge data 195.801000 K from gorgon8
+my throughput 225.067000 K, abort 1956207, commit 225067, abort ratio 0.896819
+merge data 225.067000 K from gorgon5
+[tpcc_worker.h:144] read lat: 346486 ;counts 24708
+[0m[occ_statistics.h:58] lock lat: 39174 ;counts 41929
+[0m[occ_statistics.h:61] log lat: 63420.7 ;counts 2484
+[0m[occ_statistics.h:64] commit lat: 60310.5 ;counts 2484
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 199.387 ;counts 14013
-[0m@2 System throughput 924.099000 K, abort 0.893338
-merge data 237.251000 K from gorgon5
-merge data 232.728000 K from gorgon3
-merge data 229.906000 K from gorgon4
-my throughput 233.184000 K, abort 1925056, commit 233184, abort ratio 0.891956
-merge data 233.184000 K from gorgon2
-[tpcc_worker.h:144] read lat: 334505 ;counts 25111
-[0m[occ_statistics.h:58] lock lat: 39995.7 ;counts 41994
-[0m[occ_statistics.h:61] log lat: 56833.4 ;counts 2544
-[0m[occ_statistics.h:64] commit lat: 56615.4 ;counts 2544
+[0m[occ_statistics.h:80] release_write lat: 266.022 ;counts 14213
+[0m@2 System throughput 860.847000 K, abort 0.898296
+merge data 221.335000 K from gorgon6
+merge data 215.783000 K from gorgon7
+merge data 195.354000 K from gorgon8
+my throughput 223.599000 K, abort 1956649, commit 223599, abort ratio 0.897443
+merge data 223.599000 K from gorgon5
+[tpcc_worker.h:144] read lat: 344162 ;counts 24664
+[0m[occ_statistics.h:58] lock lat: 38133.1 ;counts 43455
+[0m[occ_statistics.h:61] log lat: 59517.5 ;counts 2412
+[0m[occ_statistics.h:64] commit lat: 56641.4 ;counts 2412
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 188.976 ;counts 13635
-[0m@3 System throughput 933.069000 K, abort 0.891769
+[0m[occ_statistics.h:80] release_write lat: 191.773 ;counts 16442
+[0m@3 System throughput 856.071000 K, abort 0.899177
 [bench_listener2.cc:260] start to exit.
 [0mstats for worker 0:
 exiting master routine.
@@ -172,22 +162,22 @@ exiting master routine.
 exiting master routine.
 exiting master routine.
 exiting master routine.
-NewOrder executed 74490, latency: 0.395329, rw_size -nan, m 0.317872, 90 0.674327, 99 1.552014
-succs ratio 0.148389
+NewOrder executed 73789, latency: 0.406141, rw_size -nan, m 0.312873, 90 0.708610, 99 1.659301
+succs ratio 0.136542
 [tpcc_worker.h:152] worker exit.
-[0m[bench_listener2.cc:279] Medium latency 0.317871ms, 90th latency 0.674323ms, 99th latency 1.55201ms; average latency: 0.394033ms.
-[0m[tpcc_worker.h:155] read time: 0.147998ms
+[0m[bench_listener2.cc:279] Medium latency 0.312871ms, 90th latency 0.708292ms, 99th latency 1.65929ms; average latency: 0.404801ms.
+[0m[tpcc_worker.h:155] read time: 0.151278ms
 [0m[occ_statistics.h:39] read_lat time: 0ms
-[0m[occ_statistics.h:40] lock time: 0.0174279ms
-[0m[occ_statistics.h:41] release_write time: 6.95587e-05ms
+[0m[occ_statistics.h:40] lock time: 0.0167163ms
+[0m[occ_statistics.h:41] release_write time: 9.6513e-05ms
 [0m[occ_statistics.h:42] renew_lease time: 0ms
-[0m[occ_statistics.h:43] commit time: 0.0245503ms
+[0m[occ_statistics.h:43] commit time: 0.0263054ms
 [0m[occ_statistics.h:45] 0
-[0m[occ_statistics.h:46] 0.0174279
-[0m[occ_statistics.h:47] 6.95587e-05
+[0m[occ_statistics.h:46] 0.0167163
+[0m[occ_statistics.h:47] 9.6513e-05
 [0m[occ_statistics.h:48] 0
-[0m[occ_statistics.h:49] 0.0245503
-[0m[occ_statistics.h:51] log time: 0.0244855
+[0m[occ_statistics.h:49] 0.0263054
+[0m[occ_statistics.h:51] log time: 0.0262133
 [0m[occ_statistics.h:52] temp time: 0ms
 [0m[occ_statistics.h:53] release_read time: 0ms
 [0m[bench_worker.cc:388] 0: 0
@@ -201,15 +191,15 @@ succs ratio 0.148389
 [0m[bench_worker.cc:388] 8: 0
 [0m[bench_worker.cc:388] 9: 0
 [0m[bench_worker.cc:388] 10: 0
-[0m[bench_worker.cc:388] 11: 427435
+[0m[bench_worker.cc:388] 11: 466551
 [0m[bench_worker.cc:388] 12: 0
 [0m[bench_worker.cc:388] 13: 0
 [0m[bench_worker.cc:388] 14: 0
 [0m[bench_worker.cc:388] 15: 0
-[0m[bench_worker.cc:388] 16: 74481
+[0m[bench_worker.cc:388] 16: 73780
 [0m[bench_worker.cc:388] 17: 0
-[0m[bench_worker.cc:388] 18: 1404235
-[0m[bench_worker.cc:388] 19: 5718
+[0m[bench_worker.cc:388] 18: 1511679
+[0m[bench_worker.cc:388] 19: 8856
 [0m[bench_worker.cc:388] 20: 0
 [0m[bench_worker.cc:388] 21: 0
 [0m[bench_worker.cc:388] 22: 0
@@ -226,7 +216,7 @@ succs ratio 0.148389
 [0m[bench_worker.cc:388] 33: 0
 [0m[bench_worker.cc:388] 34: 0
 [0m[bench_worker.cc:388] 35: 0
-[0m[bench_worker.cc:388] 36: 427640
+[0m[bench_worker.cc:388] 36: 466012
 [0m[bench_worker.cc:388] 37: 0
 [0m[bench_worker.cc:388] 38: 0
 [0m[bench_worker.cc:388] 39: 0

@@ -1,18 +1,18 @@
-NOCC started with program [/noccsundial-rpc]. at 19-05-2020 07:43:57
-[bench_runner.cc:327] Use TCP port 8893
+NOCC started with program [/noccsundial-rpc]. at 26-05-2020 01:40:58
+[bench_runner.cc:327] Use TCP port 8832
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
-[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot10num_hot1000num_accounts 100000
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
 [0m[bank_main.cc:143] here0
 [0m[Bank]: check workload 17, 17, 17, 16, 17, 16, 0
-[util.cc:161] malloc_huge_pages: size = 8589934592huge_page_sz = 2097152flag = 1
+[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[librdma] get device name mlx5_0, idx 0
 [librdma] : Device 0 has 1 ports
 [bench_runner.cc:154] Total logger area 0.00390625G.
 [0m[bench_runner.cc:165] add RDMA store size 6.34766G.
-[0m[bench_runner.cc:174] [Mem] RDMA heap size 1.64646G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64644G.
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -21,7 +21,7 @@ NOCC started with program [/noccsundial-rpc]. at 19-05-2020 07:43:57
 [0m[util.cc:175] huge page alloc failed!
 [0m[bank_main.cc:243] finish loading zipfian 0
 [0m[Bank], total 12000000 accounts loaded
-[Runner] local db size: 367.16 MB
+[Runner] local db size: 367.938 MB
 [Runner] Cache size: 0 MB
 [util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
@@ -32,7 +32,7 @@ NOCC started with program [/noccsundial-rpc]. at 19-05-2020 07:43:57
 [0m[bank_main.cc:243] finish loading zipfian 1531
 [0m[Bank], total 12000000 accounts loaded
 [bank_main.cc:344] check cv balance 46280
-[0m[bench_runner.cc:255] [Runner] Backup DB[0] for 0 size: 644.914 MB
+[0m[bench_runner.cc:255] [Runner] Backup DB[0] for 0 size: 644.496 MB
 [0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
@@ -41,12 +41,12 @@ NOCC started with program [/noccsundial-rpc]. at 19-05-2020 07:43:57
 [0m[util.cc:175] huge page alloc failed!
 [0m[bank_main.cc:243] finish loading zipfian 1531
 [0m[Bank], total 12000000 accounts loaded
-[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 644.793 MB
-[0mregisterring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592worker: 1 binding 2
+[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 644.613 MB
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240worker: 0 binding 0
 worker: 2 binding 4
-worker: 0 binding 0
-worker: 4 binding 8
+worker: 1 binding 2
 worker: 3 binding 6
+worker: 4 binding 8
 worker: 5 binding 10
 worker: 6 binding 12
 worker: 7 binding 14
@@ -54,39 +54,39 @@ worker: 8 binding 16
 worker: 9 binding 18
 [Global sequence running] !
 [bench_listener2.cc:73] New monitor running!
-[0mregisterring 8589934592registerring 8589934592registerring 8589934592threadid=11: all 4 qps connected
-threadid=0: all 4 qps connected
-threadid=3: all 4 qps connected
-threadid=4: all 4 qps connected
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240threadid=8: all 4 qps connected
 threadid=1: all 4 qps connected
+threadid=7: all 4 qps connected
 threadid=6: all 4 qps connected
 threadid=2: all 4 qps connected
-threadid=9: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=3: all 4 qps connected
 threadid=5: all 4 qps connected
-threadid=7: all 4 qps connected
-threadid=8: all 4 qps connected
-12: 2 out of 4 qps connected. Retry connecting qps...
+threadid=0: all 4 qps connected
+threadid=9: all 4 qps connected
+12: 3 out of 4 qps connected. Retry connecting qps...
 threadid=12: all 4 qps connected
-[rworker.cc:47] Worker 11 on cpu 12with cor id 0
+[rworker.cc:47] Worker 11 on cpu 20with cor id 0
 [0m[bench_worker.h:154] Use RPC for logging.
 [0m[sundial_rdma.h:230] Use one-sided for read.
 [0m[bench_listener2.cc:119] All workers has initilized.
 [0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
-[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
-[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
-[rworker.cc:47] Worker 1 on cpu 2with cor id 0
-[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
-[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
-[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
-[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
-[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
-[0m[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
 [0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
-[0mmy throughput 1.243002 M, abort 7457, commit 1243002, abort ratio 0.005963
-my throughput 1.220937 M, abort 6240, commit 1220937, abort ratio 0.005085
-my throughput 1.151544 M, abort 8414, commit 1151544, abort ratio 0.007254
-my throughput 223, abort 0, commit 223, abort ratio 0.000000
+[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[0mmy throughput 1.288938 M, abort 339, commit 1288938, abort ratio 0.000263
+my throughput 1.211560 M, abort 574, commit 1211560, abort ratio 0.000474
+my throughput 1.211372 M, abort 389, commit 1211372, abort ratio 0.000321
+my throughput 344, abort 0, commit 344, abort ratio 0.000000
 [bench_listener2.cc:260] start to exit.
 [0mstats for worker 0:
 exiting master routine.
@@ -100,13 +100,13 @@ exiting master routine.
 exiting master routine.
 exiting master routine.
 exiting master routine.
-SendPayment executed 61475, latency: 0.085229, rw_size -nan, m 0.071721, 90 0.081282, 99 0.328762
-DepositChecking executed 61303, latency: 0.070279, rw_size -nan, m 0.056079, 90 0.064151, 99 0.308356
-Balance executed 61314, latency: 0.056215, rw_size -nan, m 0.050837, 90 0.059380, 99 0.288675
-Transact saving executed 57854, latency: 0.067376, rw_size -nan, m 0.055912, 90 0.063949, 99 0.304471
-Write check executed 61364, latency: 0.098217, rw_size -nan, m 0.081676, 90 0.092468, 99 0.473126
-Txn amal executed 57417, latency: 0.102949, rw_size -nan, m 0.084859, 90 0.096492, 99 0.481030
-succs ratio 0.992882
+SendPayment executed 51242, latency: 0.106425, rw_size -nan, m 0.097200, 90 0.115633, 99 0.266155
+DepositChecking executed 51156, latency: 0.082244, rw_size -nan, m 0.075592, 90 0.091364, 99 0.189993
+Balance executed 51107, latency: 0.071964, rw_size -nan, m 0.068560, 90 0.084460, 99 0.198323
+Transact saving executed 48360, latency: 0.080783, rw_size -nan, m 0.075409, 90 0.089964, 99 0.184020
+Write check executed 51321, latency: 0.121780, rw_size -nan, m 0.109583, 90 0.130791, 99 0.298666
+Txn amal executed 47683, latency: 0.124230, rw_size -nan, m 0.115156, 90 0.137557, 99 0.329001
+succs ratio 0.999678
 [bank_worker.h:126] worker exit.
 [0m[bank_worker.h:129] read time: 0ms
 [0m[occ_statistics.h:39] read_lat time: 0ms
@@ -133,15 +133,15 @@ succs ratio 0.992882
 [0m[bench_worker.cc:388] 8: 0
 [0m[bench_worker.cc:388] 9: 0
 [0m[bench_worker.cc:388] 10: 0
-[0m[bench_worker.cc:388] 11: 2549
-[0m[bench_worker.cc:388] 12: 179
+[0m[bench_worker.cc:388] 11: 85
+[0m[bench_worker.cc:388] 12: 13
 [0m[bench_worker.cc:388] 13: 0
 [0m[bench_worker.cc:388] 14: 0
 [0m[bench_worker.cc:388] 15: 0
-[0m[bench_worker.cc:388] 16: 360718
+[0m[bench_worker.cc:388] 16: 300859
 [0m[bench_worker.cc:388] 17: 0
-[0m[bench_worker.cc:388] 18: 1443171
-[0m[bench_worker.cc:388] 19: 433
+[0m[bench_worker.cc:388] 18: 1451733
+[0m[bench_worker.cc:388] 19: 24
 [0m[bench_worker.cc:388] 20: 0
 [0m[bench_worker.cc:388] 21: 0
 [0m[bench_worker.cc:388] 22: 0
@@ -158,7 +158,7 @@ succs ratio 0.992882
 [0m[bench_worker.cc:388] 33: 0
 [0m[bench_worker.cc:388] 34: 0
 [0m[bench_worker.cc:388] 35: 0
-[0m[bench_worker.cc:388] 36: 1948
+[0m[bench_worker.cc:388] 36: 114
 [0m[bench_worker.cc:388] 37: 0
 [0m[bench_worker.cc:388] 38: 0
 [0m[bench_worker.cc:388] 39: 0

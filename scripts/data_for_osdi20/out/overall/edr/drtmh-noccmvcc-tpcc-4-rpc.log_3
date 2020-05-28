@@ -1,9 +1,9 @@
-NOCC started with program [/noccmvcc-rpc]. at 20-05-2020 03:04:18
+NOCC started with program [/noccmvcc-rpc]. at 26-05-2020 03:26:45
 [tpcc] settings:
   new_order_remote_item_pct    : 1
   uniform_item_dist            : 0
   micro dist :20
-[bench_runner.cc:327] Use TCP port 8861
+[bench_runner.cc:327] Use TCP port 8833
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
@@ -34,7 +34,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [TPCC]   * average stock record length: 9 bytes
 [tpcc_loader.cc:319] [TPCC] finished loading customer.
 [0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
-[0m[Runner] local db size: 3629.67 MB
+[0m[Runner] local db size: 3629.78 MB
 [Runner] Cache size: 0 MB
 [util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
@@ -49,7 +49,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[0] for 1 size: 1109.49 MB
+[bench_runner.cc:255] [Runner] Backup DB[0] for 1 size: 1109.87 MB
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -63,48 +63,49 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[1] for 2 size: 1110.46 MB
-[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[Tpcc] n_ware_per_worker: 3
+[bench_runner.cc:255] [Runner] Backup DB[1] for 2 size: 1109.93 MB
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[Tpcc] n_ware_per_worker: 3
 worker: 0 binding 0
 worker: 2 binding 4
 worker: 3 binding 6
-worker: 1 binding 2
 worker: 4 binding 8
-worker: 6 binding 12
+worker: 1 binding 2
 worker: 5 binding 10
+worker: 6 binding 12
 worker: 7 binding 14
 worker: 8 binding 16
 worker: 9 binding 18
 [bench_listener2.cc:73] New monitor running!
-[0mregisterring 10737418240registerring 10737418240threadid=9: all 4 qps connected
-threadid=7: all 4 qps connected
-threadid=8: all 4 qps connected
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240threadid=6: all 4 qps connected
 threadid=2: all 4 qps connected
-threadid=4: all 4 qps connected
-threadid=5: all 4 qps connected
+threadid=9: all 4 qps connected
 threadid=0: all 4 qps connected
-registerring 10737418240threadid=6: all 4 qps connected
-threadid=3: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=7: all 4 qps connected
 threadid=1: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=3: all 4 qps connected
+12: 2 out of 4 qps connected. Retry connecting qps...
 threadid=12: all 4 qps connected
 [bench_worker.h:154] Use RPC for logging.
 [0m[bench_listener2.cc:119] All workers has initilized.
-[0m[rworker.cc:47] Worker 12 on cpu 23with cor id 0
+[0m[rworker.cc:47] Worker 12 on cpu 20with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
-[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
-[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
-[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
-[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
 [0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
-[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[rworker.cc:47] Worker 2 on cpu 4with cor id 0
 [0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
-[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
-[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
 [0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
-[0mmy throughput 203.313000 K, abort 1852055, commit 203313, abort ratio 0.901082
-my throughput 205.816000 K, abort 1859272, commit 205816, abort ratio 0.900335
-my throughput 205.466000 K, abort 1862956, commit 205466, abort ratio 0.900665
-my throughput 39, abort 4856149, commit 39, abort ratio 0.999992
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0mmy throughput 186.836000 K, abort 1707676, commit 186836, abort ratio 0.901380
+my throughput 184.749000 K, abort 1769410, commit 184749, abort ratio 0.905459
+my throughput 181.750000 K, abort 1810673, commit 181750, abort ratio 0.908779
+my throughput 34, abort 4760259, commit 34, abort ratio 0.999993
 [bench_listener2.cc:260] start to exit.
 [0mstats for worker 0:
 exiting master routine.
@@ -117,8 +118,8 @@ exiting master routine.
 exiting master routine.
 exiting master routine.
 exiting master routine.
-NewOrder executed 73105, latency: 0.404403, rw_size -nan, m 0.324090, 90 0.693551, 99 1.600060
-succs ratio 0.135023
+NewOrder executed 59897, latency: 0.496275, rw_size -nan, m 0.378524, 90 0.848900, 99 2.148070
+succs ratio 0.057769
 [tpcc_worker.h:152] worker exit.
 [0m[tpcc_worker.h:155] read time: 0ms
 [0m[occ_statistics.h:39] read_lat time: 0ms
@@ -152,11 +153,11 @@ succs ratio 0.135023
 [0m[bench_worker.cc:388] 15: 0
 [0m[bench_worker.cc:388] 16: 0
 [0m[bench_worker.cc:388] 17: 0
-[0m[bench_worker.cc:388] 18: 1461626
-[0m[bench_worker.cc:388] 19: 540676
-[0m[bench_worker.cc:388] 20: 23046
-[0m[bench_worker.cc:388] 21: 27550
-[0m[bench_worker.cc:388] 22: 417453
+[0m[bench_worker.cc:388] 18: 1868032
+[0m[bench_worker.cc:388] 19: 1065819
+[0m[bench_worker.cc:388] 20: 19082
+[0m[bench_worker.cc:388] 21: 22700
+[0m[bench_worker.cc:388] 22: 933344
 [0m[bench_worker.cc:388] 23: 0
 [0m[bench_worker.cc:388] 24: 0
 [0m[bench_worker.cc:388] 25: 0
@@ -170,7 +171,7 @@ succs ratio 0.135023
 [0m[bench_worker.cc:388] 33: 0
 [0m[bench_worker.cc:388] 34: 0
 [0m[bench_worker.cc:388] 35: 0
-[0m[bench_worker.cc:388] 36: 73095
+[0m[bench_worker.cc:388] 36: 59887
 [0m[bench_worker.cc:388] 37: 0
 [0m[bench_worker.cc:388] 38: 0
 [0m[bench_worker.cc:388] 39: 0

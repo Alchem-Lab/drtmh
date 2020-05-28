@@ -1,0 +1,165 @@
+NOCC started with program [/noccmvcc-rpc]. at 26-05-2020 09:25:15
+[bench_runner.cc:327] Use TCP port 8877
+[0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
+[0m[bank_main.cc:143] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16, 0
+[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:154] Total logger area 0.00390625G.
+[0m[bench_runner.cc:165] add RDMA store size 6.34766G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64646G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[bank_main.cc:243] finish loading zipfian 0
+[0m[Bank], total 12000000 accounts loaded
+[Runner] local db size: 460.125 MB
+[Runner] Cache size: 0 MB
+[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[bank_main.cc:243] finish loading zipfian 1531
+[0m[Bank], total 12000000 accounts loaded
+[bank_main.cc:344] check cv balance 1.4013e-45
+[0m[bench_runner.cc:255] [Runner] Backup DB[0] for 0 size: 1571.18 MB
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[bank_main.cc:243] finish loading zipfian 1531
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:255] [Runner] Backup DB[1] for 1 size: 1568.79 MB
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240worker: 0 binding 0
+worker: 2 binding 4
+worker: 1 binding 2
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[Global sequence running] !
+[bench_listener2.cc:73] New monitor running!
+[0mregisterring 10737418240registerring 10737418240threadid=2: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=12: all 4 qps connected
+[bench_worker.h:154] Use RPC for logging.
+[0m[rworker.cc:47] Worker 11 on cpu 4with cor id 0
+[0m[bench_listener2.cc:119] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+[0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0mmy throughput 1.315868 M, abort 9244, commit 1315868, abort ratio 0.006976
+my throughput 1.267833 M, abort 9466, commit 1267833, abort ratio 0.007411
+my throughput 1.299870 M, abort 9435, commit 1299870, abort ratio 0.007206
+my throughput 133, abort 1, commit 133, abort ratio 0.007463
+[bench_listener2.cc:260] start to exit.
+[0mstats for worker 0:
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+SendPayment executed 59579, latency: 0.098018, rw_size -nan, m 0.093507, 90 0.108716, 99 0.158446
+DepositChecking executed 60050, latency: 0.076920, rw_size -nan, m 0.072938, 90 0.085485, 99 0.102891
+Balance executed 59698, latency: 0.033133, rw_size -nan, m 0.031943, 90 0.041529, 99 0.053156
+Transact saving executed 56175, latency: 0.075603, rw_size -nan, m 0.072710, 90 0.085505, 99 0.101765
+Write check executed 59816, latency: 0.094114, rw_size -nan, m 0.089791, 90 0.104765, 99 0.135518
+Txn amal executed 56372, latency: 0.115270, rw_size -nan, m 0.110866, 90 0.127574, 99 0.190665
+succs ratio 0.989683
+[bank_worker.h:126] worker exit.
+[0m[bank_worker.h:129] read time: 0ms
+[0m[occ_statistics.h:39] read_lat time: 0ms
+[0m[occ_statistics.h:40] lock time: 0ms
+[0m[occ_statistics.h:41] release_write time: 0ms
+[0m[occ_statistics.h:42] renew_lease time: 0ms
+[0m[occ_statistics.h:43] commit time: 0ms
+[0m[occ_statistics.h:45] 0
+[0m[occ_statistics.h:46] 0
+[0m[occ_statistics.h:47] 0
+[0m[occ_statistics.h:48] 0
+[0m[occ_statistics.h:49] 0
+[0m[occ_statistics.h:51] log time: 0
+[0m[occ_statistics.h:52] temp time: 0ms
+[0m[occ_statistics.h:53] release_read time: 0ms
+[0m[bench_worker.cc:388] 0: 0
+[0m[bench_worker.cc:388] 1: 0
+[0m[bench_worker.cc:388] 2: 0
+[0m[bench_worker.cc:388] 3: 0
+[0m[bench_worker.cc:388] 4: 0
+[0m[bench_worker.cc:388] 5: 0
+[0m[bench_worker.cc:388] 6: 0
+[0m[bench_worker.cc:388] 7: 0
+[0m[bench_worker.cc:388] 8: 0
+[0m[bench_worker.cc:388] 9: 0
+[0m[bench_worker.cc:388] 10: 0
+[0m[bench_worker.cc:388] 11: 0
+[0m[bench_worker.cc:388] 12: 0
+[0m[bench_worker.cc:388] 13: 0
+[0m[bench_worker.cc:388] 14: 0
+[0m[bench_worker.cc:388] 15: 0
+[0m[bench_worker.cc:388] 16: 0
+[0m[bench_worker.cc:388] 17: 0
+[0m[bench_worker.cc:388] 18: 1234957
+[0m[bench_worker.cc:388] 19: 7351
+[0m[bench_worker.cc:388] 20: 2327
+[0m[bench_worker.cc:388] 21: 75
+[0m[bench_worker.cc:388] 22: 195
+[0m[bench_worker.cc:388] 23: 0
+[0m[bench_worker.cc:388] 24: 0
+[0m[bench_worker.cc:388] 25: 34
+[0m[bench_worker.cc:388] 26: 0
+[0m[bench_worker.cc:388] 27: 0
+[0m[bench_worker.cc:388] 28: 0
+[0m[bench_worker.cc:388] 29: 0
+[0m[bench_worker.cc:388] 30: 0
+[0m[bench_worker.cc:388] 31: 0
+[0m[bench_worker.cc:388] 32: 0
+[0m[bench_worker.cc:388] 33: 0
+[0m[bench_worker.cc:388] 34: 0
+[0m[bench_worker.cc:388] 35: 0
+[0m[bench_worker.cc:388] 36: 351680
+[0m[bench_worker.cc:388] 37: 0
+[0m[bench_worker.cc:388] 38: 0
+[0m[bench_worker.cc:388] 39: 0
+[0mmaster routine exit...
+[bench_runner.cc:299] main runner ends.
+[0m

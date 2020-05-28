@@ -1,0 +1,125 @@
+NOCC started with program [/noccnowait-onesided]. at 19-05-2020 07:49:52
+[bench_runner.cc:327] Use TCP port 8892
+[0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot10num_hot1000num_accounts 100000
+[0m[bank_main.cc:143] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16, 0
+[util.cc:161] malloc_huge_pages: size = 8589934592huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:154] Total logger area 0.00390625G.
+[0m[bench_runner.cc:165] add RDMA store size 6.34766G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 1.64648G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[bank_main.cc:243] finish loading zipfian 0
+[0m[Bank], total 12000000 accounts loaded
+[Runner] local db size: 367.148 MB
+[bank_main.cc:455] loading cache.
+[0mregisterring 8589934592threadid=21: all 4 qps connected
+Time to loader the caching is 99.780722 second
+[Runner] Cache size: 340.887 MB
+[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[bank_main.cc:243] finish loading zipfian 1531
+[0m[Bank], total 12000000 accounts loaded
+[bank_main.cc:344] check cv balance 46280
+[0m[bench_runner.cc:255] [Runner] Backup DB[0] for 0 size: 645.238 MB
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[bank_main.cc:243] finish loading zipfian 1531
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 645.328 MB
+[0mregisterring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592worker: 0 binding 0
+worker: 1 binding 2
+worker: 2 binding 4
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[Global sequence running] !
+[bench_listener2.cc:73] New monitor running!
+[0mregisterring 8589934592registerring 8589934592threadid=8: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=12: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=0: all 4 qps connected
+[bench_worker.h:160] Use RDMA for logging.
+[0m[nowait_rdma.h:320] Use one-sided for read.
+[0m[rworker.cc:47] Worker 11 on cpu 20with cor id 0
+[0m[bench_listener2.cc:119] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 23with cor id 0
+[0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0mmy throughput 1.803858 M, abort 13146, commit 1803858, abort ratio 0.007235
+my throughput 1.897038 M, abort 8484, commit 1897038, abort ratio 0.004452
+my throughput 1.908471 M, abort 8005, commit 1908471, abort ratio 0.004177
+[nowait_rdma.h:87] Assertion! 
+[0mstack trace:
+[NOCC] Meet an assertion failure!
+[nowait_rdma.h:87] Assertion! 
+[0m[nowait_rdma.h:113] Assertion! 
+[0m[nowait_rdma.h:113] Assertion! 
+[0m[nowait_rdma.h:113] Assertion! 
+[nowait_rdma.h:87] Assertion! 
+[0m[0m  ../noccnowait-onesided() [0x47e305]
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
+  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
+  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
+  ../noccnowait-onesided : nocc::MessageLogger::~MessageLogger()+0x34e
+  ../noccnowait-onesided : nocc::rtx::NOWAIT::remote_read(int, int, unsigned long, int, boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x347
+  ../noccnowait-onesided : nocc::oltp::bank::BankWorker::txn_wc_new_api(boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x159
+  ../noccnowait-onesided : nocc::oltp::bank::BankWorker::TxnWriteCheck(nocc::oltp::BenchWorker*, boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x9
+  ../noccnowait-onesided : nocc::oltp::BenchWorker::worker_routine(boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x1db
+  ../noccnowait-onesided : boost::coroutines::detail::symmetric_coroutine_object<void, boost::_bi::bind_t<void, boost::_mfi::mf1<void, nocc::oltp::RWorker, boost::coroutines::detail::symmetric_coroutine_yield<void>&>, boost::_bi::list2<boost::_bi::value<nocc::oltp::RWorker*>, boost::arg<1> > >, boost::coroutines::basic_standard_stack_allocator<boost::coroutines::stack_traits> >::run()+0x42
+  ../noccnowait-onesided : make_fcontext()+0x1b
+stack trace:
+[NOCC] Meet an assertion failure!
+[nowait_rdma.h:113] Assertion! 
+[0m  ../noccnowait-onesided() [0x47e305]
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
+  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
+  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
+  ../noccnowait-onesided : nocc::MessageLogger::~MessageLogger()+0x34e
+  ../noccnowait-onesided : nocc::rtx::NOWAIT::remote_write(int, int, unsigned long, int, boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x347
+  ../noccnowait-onesided : nocc::oltp::bank::BankWorker::txn_wc_new_api(boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x1c1
+  ../noccnowait-onesided : nocc::oltp::bank::BankWorker::TxnWriteCheck(nocc::oltp::BenchWorker*, boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x9
+  ../noccnowait-onesided : nocc::oltp::BenchWorker::worker_routine(boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x1db
+  ../noccnowait-onesided : boost::coroutines::detail::symmetric_coroutine_object<void, boost::_bi::bind_t<void, boost::_mfi::mf1<void, nocc::oltp::RWorker, boost::coroutines::detail::symmetric_coroutine_yield<void>&>, boost::_bi::list2<boost::_bi::value<nocc::oltp::RWorker*>, boost::arg<1> > >, boost::coroutines::basic_standard_stack_allocator<boost::coroutines::stack_traits> >::run()+0x42
+  ../noccnowait-onesided : make_fcontext()+0x1b
+[NOCC] Meet an assertion failure!
+stack trace:

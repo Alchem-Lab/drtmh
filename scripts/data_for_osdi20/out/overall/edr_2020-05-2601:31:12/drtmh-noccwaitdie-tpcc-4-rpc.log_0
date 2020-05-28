@@ -1,0 +1,228 @@
+NOCC started with program [/noccwaitdie-rpc]. at 26-05-2020 12:41:08
+[tpcc] settings:
+  new_order_remote_item_pct    : 1
+  uniform_item_dist            : 0
+  micro dist :20
+[bench_runner.cc:327] Use TCP port 8826
+[0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0mTxn NewOrder, 100
+Remote counts: 100
+NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:154] Total logger area 0.00390625G.
+[0m[bench_runner.cc:165] add RDMA store size 6.34766G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64647G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[TPCC loader] total 120 warehouses
+[tpcc_loader.cc:55] loading warehouses.
+[0m[tpcc_loader.cc:122] [TPCC] finished loading warehouse.
+[0m[tpcc_loader.cc:123] [TPCC]   * average warehouse record length: 101 bytes.
+[0m[tpcc_loader.cc:192] [TPCC] finished loading district.
+[0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
+[0m[TPCC] finished loading item
+[TPCC]   * average item record length: 84.1739 bytes
+[TPCC] finished loading stock
+[TPCC]   * average stock record length: 9 bytes
+[tpcc_loader.cc:319] [TPCC] finished loading customer.
+[0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
+[0m[Runner] local db size: 2853.34 MB
+[Runner] Cache size: 0 MB
+[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[TPCC loader] total 120 warehouses
+[tpcc_loader.cc:192] [TPCC] finished loading district.
+[0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
+[0m[TPCC] finished loading stock
+[TPCC]   * average stock record length: 9 bytes
+[bench_runner.cc:255] [Runner] Backup DB[0] for 2 size: 370.664 MB
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[TPCC loader] total 120 warehouses
+[tpcc_loader.cc:192] [TPCC] finished loading district.
+[0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
+[0m[TPCC] finished loading stock
+[TPCC]   * average stock record length: 9 bytes
+[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 366.617 MB
+[0m[Tpcc] n_ware_per_worker: 3
+worker: 0 binding 0
+worker: 2 binding 4
+worker: 3 binding 6
+worker: 1 binding 2
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[bench_listener2.cc:64] try log results to ./results//noccwaitdie-rpc_tpcc_4_10_10_100.log
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[bench_listener2.cc:73] New monitor running!
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240threadid=2: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=3: all 4 qps connected
+0: 2 out of 4 qps connected. Retry connecting qps...
+12: 2 out of 4 qps connected. Retry connecting qps...
+threadid=6: all 4 qps connected
+threadid=12: all 4 qps connected
+threadid=0: all 4 qps connected
+[bench_worker.h:154] Use RPC for logging.
+[0m[waitdie_rdma.h:321] Use one-sided for read.
+[0m[bench_listener2.cc:119] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+[0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0mmerge data 227.206000 K from gorgon6
+merge data 200.802000 K from gorgon8
+merge data 219.564000 K from gorgon7
+my throughput 232.283000 K, abort 2198810, commit 232283, abort ratio 0.904453
+merge data 232.283000 K from gorgon5
+[tpcc_worker.h:144] read lat: 335334 ;counts 25924
+[0m[occ_statistics.h:58] lock lat: 35786.6 ;counts 46180
+[0m[occ_statistics.h:61] log lat: 47734.4 ;counts 2625
+[0m[occ_statistics.h:64] commit lat: 60261.4 ;counts 2624
+[0m[occ_statistics.h:67] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:80] release_write lat: 142.178 ;counts 36350
+[0m@1 System throughput 879.855000 K, abort 0.900966
+merge data 240.987000 K from gorgon6
+merge data 231.989000 K from gorgon7
+merge data 211.701000 K from gorgon8
+my throughput 245.945000 K, abort 2087110, commit 245945, abort ratio 0.894582
+merge data 245.945000 K from gorgon5
+[tpcc_worker.h:144] read lat: 318812 ;counts 27474
+[0m[occ_statistics.h:58] lock lat: 35537.5 ;counts 47028
+[0m[occ_statistics.h:61] log lat: 45849.7 ;counts 2695
+[0m[occ_statistics.h:64] commit lat: 56102.7 ;counts 2696
+[0m[occ_statistics.h:67] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:80] release_write lat: 115.629 ;counts 36444
+[0m@2 System throughput 930.622000 K, abort 0.893848
+merge data 228.083000 K from gorgon6
+merge data 218.344000 K from gorgon7
+merge data 199.607000 K from gorgon8
+my throughput 230.927000 K, abort 2117284, commit 230927, abort ratio 0.901658
+merge data 230.927000 K from gorgon5
+[tpcc_worker.h:144] read lat: 339338 ;counts 25755
+[0m[occ_statistics.h:58] lock lat: 36259.8 ;counts 45780
+[0m[occ_statistics.h:61] log lat: 52083.1 ;counts 2551
+[0m[occ_statistics.h:64] commit lat: 60900.9 ;counts 2551
+[0m[occ_statistics.h:67] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:80] release_write lat: 109.885 ;counts 37123
+[0m@3 System throughput 876.961000 K, abort 0.903163
+[bench_listener2.cc:260] start to exit.
+[0mstats for worker 0:
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+NewOrder executed 79163, latency: 0.376822, rw_size -nan, m 0.290500, 90 0.661739, 99 1.584463
+succs ratio 0.135485
+[tpcc_worker.h:152] worker exit.
+[0m[bench_listener2.cc:279] Medium latency 0.290495ms, 90th latency 0.661698ms, 99th latency 1.58446ms; average latency: 0.375635ms.
+[0m[tpcc_worker.h:155] read time: 0.143971ms
+[0m[occ_statistics.h:39] read_lat time: 0ms
+[0m[occ_statistics.h:40] lock time: 0.0155904ms
+[0m[occ_statistics.h:41] release_write time: 5.30389e-05ms
+[0m[occ_statistics.h:42] renew_lease time: 0ms
+[0m[occ_statistics.h:43] commit time: 0.0256882ms
+[0m[occ_statistics.h:45] 0
+[0m[occ_statistics.h:46] 0.0155904
+[0m[occ_statistics.h:47] 5.30389e-05
+[0m[occ_statistics.h:48] 0
+[0m[occ_statistics.h:49] 0.0256882
+[0m[occ_statistics.h:51] log time: 0.0211091
+[0m[occ_statistics.h:52] temp time: 0ms
+[0m[occ_statistics.h:53] release_read time: 0ms
+[0m[bench_worker.cc:388] 0: 0
+[0m[bench_worker.cc:388] 1: 0
+[0m[bench_worker.cc:388] 2: 505059
+[0m[bench_worker.cc:388] 3: 0
+[0m[bench_worker.cc:388] 4: 504705
+[0m[bench_worker.cc:388] 5: 0
+[0m[bench_worker.cc:388] 6: 0
+[0m[bench_worker.cc:388] 7: 0
+[0m[bench_worker.cc:388] 8: 0
+[0m[bench_worker.cc:388] 9: 0
+[0m[bench_worker.cc:388] 10: 0
+[0m[bench_worker.cc:388] 11: 0
+[0m[bench_worker.cc:388] 12: 0
+[0m[bench_worker.cc:388] 13: 0
+[0m[bench_worker.cc:388] 14: 0
+[0m[bench_worker.cc:388] 15: 0
+[0m[bench_worker.cc:388] 16: 0
+[0m[bench_worker.cc:388] 17: 0
+[0m[bench_worker.cc:388] 18: 2713156
+[0m[bench_worker.cc:388] 19: 9230
+[0m[bench_worker.cc:388] 20: 0
+[0m[bench_worker.cc:388] 21: 0
+[0m[bench_worker.cc:388] 22: 0
+[0m[bench_worker.cc:388] 23: 0
+[0m[bench_worker.cc:388] 24: 0
+[0m[bench_worker.cc:388] 25: 0
+[0m[bench_worker.cc:388] 26: 0
+[0m[bench_worker.cc:388] 27: 79153
+[0m[bench_worker.cc:388] 28: 0
+[0m[bench_worker.cc:388] 29: 0
+[0m[bench_worker.cc:388] 30: 0
+[0m[bench_worker.cc:388] 31: 0
+[0m[bench_worker.cc:388] 32: 0
+[0m[bench_worker.cc:388] 33: 0
+[0m[bench_worker.cc:388] 34: 0
+[0m[bench_worker.cc:388] 35: 0
+[0m[bench_worker.cc:388] 36: 0
+[0m[bench_worker.cc:388] 37: 0
+[0m[bench_worker.cc:388] 38: 0
+[0m[bench_worker.cc:388] 39: 0
+[0m[TPCC]: check consistency.
+master routine exit...
+[bench_listener2.cc:291] benchmark ends
+[0m[bench_runner.cc:299] main runner ends.
+[0m

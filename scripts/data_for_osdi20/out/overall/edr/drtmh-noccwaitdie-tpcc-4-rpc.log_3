@@ -1,9 +1,9 @@
-NOCC started with program [/noccwaitdie-rpc]. at 20-05-2020 02:18:26
+NOCC started with program [/noccwaitdie-rpc]. at 26-05-2020 03:30:47
 [tpcc] settings:
   new_order_remote_item_pct    : 1
   uniform_item_dist            : 0
   micro dist :20
-[bench_runner.cc:327] Use TCP port 8867
+[bench_runner.cc:327] Use TCP port 8853
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
@@ -15,7 +15,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [librdma] : Device 0 has 1 ports
 [bench_runner.cc:154] Total logger area 0.00390625G.
 [0m[bench_runner.cc:165] add RDMA store size 6.34766G.
-[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64643G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64648G.
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -34,7 +34,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [TPCC]   * average stock record length: 9 bytes
 [tpcc_loader.cc:319] [TPCC] finished loading customer.
 [0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
-[0m[Runner] local db size: 2886.32 MB
+[0m[Runner] local db size: 2883.68 MB
 [Runner] Cache size: 0 MB
 [util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
@@ -49,7 +49,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[0] for 1 size: 368.941 MB
+[bench_runner.cc:255] [Runner] Backup DB[0] for 1 size: 370.234 MB
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -63,12 +63,12 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[1] for 2 size: 8.26172 MB
+[bench_runner.cc:255] [Runner] Backup DB[1] for 2 size: 366.074 MB
 [0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[Tpcc] n_ware_per_worker: 3
 worker: 0 binding 0
+worker: 1 binding 2
 worker: 2 binding 4
 worker: 3 binding 6
-worker: 1 binding 2
 worker: 4 binding 8
 worker: 5 binding 10
 worker: 6 binding 12
@@ -76,37 +76,37 @@ worker: 7 binding 14
 worker: 8 binding 16
 worker: 9 binding 18
 [bench_listener2.cc:73] New monitor running!
-[0mregisterring 10737418240registerring 10737418240threadid=7: all 4 qps connected
-threadid=8: all 4 qps connected
-threadid=4: all 4 qps connected
-threadid=1: all 4 qps connected
-threadid=0: all 4 qps connected
-threadid=3: all 4 qps connected
+[0mregisterring 10737418240registerring 10737418240threadid=5: all 4 qps connected
 threadid=6: all 4 qps connected
-threadid=5: all 4 qps connected
 threadid=2: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=4: all 4 qps connected
 threadid=9: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=8: all 4 qps connected
 12: 3 out of 4 qps connected. Retry connecting qps...
+threadid=12: all 4 qps connected
 [bench_worker.h:154] Use RPC for logging.
 [0m[waitdie_rdma.h:321] Use one-sided for read.
-[0mthreadid=12: all 4 qps connected
-[bench_listener2.cc:119] All workers has initilized.
+[0m[bench_listener2.cc:119] All workers has initilized.
 [0m[rworker.cc:47] Worker 12 on cpu 20with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
-[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
-[rworker.cc:47] Worker 2 on cpu 4with cor id 0
-[rworker.cc:47] Worker 0 on cpu 0with cor id 0
-[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
-[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
-[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
-[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[rworker.cc:47] Worker 7 on cpu 14with cor id 0
 [0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
-[0m[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
-[0m[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
-[0mmy throughput 234.149000 K, abort 2056683, commit 234149, abort ratio 0.897789
-my throughput 237.507000 K, abort 2057685, commit 237507, abort ratio 0.896520
-my throughput 236.500000 K, abort 2029209, commit 236500, abort ratio 0.895618
-my throughput 23, abort 5160293, commit 23, abort ratio 0.999996
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[0m[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0mmy throughput 206.244000 K, abort 1730832, commit 206244, abort ratio 0.893528
+my throughput 198.432000 K, abort 1862251, commit 198432, abort ratio 0.903706
+my throughput 209.446000 K, abort 1726741, commit 209446, abort ratio 0.891826
+my throughput 166, abort 4235913, commit 166, abort ratio 0.999961
 [bench_listener2.cc:260] start to exit.
 [0mstats for worker 0:
 exiting master routine.
@@ -119,8 +119,8 @@ exiting master routine.
 exiting master routine.
 exiting master routine.
 exiting master routine.
-NewOrder executed 77646, latency: 0.385162, rw_size -nan, m 0.299810, 90 0.653954, 99 1.645589
-succs ratio 0.087521
+NewOrder executed 68085, latency: 0.439079, rw_size -nan, m 0.339961, 90 0.738935, 99 1.882262
+succs ratio 0.092401
 [tpcc_worker.h:152] worker exit.
 [0m[tpcc_worker.h:155] read time: 0ms
 [0m[occ_statistics.h:39] read_lat time: 0ms
@@ -138,9 +138,9 @@ succs ratio 0.087521
 [0m[occ_statistics.h:53] release_read time: 0ms
 [0m[bench_worker.cc:388] 0: 0
 [0m[bench_worker.cc:388] 1: 0
-[0m[bench_worker.cc:388] 2: 809407
+[0m[bench_worker.cc:388] 2: 668650
 [0m[bench_worker.cc:388] 3: 0
-[0m[bench_worker.cc:388] 4: 808502
+[0m[bench_worker.cc:388] 4: 669619
 [0m[bench_worker.cc:388] 5: 0
 [0m[bench_worker.cc:388] 6: 0
 [0m[bench_worker.cc:388] 7: 0
@@ -154,8 +154,8 @@ succs ratio 0.087521
 [0m[bench_worker.cc:388] 15: 0
 [0m[bench_worker.cc:388] 16: 0
 [0m[bench_worker.cc:388] 17: 0
-[0m[bench_worker.cc:388] 18: 3527382
-[0m[bench_worker.cc:388] 19: 11692
+[0m[bench_worker.cc:388] 18: 3029472
+[0m[bench_worker.cc:388] 19: 1564
 [0m[bench_worker.cc:388] 20: 0
 [0m[bench_worker.cc:388] 21: 0
 [0m[bench_worker.cc:388] 22: 0
@@ -163,7 +163,7 @@ succs ratio 0.087521
 [0m[bench_worker.cc:388] 24: 0
 [0m[bench_worker.cc:388] 25: 0
 [0m[bench_worker.cc:388] 26: 0
-[0m[bench_worker.cc:388] 27: 77636
+[0m[bench_worker.cc:388] 27: 68075
 [0m[bench_worker.cc:388] 28: 0
 [0m[bench_worker.cc:388] 29: 0
 [0m[bench_worker.cc:388] 30: 0

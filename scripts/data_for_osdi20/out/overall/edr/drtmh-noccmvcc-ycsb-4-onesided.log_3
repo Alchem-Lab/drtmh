@@ -1,9 +1,9 @@
-NOCC started with program [/noccmvcc-onesided]. at 20-05-2020 03:15:12
-[bench_runner.cc:327] Use TCP port 8830
+NOCC started with program [/noccmvcc-onesided]. at 26-05-2020 02:30:47
+[bench_runner.cc:327] Use TCP port 8844
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
-[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot10num_hot1000num_accounts 100000
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
 [0m[bank_main.cc:143] here100
 [0m[Bank]: check workload 0, 0, 0, 0, 0, 0, 100
 [util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 2097152flag = 1
@@ -12,7 +12,7 @@ NOCC started with program [/noccmvcc-onesided]. at 20-05-2020 03:15:12
 [librdma] : Device 0 has 1 ports
 [bench_runner.cc:154] Total logger area 0.00390625G.
 [0m[bench_runner.cc:165] add RDMA store size 6.34766G.
-[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64644G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64647G.
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -21,11 +21,12 @@ NOCC started with program [/noccmvcc-onesided]. at 20-05-2020 03:15:12
 [0m[util.cc:175] huge page alloc failed!
 [0m[bank_main.cc:243] finish loading zipfian 0
 [0m[Bank], total 12000000 accounts loaded
-[Runner] local db size: 459.105 MB
+[Runner] local db size: 459.465 MB
 [bank_main.cc:455] loading cache.
-[0mregisterring 10737418240threadid=21: all 4 qps connected
-Time to loader the caching is 93.905810 second
-[Runner] Cache size: 331.234 MB
+[0mregisterring 1073741824021: 3 out of 4 qps connected. Retry connecting qps...
+threadid=21: all 4 qps connected
+Time to loader the caching is 80.266465 second
+[Runner] Cache size: 164 MB
 [util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
@@ -34,7 +35,7 @@ Time to loader the caching is 93.905810 second
 [0m[util.cc:175] huge page alloc failed!
 [0m[bank_main.cc:243] finish loading zipfian 1531
 [0m[Bank], total 12000000 accounts loaded
-[bench_runner.cc:255] [Runner] Backup DB[0] for 1 size: 1568.54 MB
+[bench_runner.cc:255] [Runner] Backup DB[0] for 1 size: 1568.96 MB
 [0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
@@ -43,8 +44,8 @@ Time to loader the caching is 93.905810 second
 [0m[util.cc:175] huge page alloc failed!
 [0m[bank_main.cc:243] finish loading zipfian 1531
 [0m[Bank], total 12000000 accounts loaded
-[bench_runner.cc:255] [Runner] Backup DB[1] for 2 size: 1570.85 MB
-[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240worker: 0 binding 0
+[bench_runner.cc:255] [Runner] Backup DB[1] for 2 size: 1571.44 MB
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240worker: 0 binding 0
 worker: 2 binding 4
 worker: 1 binding 2
 worker: 3 binding 6
@@ -56,37 +57,61 @@ worker: 8 binding 16
 worker: 9 binding 18
 [Global sequence running] !
 [bench_listener2.cc:73] New monitor running!
-[0mregisterring 10737418240threadid=11: all 4 qps connected
-threadid=2: all 4 qps connected
-threadid=5: all 4 qps connected
-threadid=1: all 4 qps connected
-registerring 10737418240threadid=0: all 4 qps connected
-threadid=7: all 4 qps connected
+[0mregisterring 10737418240registerring 10737418240registerring 107374182408: 3 out of 4 qps connected. Retry connecting qps...
+6: 3 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+4: 3 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
+11: 3 out of 4 qps connected. Retry connecting qps...
+2: 3 out of 4 qps connected. Retry connecting qps...
+5: 3 out of 4 qps connected. Retry connecting qps...
+7: 3 out of 4 qps connected. Retry connecting qps...
+9: 3 out of 4 qps connected. Retry connecting qps...
+0: 3 out of 4 qps connected. Retry connecting qps...
+12: 3 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+6: 3 out of 4 qps connected. Retry connecting qps...
+4: 3 out of 4 qps connected. Retry connecting qps...
+8: 3 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
+11: 3 out of 4 qps connected. Retry connecting qps...
+5: 3 out of 4 qps connected. Retry connecting qps...
+9: 3 out of 4 qps connected. Retry connecting qps...
+2: 3 out of 4 qps connected. Retry connecting qps...
+7: 3 out of 4 qps connected. Retry connecting qps...
+0: 3 out of 4 qps connected. Retry connecting qps...
+12: 3 out of 4 qps connected. Retry connecting qps...
 threadid=8: all 4 qps connected
-threadid=9: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=4: all 4 qps connected
 threadid=6: all 4 qps connected
 threadid=3: all 4 qps connected
-threadid=4: all 4 qps connected
-[rworker.cc:47] Worker 11 on cpu 20with cor id 0
-[0m[bench_worker.h:160] Use RDMA for logging.
-[0mthreadid=12: all 4 qps connected
-[bench_listener2.cc:119] All workers has initilized.
-[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+threadid=2: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=12: all 4 qps connected
+[bench_worker.h:160] Use RDMA for logging.
+[0m[rworker.cc:47] Worker 11 on cpu 22with cor id 0
+[0m[bench_listener2.cc:119] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 20with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
-[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
-[rworker.cc:47] Worker 8 on cpu 16with cor id 0
-[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
-[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
-[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
-[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
-[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
 [0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
-[0m[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
-[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
-[0mmy throughput 112.077000 K, abort 11454, commit 112077, abort ratio 0.092722
-my throughput 117.212000 K, abort 8542, commit 117212, abort ratio 0.067926
-my throughput 117.443000 K, abort 8643, commit 117443, abort ratio 0.068548
-my throughput 38, abort 16456, commit 38, abort ratio 0.997696
+[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[0m[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0mmy throughput 110.433000 K, abort 1936, commit 110433, abort ratio 0.017229
+my throughput 113.270000 K, abort 1604, commit 113270, abort ratio 0.013963
+my throughput 113.229000 K, abort 1515, commit 113229, abort ratio 0.013203
+my throughput 46, abort 1, commit 46, abort ratio 0.021277
 [bench_listener2.cc:260] start to exit.
 [0mstats for worker 0:
 exiting master routine.
@@ -100,8 +125,8 @@ exiting master routine.
 exiting master routine.
 exiting master routine.
 exiting master routine.
-YCSB executed 35271, latency: 0.836402, rw_size -nan, m 0.804927, 90 0.960651, 99 1.704618
-succs ratio 0.923692
+YCSB executed 34039, latency: 0.866139, rw_size -nan, m 0.851880, 90 0.982192, 99 1.268845
+succs ratio 0.985805
 [bank_worker.h:126] worker exit.
 [0m[bank_worker.h:129] read time: 0ms
 [0m[occ_statistics.h:39] read_lat time: 0ms
@@ -117,26 +142,26 @@ succs ratio 0.923692
 [0m[occ_statistics.h:51] log time: 0
 [0m[occ_statistics.h:52] temp time: 0ms
 [0m[occ_statistics.h:53] release_read time: 0ms
-[0m[bench_worker.cc:388] 0: 103
-[0m[bench_worker.cc:388] 1: 415
+[0m[bench_worker.cc:388] 0: 7
+[0m[bench_worker.cc:388] 1: 36
 [0m[bench_worker.cc:388] 2: 0
-[0m[bench_worker.cc:388] 3: 7
+[0m[bench_worker.cc:388] 3: 0
 [0m[bench_worker.cc:388] 4: 0
 [0m[bench_worker.cc:388] 5: 0
 [0m[bench_worker.cc:388] 6: 0
 [0m[bench_worker.cc:388] 7: 0
 [0m[bench_worker.cc:388] 8: 0
-[0m[bench_worker.cc:388] 9: 1238
-[0m[bench_worker.cc:388] 10: 16
+[0m[bench_worker.cc:388] 9: 135
+[0m[bench_worker.cc:388] 10: 7
 [0m[bench_worker.cc:388] 11: 0
 [0m[bench_worker.cc:388] 12: 0
 [0m[bench_worker.cc:388] 13: 0
 [0m[bench_worker.cc:388] 14: 0
 [0m[bench_worker.cc:388] 15: 0
 [0m[bench_worker.cc:388] 16: 0
-[0m[bench_worker.cc:388] 17: 363128
-[0m[bench_worker.cc:388] 18: 719819
-[0m[bench_worker.cc:388] 19: 3660
+[0m[bench_worker.cc:388] 17: 0
+[0m[bench_worker.cc:388] 18: 1119882
+[0m[bench_worker.cc:388] 19: 702
 [0m[bench_worker.cc:388] 20: 0
 [0m[bench_worker.cc:388] 21: 0
 [0m[bench_worker.cc:388] 22: 0
@@ -152,10 +177,10 @@ succs ratio 0.923692
 [0m[bench_worker.cc:388] 32: 0
 [0m[bench_worker.cc:388] 33: 0
 [0m[bench_worker.cc:388] 34: 0
-[0m[bench_worker.cc:388] 35: 35261
+[0m[bench_worker.cc:388] 35: 34029
 [0m[bench_worker.cc:388] 36: 0
 [0m[bench_worker.cc:388] 37: 0
-[0m[bench_worker.cc:388] 38: 1124
+[0m[bench_worker.cc:388] 38: 295
 [0m[bench_worker.cc:388] 39: 0
 [0mmaster routine exit...
 [bench_runner.cc:299] main runner ends.

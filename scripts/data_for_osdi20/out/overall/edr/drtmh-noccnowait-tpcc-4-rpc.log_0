@@ -1,9 +1,9 @@
-NOCC started with program [/noccnowait-rpc]. at 20-05-2020 02:13:43
+NOCC started with program [/noccnowait-rpc]. at 26-05-2020 03:28:47
 [tpcc] settings:
   new_order_remote_item_pct    : 1
   uniform_item_dist            : 0
   micro dist :20
-[bench_runner.cc:327] Use TCP port 8843
+[bench_runner.cc:327] Use TCP port 8867
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
@@ -15,7 +15,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [librdma] : Device 0 has 1 ports
 [bench_runner.cc:154] Total logger area 0.00390625G.
 [0m[bench_runner.cc:165] add RDMA store size 6.34766G.
-[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64644G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64646G.
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -34,7 +34,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [TPCC]   * average stock record length: 9 bytes
 [tpcc_loader.cc:319] [TPCC] finished loading customer.
 [0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
-[0m[Runner] local db size: 2885.76 MB
+[0m[Runner] local db size: 2883.68 MB
 [Runner] Cache size: 0 MB
 [util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
@@ -49,7 +49,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[0] for 2 size: 371.09 MB
+[bench_runner.cc:255] [Runner] Backup DB[0] for 2 size: 368.086 MB
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -63,7 +63,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 364.969 MB
+[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 368.465 MB
 [0m[Tpcc] n_ware_per_worker: 3
 worker: 0 binding 0
 worker: 2 binding 4
@@ -77,154 +77,78 @@ worker: 8 binding 16
 worker: 9 binding 18
 [bench_listener2.cc:64] try log results to ./results//noccnowait-rpc_tpcc_4_10_10_100.log
 [0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[bench_listener2.cc:73] New monitor running!
-[0mregisterring 10737418240registerring 107374182402: 1 out of 4 qps connected. Retry connecting qps...
-4: 1 out of 4 qps connected. Retry connecting qps...
-5: 1 out of 4 qps connected. Retry connecting qps...
-0: 1 out of 4 qps connected. Retry connecting qps...
-8: 1 out of 4 qps connected. Retry connecting qps...
-6: 1 out of 4 qps connected. Retry connecting qps...
-3: 1 out of 4 qps connected. Retry connecting qps...
-1: 1 out of 4 qps connected. Retry connecting qps...
-9: 1 out of 4 qps connected. Retry connecting qps...
-7: 1 out of 4 qps connected. Retry connecting qps...
-12: 1 out of 4 qps connected. Retry connecting qps...
-9: 2 out of 4 qps connected. Retry connecting qps...
-4: 2 out of 4 qps connected. Retry connecting qps...
-7: 2 out of 4 qps connected. Retry connecting qps...
-8: 2 out of 4 qps connected. Retry connecting qps...
-2: 2 out of 4 qps connected. Retry connecting qps...
-6: 2 out of 4 qps connected. Retry connecting qps...
-1: 2 out of 4 qps connected. Retry connecting qps...
-3: 2 out of 4 qps connected. Retry connecting qps...
-0: 2 out of 4 qps connected. Retry connecting qps...
-5: 2 out of 4 qps connected. Retry connecting qps...
-12: 2 out of 4 qps connected. Retry connecting qps...
-9: 2 out of 4 qps connected. Retry connecting qps...
-7: 2 out of 4 qps connected. Retry connecting qps...
-4: 2 out of 4 qps connected. Retry connecting qps...
-2: 2 out of 4 qps connected. Retry connecting qps...
-5: 2 out of 4 qps connected. Retry connecting qps...
-8: 2 out of 4 qps connected. Retry connecting qps...
-6: 2 out of 4 qps connected. Retry connecting qps...
-1: 2 out of 4 qps connected. Retry connecting qps...
-3: 2 out of 4 qps connected. Retry connecting qps...
-0: 2 out of 4 qps connected. Retry connecting qps...
-12: 2 out of 4 qps connected. Retry connecting qps...
-1: 2 out of 4 qps connected. Retry connecting qps...
-8: 2 out of 4 qps connected. Retry connecting qps...
-3: 2 out of 4 qps connected. Retry connecting qps...
-6: 2 out of 4 qps connected. Retry connecting qps...
-7: 2 out of 4 qps connected. Retry connecting qps...
-4: 2 out of 4 qps connected. Retry connecting qps...
-0: 2 out of 4 qps connected. Retry connecting qps...
-9: 2 out of 4 qps connected. Retry connecting qps...
-2: 2 out of 4 qps connected. Retry connecting qps...
-5: 2 out of 4 qps connected. Retry connecting qps...
-12: 2 out of 4 qps connected. Retry connecting qps...
-9: 2 out of 4 qps connected. Retry connecting qps...
-2: 2 out of 4 qps connected. Retry connecting qps...
-1: 2 out of 4 qps connected. Retry connecting qps...
-6: 2 out of 4 qps connected. Retry connecting qps...
-7: 2 out of 4 qps connected. Retry connecting qps...
-8: 2 out of 4 qps connected. Retry connecting qps...
-3: 2 out of 4 qps connected. Retry connecting qps...
-5: 2 out of 4 qps connected. Retry connecting qps...
-0: 2 out of 4 qps connected. Retry connecting qps...
-4: 2 out of 4 qps connected. Retry connecting qps...
-12: 2 out of 4 qps connected. Retry connecting qps...
-5: 2 out of 4 qps connected. Retry connecting qps...
-7: 2 out of 4 qps connected. Retry connecting qps...
-4: 2 out of 4 qps connected. Retry connecting qps...
-1: 2 out of 4 qps connected. Retry connecting qps...
-8: 2 out of 4 qps connected. Retry connecting qps...
-9: 2 out of 4 qps connected. Retry connecting qps...
-6: 2 out of 4 qps connected. Retry connecting qps...
-0: 2 out of 4 qps connected. Retry connecting qps...
-2: 2 out of 4 qps connected. Retry connecting qps...
-3: 2 out of 4 qps connected. Retry connecting qps...
-12: 2 out of 4 qps connected. Retry connecting qps...
-6: 2 out of 4 qps connected. Retry connecting qps...
-4: 2 out of 4 qps connected. Retry connecting qps...
-0: 2 out of 4 qps connected. Retry connecting qps...
-9: 2 out of 4 qps connected. Retry connecting qps...
-2: 2 out of 4 qps connected. Retry connecting qps...
-1: 2 out of 4 qps connected. Retry connecting qps...
-5: 2 out of 4 qps connected. Retry connecting qps...
-7: 2 out of 4 qps connected. Retry connecting qps...
-8: 2 out of 4 qps connected. Retry connecting qps...
-3: 2 out of 4 qps connected. Retry connecting qps...
-12: 2 out of 4 qps connected. Retry connecting qps...
+[0mregisterring 10737418240registerring 10737418240threadid=6: all 4 qps connected
 threadid=5: all 4 qps connected
-threadid=1: all 4 qps connected
 threadid=7: all 4 qps connected
-threadid=0: all 4 qps connected
 threadid=2: all 4 qps connected
-threadid=9: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=0: all 4 qps connected
 threadid=8: all 4 qps connected
 threadid=3: all 4 qps connected
+threadid=9: all 4 qps connected
 threadid=4: all 4 qps connected
-threadid=6: all 4 qps connected
+12: 2 out of 4 qps connected. Retry connecting qps...
 threadid=12: all 4 qps connected
 [bench_worker.h:154] Use RPC for logging.
 [0m[nowait_rdma.h:320] Use one-sided for read.
 [0m[bench_listener2.cc:119] All workers has initilized.
-[0m[rworker.cc:47] Worker 12 on cpu 20with cor id 0
+[0m[rworker.cc:47] Worker 12 on cpu 23with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
-[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
-[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
-[rworker.cc:47] Worker 1 on cpu 2with cor id 0
-[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
-[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
-[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[rworker.cc:47] Worker 9 on cpu 18with cor id 0
 [0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
 [0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
-[0m[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
-[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
-[0mmerge data 233.892000 K from gorgon5
-merge data 232.142000 K from gorgon4
-merge data 230.782000 K from gorgon3
-my throughput 234.259000 K, abort 2058839, commit 234259, abort ratio 0.897842
-merge data 234.259000 K from gorgon2
-[tpcc_worker.h:144] read lat: 327802 ;counts 25800
-[0m[occ_statistics.h:58] lock lat: 35608.3 ;counts 46369
-[0m[occ_statistics.h:61] log lat: 53392.5 ;counts 2595
-[0m[occ_statistics.h:64] commit lat: 55667.2 ;counts 2595
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0mmerge data 223.275000 K from gorgon6
+merge data 219.139000 K from gorgon7
+merge data 197.780000 K from gorgon8
+my throughput 227.657000 K, abort 2063790, commit 227657, abort ratio 0.900649
+merge data 227.657000 K from gorgon5
+[tpcc_worker.h:144] read lat: 337257 ;counts 25547
+[0m[occ_statistics.h:58] lock lat: 37408.2 ;counts 44137
+[0m[occ_statistics.h:61] log lat: 51976 ;counts 2544
+[0m[occ_statistics.h:64] commit lat: 64921.7 ;counts 2544
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 135.108 ;counts 37379
-[0m@1 System throughput 931.075000 K, abort 0.898262
-merge data 230.859000 K from gorgon5
-merge data 230.269000 K from gorgon4
-merge data 228.599000 K from gorgon3
-my throughput 231.620000 K, abort 2112667, commit 231620, abort ratio 0.901198
-merge data 231.620000 K from gorgon2
-[tpcc_worker.h:144] read lat: 330434 ;counts 25508
-[0m[occ_statistics.h:58] lock lat: 36688.1 ;counts 45390
-[0m[occ_statistics.h:61] log lat: 52197.9 ;counts 2468
-[0m[occ_statistics.h:64] commit lat: 55945.7 ;counts 2468
+[0m[occ_statistics.h:80] release_write lat: 148.015 ;counts 33838
+[0m@1 System throughput 867.851000 K, abort 0.903515
+merge data 220.512000 K from gorgon6
+merge data 217.869000 K from gorgon7
+merge data 196.741000 K from gorgon8
+my throughput 226.009000 K, abort 2125590, commit 226009, abort ratio 0.903891
+merge data 226.009000 K from gorgon5
+[tpcc_worker.h:144] read lat: 342156 ;counts 25333
+[0m[occ_statistics.h:58] lock lat: 37466.3 ;counts 44532
+[0m[occ_statistics.h:61] log lat: 49454.4 ;counts 2528
+[0m[occ_statistics.h:64] commit lat: 59095.2 ;counts 2528
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 154.392 ;counts 37588
-[0m@2 System throughput 921.347000 K, abort 0.901416
-merge data 239.493000 K from gorgon4
-merge data 239.913000 K from gorgon5
-merge data 238.776000 K from gorgon3
-my throughput 242.707000 K, abort 2077449, commit 242707, abort ratio 0.895392
-merge data 242.707000 K from gorgon2
-[tpcc_worker.h:144] read lat: 312974 ;counts 27103
-[0m[occ_statistics.h:58] lock lat: 35968.8 ;counts 46004
-[0m[occ_statistics.h:61] log lat: 51868 ;counts 2696
-[0m[occ_statistics.h:64] commit lat: 54087.4 ;counts 2696
+[0m[occ_statistics.h:80] release_write lat: 137.647 ;counts 34952
+[0m@2 System throughput 861.131000 K, abort 0.905783
+merge data 227.500000 K from gorgon6
+merge data 224.086000 K from gorgon7
+merge data 203.352000 K from gorgon8
+my throughput 233.191000 K, abort 2200101, commit 233191, abort ratio 0.904166
+merge data 233.191000 K from gorgon5
+[tpcc_worker.h:144] read lat: 331274 ;counts 25945
+[0m[occ_statistics.h:58] lock lat: 35184.7 ;counts 47179
+[0m[occ_statistics.h:61] log lat: 49224.9 ;counts 2561
+[0m[occ_statistics.h:64] commit lat: 61123.6 ;counts 2561
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 164.086 ;counts 34182
-[0m@3 System throughput 960.889000 K, abort 0.894989
+[0m[occ_statistics.h:80] release_write lat: 116.322 ;counts 39297
+[0m@3 System throughput 888.129000 K, abort 0.901221
 [bench_listener2.cc:260] start to exit.
 [0mstats for worker 0:
 exiting master routine.
@@ -238,29 +162,29 @@ exiting master routine.
 exiting master routine.
 exiting master routine.
 exiting master routine.
-NewOrder executed 78421, latency: 0.382026, rw_size -nan, m 0.293232, 90 0.645919, 99 1.601375
-succs ratio 0.137684
+NewOrder executed 76835, latency: 0.388556, rw_size -nan, m 0.293473, 90 0.681077, 99 1.666231
+succs ratio 0.130161
 [tpcc_worker.h:152] worker exit.
-[0m[bench_listener2.cc:279] Medium latency 0.293228ms, 90th latency 0.645915ms, 99th latency 1.60136ms; average latency: 0.381006ms.
-[0m[tpcc_worker.h:155] read time: 0.140742ms
+[0m[bench_listener2.cc:279] Medium latency 0.293455ms, 90th latency 0.681064ms, 99th latency 1.66619ms; average latency: 0.387256ms.
+[0m[tpcc_worker.h:155] read time: 0.146464ms
 [0m[occ_statistics.h:39] read_lat time: 0ms
-[0m[occ_statistics.h:40] lock time: 0.015689ms
-[0m[occ_statistics.h:41] release_write time: 6.56461e-05ms
+[0m[occ_statistics.h:40] lock time: 0.0159491ms
+[0m[occ_statistics.h:41] release_write time: 5.78213e-05ms
 [0m[occ_statistics.h:42] renew_lease time: 0ms
-[0m[occ_statistics.h:43] commit time: 0.0240121ms
+[0m[occ_statistics.h:43] commit time: 0.0268295ms
 [0m[occ_statistics.h:45] 0
-[0m[occ_statistics.h:46] 0.015689
-[0m[occ_statistics.h:47] 6.56461e-05
+[0m[occ_statistics.h:46] 0.0159491
+[0m[occ_statistics.h:47] 5.78213e-05
 [0m[occ_statistics.h:48] 0
-[0m[occ_statistics.h:49] 0.0240121
-[0m[occ_statistics.h:51] log time: 0.0228179
+[0m[occ_statistics.h:49] 0.0268295
+[0m[occ_statistics.h:51] log time: 0.0218321
 [0m[occ_statistics.h:52] temp time: 0ms
 [0m[occ_statistics.h:53] release_read time: 0ms
 [0m[bench_worker.cc:388] 0: 0
 [0m[bench_worker.cc:388] 1: 0
-[0m[bench_worker.cc:388] 2: 491077
+[0m[bench_worker.cc:388] 2: 513396
 [0m[bench_worker.cc:388] 3: 0
-[0m[bench_worker.cc:388] 4: 490915
+[0m[bench_worker.cc:388] 4: 513303
 [0m[bench_worker.cc:388] 5: 0
 [0m[bench_worker.cc:388] 6: 0
 [0m[bench_worker.cc:388] 7: 0
@@ -274,8 +198,8 @@ succs ratio 0.137684
 [0m[bench_worker.cc:388] 15: 0
 [0m[bench_worker.cc:388] 16: 0
 [0m[bench_worker.cc:388] 17: 0
-[0m[bench_worker.cc:388] 18: 2664522
-[0m[bench_worker.cc:388] 19: 13538
+[0m[bench_worker.cc:388] 18: 2707019
+[0m[bench_worker.cc:388] 19: 12911
 [0m[bench_worker.cc:388] 20: 0
 [0m[bench_worker.cc:388] 21: 0
 [0m[bench_worker.cc:388] 22: 0
@@ -283,7 +207,7 @@ succs ratio 0.137684
 [0m[bench_worker.cc:388] 24: 0
 [0m[bench_worker.cc:388] 25: 0
 [0m[bench_worker.cc:388] 26: 0
-[0m[bench_worker.cc:388] 27: 78411
+[0m[bench_worker.cc:388] 27: 76825
 [0m[bench_worker.cc:388] 28: 0
 [0m[bench_worker.cc:388] 29: 0
 [0m[bench_worker.cc:388] 30: 0

@@ -1,18 +1,18 @@
-NOCC started with program [/noccwaitdie-onesided]. at 20-05-2020 03:20:36
-[bench_runner.cc:327] Use TCP port 8858
+NOCC started with program [/noccwaitdie-onesided]. at 26-05-2020 02:36:38
+[bench_runner.cc:327] Use TCP port 8831
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
-[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot10num_hot1000num_accounts 100000
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
 [0m[bank_main.cc:143] here100
 [0m[Bank]: check workload 0, 0, 0, 0, 0, 0, 100
-[util.cc:161] malloc_huge_pages: size = 8589934592huge_page_sz = 2097152flag = 1
+[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[librdma] get device name mlx5_0, idx 0
 [librdma] : Device 0 has 1 ports
 [bench_runner.cc:154] Total logger area 0.00390625G.
 [0m[bench_runner.cc:165] add RDMA store size 6.34766G.
-[0m[bench_runner.cc:174] [Mem] RDMA heap size 1.64646G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64645G.
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -21,12 +21,12 @@ NOCC started with program [/noccwaitdie-onesided]. at 20-05-2020 03:20:36
 [0m[util.cc:175] huge page alloc failed!
 [0m[bank_main.cc:243] finish loading zipfian 0
 [0m[Bank], total 12000000 accounts loaded
-[Runner] local db size: 367.566 MB
+[Runner] local db size: 367.637 MB
 [bank_main.cc:455] loading cache.
-[0mregisterring 858993459221: 3 out of 4 qps connected. Retry connecting qps...
+[0mregisterring 1073741824021: 2 out of 4 qps connected. Retry connecting qps...
 threadid=21: all 4 qps connected
-Time to loader the caching is 79.436653 second
-[Runner] Cache size: 348.816 MB
+Time to loader the caching is 79.872805 second
+[Runner] Cache size: 362.801 MB
 [util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
@@ -36,7 +36,7 @@ Time to loader the caching is 79.436653 second
 [0m[bank_main.cc:243] finish loading zipfian 1531
 [0m[Bank], total 12000000 accounts loaded
 [bank_main.cc:344] check cv balance 46280
-[0m[bench_runner.cc:255] [Runner] Backup DB[0] for 0 size: 645.277 MB
+[0m[bench_runner.cc:255] [Runner] Backup DB[0] for 0 size: 644.945 MB
 [0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
@@ -45,8 +45,8 @@ Time to loader the caching is 79.436653 second
 [0m[util.cc:175] huge page alloc failed!
 [0m[bank_main.cc:243] finish loading zipfian 1531
 [0m[Bank], total 12000000 accounts loaded
-[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 644.781 MB
-[0mregisterring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592registerring 8589934592worker: 0 binding 0
+[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 645.02 MB
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240worker: 0 binding 0
 worker: 1 binding 2
 worker: 2 binding 4
 worker: 3 binding 6
@@ -58,84 +58,120 @@ worker: 8 binding 16
 worker: 9 binding 18
 [Global sequence running] !
 [bench_listener2.cc:73] New monitor running!
-[0mregisterring 8589934592registerring 85899345923: 3 out of 4 qps connected. Retry connecting qps...
-8: 3 out of 4 qps connected. Retry connecting qps...
-1: 3 out of 4 qps connected. Retry connecting qps...
-11: 3 out of 4 qps connected. Retry connecting qps...
-5: 3 out of 4 qps connected. Retry connecting qps...
-2: 3 out of 4 qps connected. Retry connecting qps...
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 1073741824011: 3 out of 4 qps connected. Retry connecting qps...
+7: 2 out of 4 qps connected. Retry connecting qps...
 4: 3 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
 9: 3 out of 4 qps connected. Retry connecting qps...
+8: 3 out of 4 qps connected. Retry connecting qps...
+2: 3 out of 4 qps connected. Retry connecting qps...
 6: 3 out of 4 qps connected. Retry connecting qps...
-7: 3 out of 4 qps connected. Retry connecting qps...
-12: 1 out of 4 qps connected. Retry connecting qps...
 0: 3 out of 4 qps connected. Retry connecting qps...
+12: 1 out of 4 qps connected. Retry connecting qps...
+5: 3 out of 4 qps connected. Retry connecting qps...
 threadid=11: all 4 qps connected
-threadid=3: all 4 qps connected
-threadid=5: all 4 qps connected
-threadid=4: all 4 qps connected
-threadid=6: all 4 qps connected
-threadid=2: all 4 qps connected
-threadid=8: all 4 qps connected
-threadid=1: all 4 qps connected
-threadid=7: all 4 qps connected
 threadid=9: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=5: all 4 qps connected
 threadid=0: all 4 qps connected
+threadid=1: all 4 qps connected
 threadid=12: all 4 qps connected
-[rworker.cc:47] Worker 11 on cpu 20with cor id 0
-[0m[bench_worker.h:160] Use RDMA for logging.
+[bench_worker.h:160] Use RDMA for logging.
 [0m[waitdie_rdma.h:321] Use one-sided for read.
+[0m[rworker.cc:47] Worker 11 on cpu 22with cor id 0
 [0m[bench_listener2.cc:119] All workers has initilized.
-[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+[0m[rworker.cc:47] Worker 12 on cpu 20with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
-[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
 [rworker.cc:47] Worker 6 on cpu 12with cor id 0
 [0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
-[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
 [0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
-[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
 [0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
-[0m[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
-[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
 [0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
-[0mmy throughput 114.428000 K, abort 38351, commit 114428, abort ratio 0.251023
-my throughput 118.064000 K, abort 35179, commit 118064, abort ratio 0.229564
-my throughput 118.958000 K, abort 34062, commit 118958, abort ratio 0.222598
-[waitdie_rdma.h:87] Assertion! 
-[0mstack trace:
-[NOCC] Meet an assertion failure!
-[waitdie_rdma.h:87] Assertion! 
-[0m[waitdie_rdma.h:87] Assertion! 
-[0m[waitdie_rdma.h:87] Assertion! 
-[0m[waitdie_rdma.h:113] Assertion! 
-[0m[waitdie_rdma.h:87] Assertion! 
-[0m[waitdie_rdma.h:87] Assertion! 
-[0m[waitdie_rdma.h:113] Assertion! 
-[0m[waitdie_rdma.h:113] Assertion! 
-[0m  ../noccwaitdie-onesided() [0x47e315]
-  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
-  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
-  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
-  ../noccwaitdie-onesided : nocc::MessageLogger::~MessageLogger()+0x34e
-  ../noccwaitdie-onesided : nocc::rtx::WAITDIE::remote_read(int, int, unsigned long, int, boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x347
-  ../noccwaitdie-onesided : nocc::oltp::bank::BankWorker::ycsb_func(boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x6ae
-  ../noccwaitdie-onesided : nocc::oltp::bank::BankWorker::YCSB_Transaction(nocc::oltp::BenchWorker*, boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x9
-  ../noccwaitdie-onesided : nocc::oltp::BenchWorker::worker_routine(boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x1db
-  ../noccwaitdie-onesided : boost::coroutines::detail::symmetric_coroutine_object<void, boost::_bi::bind_t<void, boost::_mfi::mf1<void, nocc::oltp::RWorker, boost::coroutines::detail::symmetric_coroutine_yield<void>&>, boost::_bi::list2<boost::_bi::value<nocc::oltp::RWorker*>, boost::arg<1> > >, boost::coroutines::basic_standard_stack_allocator<boost::coroutines::stack_traits> >::run()+0x42
-  ../noccwaitdie-onesided : make_fcontext()+0x1b
-stack trace:
-[NOCC] Meet an assertion failure!
-[waitdie_rdma.h:87] Assertion! 
-[0m  ../noccwaitdie-onesided() [0x47e315]
-  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
-  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
-  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
-  ../noccwaitdie-onesided : nocc::MessageLogger::~MessageLogger()+0x34e
-  ../noccwaitdie-onesided : nocc::rtx::WAITDIE::remote_write(int, int, unsigned long, int, boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x347
-  ../noccwaitdie-onesided : nocc::oltp::bank::BankWorker::ycsb_func(boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x41d
-  ../noccwaitdie-onesided : nocc::oltp::bank::BankWorker::YCSB_Transaction(nocc::oltp::BenchWorker*, boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x9
-  ../noccwaitdie-onesided : nocc::oltp::BenchWorker::worker_routine(boost::coroutines::detail::symmetric_coroutine_yield<void>&)+0x1db
-  ../noccwaitdie-onesided : boost::coroutines::detail::symmetric_coroutine_object<void, boost::_bi::bind_t<void, boost::_mfi::mf1<void, nocc::oltp::RWorker, boost::coroutines::detail::symmetric_coroutine_yield<void>&>, boost::_bi::list2<boost::_bi::value<nocc::oltp::RWorker*>, boost::arg<1> > >, boost::coroutines::basic_standard_stack_allocator<boost::coroutines::stack_traits> >::run()+0x42
-  ../noccwaitdie-onesided : make_fcontext()+0x1b
-[NOCC] Meet an assertion failure!
-stack trace:
+[0mmy throughput 118.758000 K, abort 2468, commit 118758, abort ratio 0.020359
+my throughput 119.685000 K, abort 2415, commit 119685, abort ratio 0.019779
+my throughput 118.278000 K, abort 2771, commit 118278, abort ratio 0.022892
+my throughput 3.688000 K, abort 1224972, commit 3688, abort ratio 0.996998
+[bench_listener2.cc:260] start to exit.
+[0mstats for worker 0:
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+YCSB executed 35776, latency: 0.835044, rw_size -nan, m 0.826589, 90 0.975526, 99 1.427064
+succs ratio 0.150469
+[bank_worker.h:126] worker exit.
+[0m[bank_worker.h:129] read time: 0ms
+[0m[occ_statistics.h:39] read_lat time: 0ms
+[0m[occ_statistics.h:40] lock time: 0ms
+[0m[occ_statistics.h:41] release_write time: 0ms
+[0m[occ_statistics.h:42] renew_lease time: 0ms
+[0m[occ_statistics.h:43] commit time: 0ms
+[0m[occ_statistics.h:45] 0
+[0m[occ_statistics.h:46] 0
+[0m[occ_statistics.h:47] 0
+[0m[occ_statistics.h:48] 0
+[0m[occ_statistics.h:49] 0
+[0m[occ_statistics.h:51] log time: 0
+[0m[occ_statistics.h:52] temp time: 0ms
+[0m[occ_statistics.h:53] release_read time: 0ms
+[0m[bench_worker.cc:388] 0: 0
+[0m[bench_worker.cc:388] 1: 110462
+[0m[bench_worker.cc:388] 2: 91459
+[0m[bench_worker.cc:388] 3: 0
+[0m[bench_worker.cc:388] 4: 0
+[0m[bench_worker.cc:388] 5: 0
+[0m[bench_worker.cc:388] 6: 0
+[0m[bench_worker.cc:388] 7: 0
+[0m[bench_worker.cc:388] 8: 0
+[0m[bench_worker.cc:388] 9: 0
+[0m[bench_worker.cc:388] 10: 0
+[0m[bench_worker.cc:388] 11: 0
+[0m[bench_worker.cc:388] 12: 0
+[0m[bench_worker.cc:388] 13: 0
+[0m[bench_worker.cc:388] 14: 0
+[0m[bench_worker.cc:388] 15: 0
+[0m[bench_worker.cc:388] 16: 0
+[0m[bench_worker.cc:388] 17: 0
+[0m[bench_worker.cc:388] 18: 2714155
+[0m[bench_worker.cc:388] 19: 821234
+[0m[bench_worker.cc:388] 20: 0
+[0m[bench_worker.cc:388] 21: 0
+[0m[bench_worker.cc:388] 22: 0
+[0m[bench_worker.cc:388] 23: 0
+[0m[bench_worker.cc:388] 24: 0
+[0m[bench_worker.cc:388] 25: 0
+[0m[bench_worker.cc:388] 26: 35766
+[0m[bench_worker.cc:388] 27: 0
+[0m[bench_worker.cc:388] 28: 0
+[0m[bench_worker.cc:388] 29: 0
+[0m[bench_worker.cc:388] 30: 0
+[0m[bench_worker.cc:388] 31: 0
+[0m[bench_worker.cc:388] 32: 0
+[0m[bench_worker.cc:388] 33: 0
+[0m[bench_worker.cc:388] 34: 0
+[0m[bench_worker.cc:388] 35: 0
+[0m[bench_worker.cc:388] 36: 0
+[0m[bench_worker.cc:388] 37: 0
+[0m[bench_worker.cc:388] 38: 0
+[0m[bench_worker.cc:388] 39: 0
+[0mmaster routine exit...
+[bench_runner.cc:299] main runner ends.
+[0m

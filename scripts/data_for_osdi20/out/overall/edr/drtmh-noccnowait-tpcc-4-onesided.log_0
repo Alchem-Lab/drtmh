@@ -1,9 +1,9 @@
-NOCC started with program [/noccnowait-onesided]. at 20-05-2020 02:16:49
+NOCC started with program [/noccnowait-onesided]. at 26-05-2020 03:29:28
 [tpcc] settings:
   new_order_remote_item_pct    : 1
   uniform_item_dist            : 0
   micro dist :20
-[bench_runner.cc:327] Use TCP port 8825
+[bench_runner.cc:327] Use TCP port 8833
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
@@ -15,7 +15,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [librdma] : Device 0 has 1 ports
 [bench_runner.cc:154] Total logger area 0.00390625G.
 [0m[bench_runner.cc:165] add RDMA store size 6.34766G.
-[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64646G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64643G.
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -34,12 +34,12 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [TPCC]   * average stock record length: 9 bytes
 [tpcc_loader.cc:319] [TPCC] finished loading customer.
 [0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
-[0m[Runner] local db size: 2500.43 MB
+[0m[Runner] local db size: 2514.59 MB
 registerring 1073741824021: 1 out of 4 qps connected. Retry connecting qps...
 threadid=21: all 4 qps connected
    0% [                                                            ]   1% [|                                                           ]   2% [|                                                           ]   3% [||                                                          ]   4% [||                                                          ]   5% [|||                                                         ]   5% [|||                                                         ]   6% [||||                                                        ]   7% [||||                                                        ]   8% [|||||                                                       ]   9% [|||||                                                       ]  10% [||||||                                                      ]  10% [||||||                                                      ]  11% [|||||||                                                     ]  12% [|||||||                                                     ]  13% [||||||||                                                    ]  14% [||||||||                                                    ]  15% [|||||||||                                                   ]  15% [|||||||||                                                   ]  16% [||||||||||                                                  ]  17% [||||||||||                                                  ]  18% [|||||||||||                                                 ]  19% [|||||||||||                                                 ]  20% [||||||||||||                                                ]  20% [||||||||||||                                                ]  21% [|||||||||||||                                               ]  22% [|||||||||||||                                               ]  23% [||||||||||||||                                              ]  24% [||||||||||||||                                              ]  25% [|||||||||||||||                                             ]  25% [|||||||||||||||                                             ]  26% [||||||||||||||||                                            ]  27% [||||||||||||||||                                            ]  28% [|||||||||||||||||                                           ]  29% [|||||||||||||||||                                           ]  30% [||||||||||||||||||                                          ]  30% [||||||||||||||||||                                          ]  31% [|||||||||||||||||||                                         ]  32% [|||||||||||||||||||                                         ]  33% [||||||||||||||||||||                                        ]  34% [||||||||||||||||||||                                        ]  35% [|||||||||||||||||||||                                       ]  35% [|||||||||||||||||||||                                       ]  36% [||||||||||||||||||||||                                      ]  37% [||||||||||||||||||||||                                      ]  38% [|||||||||||||||||||||||                                     ]  39% [|||||||||||||||||||||||                                     ]  40% [||||||||||||||||||||||||                                    ]  40% [||||||||||||||||||||||||                                    ]  41% [|||||||||||||||||||||||||                                   ]  42% [|||||||||||||||||||||||||                                   ]  43% [||||||||||||||||||||||||||                                  ]  44% [||||||||||||||||||||||||||                                  ]  45% [|||||||||||||||||||||||||||                                 ]  45% [|||||||||||||||||||||||||||                                 ]  46% [||||||||||||||||||||||||||||                                ]  47% [||||||||||||||||||||||||||||                                ]  48% [|||||||||||||||||||||||||||||                               ]  49% [|||||||||||||||||||||||||||||                               ]  50% [||||||||||||||||||||||||||||||                              ]  50% [||||||||||||||||||||||||||||||                              ]  51% [|||||||||||||||||||||||||||||||                             ]  52% [|||||||||||||||||||||||||||||||                             ]  53% [||||||||||||||||||||||||||||||||                            ]  54% [||||||||||||||||||||||||||||||||                            ]  55% [|||||||||||||||||||||||||||||||||                           ]  55% [|||||||||||||||||||||||||||||||||                           ]  56% [||||||||||||||||||||||||||||||||||                          ]  57% [||||||||||||||||||||||||||||||||||                          ]  58% [|||||||||||||||||||||||||||||||||||                         ]  59% [|||||||||||||||||||||||||||||||||||                         ]  60% [||||||||||||||||||||||||||||||||||||                        ]  60% [||||||||||||||||||||||||||||||||||||                        ]  61% [|||||||||||||||||||||||||||||||||||||                       ]  62% [|||||||||||||||||||||||||||||||||||||                       ]  63% [||||||||||||||||||||||||||||||||||||||                      ]  64% [||||||||||||||||||||||||||||||||||||||                      ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  66% [||||||||||||||||||||||||||||||||||||||||                    ]  67% [||||||||||||||||||||||||||||||||||||||||                    ]  68% [|||||||||||||||||||||||||||||||||||||||||                   ]  69% [|||||||||||||||||||||||||||||||||||||||||                   ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  71% [|||||||||||||||||||||||||||||||||||||||||||                 ]  72% [|||||||||||||||||||||||||||||||||||||||||||                 ]  73% [||||||||||||||||||||||||||||||||||||||||||||                ]  74% [||||||||||||||||||||||||||||||||||||||||||||                ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  76% [||||||||||||||||||||||||||||||||||||||||||||||              ]  77% [||||||||||||||||||||||||||||||||||||||||||||||              ]  78% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  79% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  81% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  86% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  93% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  96% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ] 100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]   0% [                                                            ]   1% [|                                                           ]   2% [|                                                           ]   3% [||                                                          ]   4% [||                                                          ]   5% [|||                                                         ]   5% [|||                                                         ]   6% [||||                                                        ]   7% [||||                                                        ]   8% [|||||                                                       ]   9% [|||||                                                       ]  10% [||||||                                                      ]  10% [||||||                                                      ]  11% [|||||||                                                     ]  12% [|||||||                                                     ]  13% [||||||||                                                    ]  14% [||||||||                                                    ]  15% [|||||||||                                                   ]  15% [|||||||||                                                   ]  16% [||||||||||                                                  ]  17% [||||||||||                                                  ]  18% [|||||||||||                                                 ]  19% [|||||||||||                                                 ]  20% [||||||||||||                                                ]  20% [||||||||||||                                                ]  21% [|||||||||||||                                               ]  22% [|||||||||||||                                               ]  23% [||||||||||||||                                              ]  24% [||||||||||||||                                              ]  25% [|||||||||||||||                                             ]  25% [|||||||||||||||                                             ]  26% [||||||||||||||||                                            ]  27% [||||||||||||||||                                            ]  28% [|||||||||||||||||                                           ]  29% [|||||||||||||||||                                           ]  30% [||||||||||||||||||                                          ]  30% [||||||||||||||||||                                          ]  31% [|||||||||||||||||||                                         ]  32% [|||||||||||||||||||                                         ]  33% [||||||||||||||||||||                                        ]  34% [||||||||||||||||||||                                        ]  35% [|||||||||||||||||||||                                       ]  35% [|||||||||||||||||||||                                       ]  36% [||||||||||||||||||||||                                      ]  37% [||||||||||||||||||||||                                      ]  38% [|||||||||||||||||||||||                                     ]  39% [|||||||||||||||||||||||                                     ]  40% [||||||||||||||||||||||||                                    ]  40% [||||||||||||||||||||||||                                    ]  41% [|||||||||||||||||||||||||                                   ]  42% [|||||||||||||||||||||||||                                   ]  43% [||||||||||||||||||||||||||                                  ]  44% [||||||||||||||||||||||||||                                  ]  45% [|||||||||||||||||||||||||||                                 ]  45% [|||||||||||||||||||||||||||                                 ]  46% [||||||||||||||||||||||||||||                                ]  47% [||||||||||||||||||||||||||||                                ]  48% [|||||||||||||||||||||||||||||                               ]  49% [|||||||||||||||||||||||||||||                               ]  50% [||||||||||||||||||||||||||||||                              ]  50% [||||||||||||||||||||||||||||||                              ]  51% [|||||||||||||||||||||||||||||||                             ]  52% [|||||||||||||||||||||||||||||||                             ]  53% [||||||||||||||||||||||||||||||||                            ]  54% [||||||||||||||||||||||||||||||||                            ]  55% [|||||||||||||||||||||||||||||||||                           ]  55% [|||||||||||||||||||||||||||||||||                           ]  56% [||||||||||||||||||||||||||||||||||                          ]  57% [||||||||||||||||||||||||||||||||||                          ]  58% [|||||||||||||||||||||||||||||||||||                         ]  59% [|||||||||||||||||||||||||||||||||||                         ]  60% [||||||||||||||||||||||||||||||||||||                        ]  60% [||||||||||||||||||||||||||||||||||||                        ]  61% [|||||||||||||||||||||||||||||||||||||                       ]  62% [|||||||||||||||||||||||||||||||||||||                       ]  63% [||||||||||||||||||||||||||||||||||||||                      ]  64% [||||||||||||||||||||||||||||||||||||||                      ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  66% [||||||||||||||||||||||||||||||||||||||||                    ]  67% [||||||||||||||||||||||||||||||||||||||||                    ]  68% [|||||||||||||||||||||||||||||||||||||||||                   ]  69% [|||||||||||||||||||||||||||||||||||||||||                   ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  71% [|||||||||||||||||||||||||||||||||||||||||||                 ]  72% [|||||||||||||||||||||||||||||||||||||||||||                 ]  73% [||||||||||||||||||||||||||||||||||||||||||||                ]  74% [||||||||||||||||||||||||||||||||||||||||||||                ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  76% [||||||||||||||||||||||||||||||||||||||||||||||              ]  77% [||||||||||||||||||||||||||||||||||||||||||||||              ]  78% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  79% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  81% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  86% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  93% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  96% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ] 100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||][tpcc_cache.cc:78] total 12000000 cache entries loaded.
-[0mTime to loader the caching is 25.760491 second
-[Runner] Cache size: 178.504 MB
+[0mTime to loader the caching is 25.601011 second
+[Runner] Cache size: 84.4961 MB
 [util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -53,7 +53,7 @@ threadid=21: all 4 qps connected
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[0] for 2 size: 368.582 MB
+[bench_runner.cc:255] [Runner] Backup DB[0] for 2 size: 368.43 MB
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -67,11 +67,11 @@ threadid=21: all 4 qps connected
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: -321.699 MB
+[bench_runner.cc:255] [Runner] Backup DB[1] for 3 size: 366.84 MB
 [0m[Tpcc] n_ware_per_worker: 3
 worker: 0 binding 0
-worker: 3 binding 6
 worker: 2 binding 4
+worker: 3 binding 6
 worker: 1 binding 2
 worker: 4 binding 8
 worker: 5 binding 10
@@ -80,89 +80,89 @@ worker: 7 binding 14
 worker: 8 binding 16
 worker: 9 binding 18
 [bench_listener2.cc:64] try log results to ./results//noccnowait-onesided_tpcc_4_10_10_100.log
-[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[bench_listener2.cc:73] New monitor running!
-[0mregisterring 10737418240registerring 10737418240registerring 107374182409: 2 out of 4 qps connected. Retry connecting qps...
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[bench_listener2.cc:73] New monitor running!
+[0mregisterring 10737418240registerring 107374182406: 3 out of 4 qps connected. Retry connecting qps...
 5: 3 out of 4 qps connected. Retry connecting qps...
-7: 3 out of 4 qps connected. Retry connecting qps...
-3: 3 out of 4 qps connected. Retry connecting qps...
 8: 3 out of 4 qps connected. Retry connecting qps...
-2: 3 out of 4 qps connected. Retry connecting qps...
-0: 3 out of 4 qps connected. Retry connecting qps...
-1: 3 out of 4 qps connected. Retry connecting qps...
+7: 3 out of 4 qps connected. Retry connecting qps...
 4: 3 out of 4 qps connected. Retry connecting qps...
-6: 3 out of 4 qps connected. Retry connecting qps...
-12: 1 out of 4 qps connected. Retry connecting qps...
-threadid=9: all 4 qps connected
-threadid=5: all 4 qps connected
-threadid=3: all 4 qps connected
-threadid=2: all 4 qps connected
-threadid=0: all 4 qps connected
-threadid=1: all 4 qps connected
-threadid=8: all 4 qps connected
+2: 3 out of 4 qps connected. Retry connecting qps...
+9: 3 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+0: 3 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
+12: 2 out of 4 qps connected. Retry connecting qps...
 threadid=7: all 4 qps connected
-threadid=4: all 4 qps connected
+threadid=5: all 4 qps connected
 threadid=6: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=2: all 4 qps connected
 threadid=12: all 4 qps connected
 [bench_worker.h:160] Use RDMA for logging.
 [0m[nowait_rdma.h:320] Use one-sided for read.
 [0m[bench_listener2.cc:119] All workers has initilized.
-[0m[rworker.cc:47] Worker 12 on cpu 20with cor id 0
+[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
-[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
 [0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
-[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
-[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
-[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
-[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
-[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[rworker.cc:47] Worker 4 on cpu 8with cor id 0
 [0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
-[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
 [0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
-[0mmerge data 257.869000 K from gorgon4
-merge data 268.523000 K from gorgon5
-merge data 256.528000 K from gorgon3
-my throughput 255.689000 K, abort 1883783, commit 255689, abort ratio 0.880490
-merge data 255.689000 K from gorgon2
-[tpcc_worker.h:144] read lat: 310724 ;counts 28229
-[0m[occ_statistics.h:58] lock lat: 20731.3 ;counts 31267
-[0m[occ_statistics.h:61] log lat: 20038.9 ;counts 2800
-[0m[occ_statistics.h:64] commit lat: 26078.4 ;counts 2799
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[0m[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0mmerge data 251.750000 K from gorgon7
+merge data 257.385000 K from gorgon6
+merge data 233.454000 K from gorgon8
+my throughput 256.815000 K, abort 1927469, commit 256815, abort ratio 0.882426
+merge data 256.815000 K from gorgon5
+[tpcc_worker.h:144] read lat: 309877 ;counts 28920
+[0m[occ_statistics.h:58] lock lat: 20251.9 ;counts 32768
+[0m[occ_statistics.h:61] log lat: 18775.3 ;counts 2938
+[0m[occ_statistics.h:64] commit lat: 25869.2 ;counts 2938
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 73.158 ;counts 32932
-[0m@1 System throughput 1.038609 M, abort 0.877304
-merge data 269.421000 K from gorgon4
-merge data 270.104000 K from gorgon5
-merge data 266.080000 K from gorgon3
-my throughput 265.375000 K, abort 1835052, commit 265375, abort ratio 0.873657
-merge data 265.375000 K from gorgon2
-[tpcc_worker.h:144] read lat: 309635 ;counts 29343
-[0m[occ_statistics.h:58] lock lat: 20724.7 ;counts 32664
-[0m[occ_statistics.h:61] log lat: 19844.9 ;counts 2928
-[0m[occ_statistics.h:64] commit lat: 26052.4 ;counts 2929
+[0m[occ_statistics.h:80] release_write lat: 66.6907 ;counts 34046
+[0m@1 System throughput 999.404000 K, abort 0.879234
+merge data 250.669000 K from gorgon7
+merge data 263.106000 K from gorgon6
+merge data 229.261000 K from gorgon8
+my throughput 254.412000 K, abort 1844691, commit 254412, abort ratio 0.878800
+merge data 254.412000 K from gorgon5
+[tpcc_worker.h:144] read lat: 318613 ;counts 28914
+[0m[occ_statistics.h:58] lock lat: 20788.3 ;counts 32380
+[0m[occ_statistics.h:61] log lat: 22439.8 ;counts 2893
+[0m[occ_statistics.h:64] commit lat: 26441.7 ;counts 2893
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 61.677 ;counts 31626
-[0m@2 System throughput 1.070980 M, abort 0.874033
-merge data 268.061000 K from gorgon4
-merge data 267.143000 K from gorgon5
-merge data 267.415000 K from gorgon3
-my throughput 263.102000 K, abort 1824311, commit 263102, abort ratio 0.873958
-merge data 263.102000 K from gorgon2
-[tpcc_worker.h:144] read lat: 311041 ;counts 29292
-[0m[occ_statistics.h:58] lock lat: 21031.9 ;counts 32444
-[0m[occ_statistics.h:61] log lat: 19565.7 ;counts 2915
-[0m[occ_statistics.h:64] commit lat: 26649 ;counts 2915
+[0m[occ_statistics.h:80] release_write lat: 73.6328 ;counts 31665
+[0m@2 System throughput 997.448000 K, abort 0.881068
+merge data 245.826000 K from gorgon7
+merge data 257.241000 K from gorgon6
+merge data 222.845000 K from gorgon8
+my throughput 258.472000 K, abort 1879549, commit 258472, abort ratio 0.879107
+merge data 258.472000 K from gorgon5
+[tpcc_worker.h:144] read lat: 312177 ;counts 29013
+[0m[occ_statistics.h:58] lock lat: 20993.1 ;counts 32874
+[0m[occ_statistics.h:61] log lat: 19176.1 ;counts 2953
+[0m[occ_statistics.h:64] commit lat: 25802.1 ;counts 2953
 [0m[occ_statistics.h:67] temp lat: 0 ;counts 1
 [0m[occ_statistics.h:70] read_lat lat: 0 ;counts 1
 [0m[occ_statistics.h:73] renew_lease lat: 0 ;counts 1
 [0m[occ_statistics.h:77] release_read lat: 0 ;counts 1
-[0m[occ_statistics.h:80] release_write lat: 57.6184 ;counts 31233
-[0m@3 System throughput 1.065721 M, abort 0.874892
+[0m[occ_statistics.h:80] release_write lat: 64.1816 ;counts 32687
+[0m@3 System throughput 984.384000 K, abort 0.882983
 [bench_listener2.cc:260] start to exit.
 [0mstats for worker 0:
 exiting master routine.
@@ -176,27 +176,27 @@ exiting master routine.
 exiting master routine.
 exiting master routine.
 exiting master routine.
-NewOrder executed 86875, latency: 0.343547, rw_size -nan, m 0.278248, 90 0.579034, 99 1.357909
-succs ratio 0.167760
+NewOrder executed 86859, latency: 0.338169, rw_size -nan, m 0.272571, 90 0.565128, 99 1.365017
+succs ratio 0.160728
 [tpcc_worker.h:152] worker exit.
-[0m[bench_listener2.cc:279] Medium latency 0.278211ms, 90th latency 0.578887ms, 99th latency 1.35791ms; average latency: 0.342803ms.
-[0m[tpcc_worker.h:155] read time: 0.13497ms
+[0m[bench_listener2.cc:279] Medium latency 0.272548ms, 90th latency 0.56513ms, 99th latency 1.36501ms; average latency: 0.337238ms.
+[0m[tpcc_worker.h:155] read time: 0.136318ms
 [0m[occ_statistics.h:39] read_lat time: 0ms
-[0m[occ_statistics.h:40] lock time: 0.00905508ms
-[0m[occ_statistics.h:41] release_write time: 2.7823e-05ms
+[0m[occ_statistics.h:40] lock time: 0.0089893ms
+[0m[occ_statistics.h:41] release_write time: 2.95629e-05ms
 [0m[occ_statistics.h:42] renew_lease time: 0ms
-[0m[occ_statistics.h:43] commit time: 0.0114157ms
+[0m[occ_statistics.h:43] commit time: 0.0113195ms
 [0m[occ_statistics.h:45] 0
-[0m[occ_statistics.h:46] 0.00905508
-[0m[occ_statistics.h:47] 2.7823e-05
+[0m[occ_statistics.h:46] 0.0089893
+[0m[occ_statistics.h:47] 2.95629e-05
 [0m[occ_statistics.h:48] 0
-[0m[occ_statistics.h:49] 0.0114157
-[0m[occ_statistics.h:51] log time: 0.00861469
+[0m[occ_statistics.h:49] 0.0113195
+[0m[occ_statistics.h:51] log time: 0.00875149
 [0m[occ_statistics.h:52] temp time: 0ms
 [0m[occ_statistics.h:53] release_read time: 0ms
 [0m[bench_worker.cc:388] 0: 0
 [0m[bench_worker.cc:388] 1: 0
-[0m[bench_worker.cc:388] 2: 430917
+[0m[bench_worker.cc:388] 2: 453489
 [0m[bench_worker.cc:388] 3: 0
 [0m[bench_worker.cc:388] 4: 0
 [0m[bench_worker.cc:388] 5: 0
@@ -211,16 +211,16 @@ succs ratio 0.167760
 [0m[bench_worker.cc:388] 14: 0
 [0m[bench_worker.cc:388] 15: 0
 [0m[bench_worker.cc:388] 16: 0
-[0m[bench_worker.cc:388] 17: 1400110
-[0m[bench_worker.cc:388] 18: 1209313
-[0m[bench_worker.cc:388] 19: 443032
+[0m[bench_worker.cc:388] 17: 0
+[0m[bench_worker.cc:388] 18: 4104698
+[0m[bench_worker.cc:388] 19: 468394
 [0m[bench_worker.cc:388] 20: 0
 [0m[bench_worker.cc:388] 21: 0
 [0m[bench_worker.cc:388] 22: 0
 [0m[bench_worker.cc:388] 23: 0
 [0m[bench_worker.cc:388] 24: 0
 [0m[bench_worker.cc:388] 25: 0
-[0m[bench_worker.cc:388] 26: 86865
+[0m[bench_worker.cc:388] 26: 86849
 [0m[bench_worker.cc:388] 27: 0
 [0m[bench_worker.cc:388] 28: 0
 [0m[bench_worker.cc:388] 29: 0

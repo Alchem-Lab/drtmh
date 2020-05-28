@@ -1,9 +1,9 @@
-NOCC started with program [/noccmvcc-rpc]. at 20-05-2020 03:03:55
+NOCC started with program [/noccmvcc-rpc]. at 26-05-2020 03:26:45
 [tpcc] settings:
   new_order_remote_item_pct    : 1
   uniform_item_dist            : 0
   micro dist :20
-[bench_runner.cc:327] Use TCP port 8861
+[bench_runner.cc:327] Use TCP port 8833
 [0m[bench_runner.cc:349] use scale factor: 30; with total 10 threads.
 [0m[view.h:48] Start with 2 backups.
 [0m[view.cc:10] total 4 backups to assign
@@ -15,7 +15,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [librdma] : Device 0 has 1 ports
 [bench_runner.cc:154] Total logger area 0.00390625G.
 [0m[bench_runner.cc:165] add RDMA store size 6.34766G.
-[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64646G.
+[0m[bench_runner.cc:174] [Mem] RDMA heap size 3.64643G.
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -34,7 +34,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [TPCC]   * average stock record length: 9 bytes
 [tpcc_loader.cc:319] [TPCC] finished loading customer.
 [0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
-[0m[Runner] local db size: 3627.12 MB
+[0m[Runner] local db size: 3629.94 MB
 [Runner] Cache size: 0 MB
 [util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
@@ -49,7 +49,7 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[0] for 0 size: 1109.75 MB
+[bench_runner.cc:255] [Runner] Backup DB[0] for 0 size: 1110.46 MB
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
 [0m[util.cc:175] huge page alloc failed!
 [0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
@@ -63,12 +63,12 @@ NAIVE: 4[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 209715
 [0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
 [0m[TPCC] finished loading stock
 [TPCC]   * average stock record length: 9 bytes
-[bench_runner.cc:255] [Runner] Backup DB[1] for 1 size: 1044.96 MB
+[bench_runner.cc:255] [Runner] Backup DB[1] for 1 size: 1110.54 MB
 [0mregisterring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240registerring 10737418240[Tpcc] n_ware_per_worker: 3
 worker: 0 binding 0
+worker: 1 binding 2
 worker: 2 binding 4
 worker: 3 binding 6
-worker: 1 binding 2
 worker: 4 binding 8
 worker: 5 binding 10
 worker: 6 binding 12
@@ -76,57 +76,35 @@ worker: 7 binding 14
 worker: 8 binding 16
 worker: 9 binding 18
 [bench_listener2.cc:73] New monitor running!
-[0mregisterring 10737418240registerring 10737418240registerring 107374182405: 3 out of 4 qps connected. Retry connecting qps...
-4: 3 out of 4 qps connected. Retry connecting qps...
-6: 3 out of 4 qps connected. Retry connecting qps...
-2: 3 out of 4 qps connected. Retry connecting qps...
-0: 3 out of 4 qps connected. Retry connecting qps...
-3: 3 out of 4 qps connected. Retry connecting qps...
-1: 3 out of 4 qps connected. Retry connecting qps...
-8: 3 out of 4 qps connected. Retry connecting qps...
-9: 3 out of 4 qps connected. Retry connecting qps...
-7: 3 out of 4 qps connected. Retry connecting qps...
-12: 3 out of 4 qps connected. Retry connecting qps...
-5: 3 out of 4 qps connected. Retry connecting qps...
-1: 3 out of 4 qps connected. Retry connecting qps...
-9: 3 out of 4 qps connected. Retry connecting qps...
-0: 3 out of 4 qps connected. Retry connecting qps...
-7: 3 out of 4 qps connected. Retry connecting qps...
-6: 3 out of 4 qps connected. Retry connecting qps...
-3: 3 out of 4 qps connected. Retry connecting qps...
-4: 3 out of 4 qps connected. Retry connecting qps...
-8: 3 out of 4 qps connected. Retry connecting qps...
-2: 3 out of 4 qps connected. Retry connecting qps...
-12: 3 out of 4 qps connected. Retry connecting qps...
-threadid=1: all 4 qps connected
-threadid=9: all 4 qps connected
+[0mregisterring 10737418240registerring 10737418240registerring 10737418240threadid=9: all 4 qps connected
 threadid=5: all 4 qps connected
-threadid=0: all 4 qps connected
-threadid=7: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=1: all 4 qps connected
 threadid=6: all 4 qps connected
 threadid=3: all 4 qps connected
-threadid=8: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=7: all 4 qps connected
 threadid=2: all 4 qps connected
-threadid=4: all 4 qps connected
 threadid=12: all 4 qps connected
 [bench_worker.h:154] Use RPC for logging.
 [0m[bench_listener2.cc:119] All workers has initilized.
-[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+[0m[rworker.cc:47] Worker 12 on cpu 20with cor id 0
 [0m[bench_listener2.cc:218] [LISTENER] receive start RPC.
-[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
-[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[rworker.cc:47] Worker 3 on cpu 6with cor id 0
 [0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
-[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
 [0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
-[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[0m[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
 [0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
 [0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
-[0m[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
-[rworker.cc:47] Worker 1 on cpu 2with cor id 0
-[0m[0mmy throughput 222.349000 K, abort 2010830, commit 222349, abort ratio 0.900434
-my throughput 224.704000 K, abort 2024741, commit 224704, abort ratio 0.900107
-my throughput 223.997000 K, abort 2026922, commit 223997, abort ratio 0.900486
-my throughput 25, abort 5578350, commit 25, abort ratio 0.999996
+[0mmy throughput 211.009000 K, abort 1944099, commit 211009, abort ratio 0.902089
+my throughput 207.180000 K, abort 1919031, commit 207180, abort ratio 0.902559
+my throughput 205.436000 K, abort 1981200, commit 205436, abort ratio 0.906049
+my throughput 50, abort 4855329, commit 50, abort ratio 0.999990
 [bench_listener2.cc:260] start to exit.
 [0mstats for worker 0:
 exiting master routine.
@@ -139,8 +117,8 @@ exiting master routine.
 exiting master routine.
 exiting master routine.
 exiting master routine.
-NewOrder executed 72654, latency: 0.409831, rw_size -nan, m 0.325854, 90 0.704731, 99 1.617018
-succs ratio 0.070593
+NewOrder executed 67791, latency: 0.436549, rw_size -nan, m 0.335703, 90 0.729971, 99 1.726870
+succs ratio 0.081917
 [tpcc_worker.h:152] worker exit.
 [0m[tpcc_worker.h:155] read time: 0ms
 [0m[occ_statistics.h:39] read_lat time: 0ms
@@ -174,11 +152,11 @@ succs ratio 0.070593
 [0m[bench_worker.cc:388] 15: 0
 [0m[bench_worker.cc:388] 16: 0
 [0m[bench_worker.cc:388] 17: 0
-[0m[bench_worker.cc:388] 18: 1940273
-[0m[bench_worker.cc:388] 19: 1022691
-[0m[bench_worker.cc:388] 20: 23393
-[0m[bench_worker.cc:388] 21: 28039
-[0m[bench_worker.cc:388] 22: 905298
+[0m[bench_worker.cc:388] 18: 1750489
+[0m[bench_worker.cc:388] 19: 829410
+[0m[bench_worker.cc:388] 20: 21558
+[0m[bench_worker.cc:388] 21: 25282
+[0m[bench_worker.cc:388] 22: 712761
 [0m[bench_worker.cc:388] 23: 0
 [0m[bench_worker.cc:388] 24: 0
 [0m[bench_worker.cc:388] 25: 0
@@ -192,7 +170,7 @@ succs ratio 0.070593
 [0m[bench_worker.cc:388] 33: 0
 [0m[bench_worker.cc:388] 34: 0
 [0m[bench_worker.cc:388] 35: 0
-[0m[bench_worker.cc:388] 36: 72644
+[0m[bench_worker.cc:388] 36: 67781
 [0m[bench_worker.cc:388] 37: 0
 [0m[bench_worker.cc:388] 38: 0
 [0m[bench_worker.cc:388] 39: 0
