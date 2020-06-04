@@ -20,6 +20,7 @@ extern size_t total_partition;
 using namespace rdmaio::ringmsg;
 
 namespace nocc {
+extern __thread MappedLog local_log;
 extern db::EpochManager* epoch_manager;
 extern oltp::Scheduler* scheduler;
 
@@ -38,7 +39,15 @@ void Sequencer::run() {
   BindToCore(worker_id_);
   //binding(worker_id_);
   init_routines(1);
-  
+
+#if 1
+  create_logger();
+  fprintf(stderr, "next_log_entry: local_log=%p\n", &local_log);
+  char *log_buf = next_log_entry(&local_log,64);
+  assert(log_buf != NULL);
+  sprintf(log_buf,"sequencer runs @thread=%d\n", worker_id_);
+#endif
+
 #if USE_RDMA
   printf("sequencer in init rdma; id = %d\n", worker_id_);
   init_rdma();
@@ -91,7 +100,7 @@ void Sequencer::run() {
 
 void Sequencer::worker_routine(yield_func_t &yield) {
 
-  LOG(3) << "Running Sequencer routine.";
+  LOG(3) << worker_id_ << " Running Sequencer routine";
 
   static const auto& workload = get_workload_func();
   char * const req_buf = rpc_->get_static_buf(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
@@ -118,7 +127,7 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     ((calvin_header*)req_buf)->node_id = cm_->get_nodeid();
     // epoch_manager->get_current_epoch((char*)&((calvin_header*)req_buf)->epoch_id);
     ((calvin_header*)req_buf)->epoch_id = iteration;
-    fprintf(stderr, "sequencing @ epoch %lu.\n", ((calvin_header*)req_buf)->epoch_id);
+    fprintf(stderr, "%d: sequencing @ epoch %lu.\n", worker_id_, ((calvin_header*)req_buf)->epoch_id);
     char* req_buf_end = req_buf + sizeof(calvin_header);
     auto start = rdtsc();
 
@@ -163,7 +172,7 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     // END(log)
     // broadcasting to other participants
     broadcast(req_buf, req_buf_end, yield);
-    LOG(3) << "sequencer broadcasted at epoch: " << ((calvin_header*)req_buf)->epoch_id;
+    LOG(3) << worker_id_ << ": sequencer broadcasted at epoch: " << ((calvin_header*)req_buf)->epoch_id;
 
     // while (true) {
     //   int n_ready = 0;
@@ -180,7 +189,7 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
     while (!scheduler->epoch_done) {
       cpu_relax();
-      indirect_yield(yield);
+      yield_next(yield);
       asm volatile("" ::: "memory");
     }
 
@@ -188,10 +197,12 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     scheduler->req_buffer_state[1] == Scheduler::BUFFER_INIT;
 
     epoch_sync(yield);
-    LOG(3) << "sequencer epoch " << iteration << "done";
+    LOG(3) << worker_id_ << ": sequencer epoch " << iteration << "done";
     auto latency = rdtsc() - start;
     timer_.emplace(latency);
     iteration += 1;
+
+    yield_next(yield);
   }
 }
 
@@ -241,7 +252,7 @@ void Sequencer::broadcast(char* const req_buf, char* const req_buf_end, yield_fu
                          cor_id_,RRpc::REQ,mac_set_);
       indirect_yield(yield);
       cur += size;  
-      fprintf(stderr, "Sequencer: chunk %d posted to remote. size = %d\n", chunk_id, size);
+      fprintf(stderr, "%d: Sequencer chunk %d posted to remote. size = %d\n", worker_id_, chunk_id, size);
       chunk_id++;
     }
     ASSERT(nchunks == chunk_id) << nchunks << " " << chunk_id;
@@ -252,7 +263,7 @@ void Sequencer::broadcast(char* const req_buf, char* const req_buf_end, yield_fu
 void Sequencer::sequence_rpc_handler(int id,int cid,char *msg,void *arg) {
   assert(id < cm_->get_num_nodes());
   calvin_header* h = (calvin_header*)msg;
-  fprintf(stderr, "Received batch from machine %d for epoch id = %d\n", id, h->epoch_id);
+  fprintf(stderr, "%d: Received batch from machine %d for epoch id = %d\n", worker_id_, id, h->epoch_id);
   // assert(!scheduler->req_buffer_ready[id]);
 
   char* buf = scheduler->req_buffers[id];
@@ -275,7 +286,7 @@ void Sequencer::sequence_rpc_handler(int id,int cid,char *msg,void *arg) {
       cpu_relax();
     }
     scheduler->req_buffer_state[id] = Scheduler::BUFFER_RECVED;
-    fprintf(stderr, "%d buffer all received @ epoch %d.\n", id, h->epoch_id);
+    fprintf(stderr, "%d: %d buffer all received @ epoch %d.\n", worker_id_, id, h->epoch_id);
   }
 
   // scheduler->sequence_lock.Unlock();
@@ -318,7 +329,7 @@ void Sequencer::epoch_sync(yield_func_t &yield) {
       if (i == cm_->get_nodeid()) continue;
 #if ONE_SIDED_READ == 0
       if (epoch_status_[i] != CALVIN_EPOCH_DONE) {
-        indirect_yield(yield);
+        yield_next(yield);
         asm volatile("" ::: "memory");
         i--;
       }

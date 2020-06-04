@@ -44,6 +44,7 @@ int new_mapped_log(const char *path, MappedLog *log, int inc_size) {
         return -1;
     }
 
+    // fprintf(stderr, "log = %p, log->inc_size = %d\n, log->start = %p\n", log, log->inc_size, log->start);
     log->log_size = 0;
     return 0;
 }
@@ -92,6 +93,7 @@ int enlarge_mapped_log(MappedLog *log) {
         return -1;
     }
     off_t original_size = sb.st_size;
+    // fprintf(stderr, "%d %% %d\n", original_size, log->inc_size);
     assert(original_size % log->inc_size == 0);
 
 #ifdef DEBUG

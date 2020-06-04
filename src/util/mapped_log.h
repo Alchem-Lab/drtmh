@@ -40,6 +40,7 @@ int enlarge_mapped_log(MappedLog *log);
 static inline char *next_log_entry(MappedLog *log, int entry_size) {
 
     if ((log->buf + entry_size) > log->end) {
+        // fprintf(stderr, "log:%p, log->buf = %p, entry_size=%d, log->end = %p", log, log->buf, entry_size, log->end);
         if (enlarge_mapped_log(log) != 0) {
             exit(1);
             return NULL;

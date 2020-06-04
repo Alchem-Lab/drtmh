@@ -46,6 +46,7 @@ namespace nocc {
 			void thread_local_init();
 			void logging(char* buffer_start, char* buffer_end, yield_func_t &yield);
 			void broadcast(char* buffer_start, char* buffer_end, yield_func_t &yield);
+			
 			void epoch_sync(yield_func_t &yield);
 		public:
 			#include "rtx/occ_statistics.h"

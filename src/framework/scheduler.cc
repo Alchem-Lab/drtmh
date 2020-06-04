@@ -24,6 +24,8 @@ using namespace rdmaio::ringmsg;
 
 namespace nocc {
 
+extern __thread MappedLog local_log;
+
 namespace oltp {
 
 Scheduler::Scheduler(unsigned worker_id, RdmaCtrl *cm, MemDB * db):
@@ -43,14 +45,21 @@ Scheduler::~Scheduler() {}
 void Scheduler::run() {
   BindToCore(worker_id_);
   //binding(worker_id_);
+  init_routines(1);
+
+#if 1
+  create_logger();
+  fprintf(stderr, "%d: next_log_entry: local_log=%p\n", worker_id_, &local_log);
+  char *log_buf = next_log_entry(&local_log,64);
+  assert(log_buf != NULL);
+  sprintf(log_buf,"scheduler runs @thread=%d\n", worker_id_);
+#endif
 
 #if USE_RDMA
-  printf("scheduler in init rdma; id = %d\n", worker_id_);
+  printf("%d: scheduler in init rdma.\n", worker_id_);
   init_rdma();
   create_qps();
 #endif
-
-  init_routines(1);
 
 #if USE_TCP_MSG == 1
   assert(local_comm_queues.size() > 0);
@@ -89,7 +98,7 @@ void Scheduler::run() {
 
 void Scheduler::worker_routine(yield_func_t &yield) {
 
-  LOG(3) << "Running Scheduler routine.on worker " << worker_id_;
+  LOG(3) << worker_id_ << ": Running Scheduler routine";
 
   while (true)
   {
@@ -105,6 +114,7 @@ void Scheduler::worker_routine(yield_func_t &yield) {
       if (n_ready == cm_->get_num_nodes())
         break;
       cpu_relax();
+      yield_next(yield);
     }
 
     int i = 0;
@@ -158,7 +168,7 @@ void Scheduler::worker_routine(yield_func_t &yield) {
         }
         // free(buf_end);
 
-        fprintf(stderr, "deterministic_plan installs requests from %d for epoch %d\n", i, h->epoch_id);
+        fprintf(stderr, "%d: deterministic_plan installs requests from %d for epoch %d\n", worker_id_, i, h->epoch_id);
         req_buffer_state[i] = Scheduler::BUFFER_INIT;
         // sequence_lock.Lock();
         // req_buffer_ready[i] = false;
@@ -268,11 +278,13 @@ void Scheduler::worker_routine(yield_func_t &yield) {
     // held by them are unlocked.
     while (req_fullfilled < deterministic_plan.size()) {
         cpu_relax();
+        yield_next(yield);
+        asm volatile("" ::: "memory");        
     }
     epoch_done = true;
     while (epoch_done) {
       cpu_relax();
-      // indirect_yield(yield);
+      yield_next(yield);
       asm volatile("" ::: "memory");
     }
 
@@ -290,7 +302,7 @@ void Scheduler::worker_routine(yield_func_t &yield) {
 
       // sleep(1);
 
-
+    yield_next(yield);
   }
 }
 

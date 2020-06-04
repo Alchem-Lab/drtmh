@@ -50,7 +50,7 @@ void  RWorker::new_master_routine(yield_func_t &yield,int cor_id) {
 
   while( true ) {
     if(unlikely(!running_status())) {
-      fprintf(stdout, "exiting master routine.\n");
+      fprintf(stdout, "exiting master routine for worker %d.\n", worker_id_);
       return exit_handler();
     }
 
@@ -280,7 +280,8 @@ void RWorker::create_tcp_connections(util::SingleQueue *queue, int tcp_port, zmq
 void RWorker::create_logger() {
   char log_path[16];
   sprintf(log_path,"./%d_%d.log",cm_->get_nodeid(),worker_id_);
-  new_mapped_log(log_path, &local_log,4096);
+  fprintf(stderr, "create_logger: local_log=%p\n", &local_log);
+  ASSERT(new_mapped_log(log_path, &local_log,2048*1024) == 0);
 }
 
 __thread RWorker *RWorker::thread_worker = NULL;

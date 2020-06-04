@@ -299,7 +299,7 @@ void BenchWorker::run() {
   init_tx_ctx();
   init_routines(server_routine);
 
-  //create_logger();
+  create_logger();
 
 #if USE_RDMA
   init_rdma();
@@ -381,22 +381,27 @@ BenchWorker::worker_routine(yield_func_t &yield) {
         if (scheduler->locked_transactions.size() < nthreads) {
           // LOG(3) << "aaaa";
           cpu_relax();
-          indirect_yield(yield);
+          yield_next(yield);
           continue;
         }
         if (scheduler->locked_transactions[worker_id_][cor_id_] == NULL) {     
           // LOG(3) << "bbbb";
           cpu_relax();
-          indirect_yield(yield);
+          yield_next(yield);
           continue;
         }
 
-        scheduler->locks_4_locked_transactions[worker_id_]->Lock();
+        if(scheduler->locks_4_locked_transactions[worker_id_]->Trylock()) {
+          cpu_relax();
+          yield_next(yield);
+        }
+
+        // locked
         if (scheduler->locked_transactions[worker_id_][cor_id_]->empty()) {
           scheduler->locks_4_locked_transactions[worker_id_]->Unlock();
           // LOG(3) << "cccc";
           cpu_relax();
-          indirect_yield(yield);
+          yield_next(yield);
           continue;
         }
 

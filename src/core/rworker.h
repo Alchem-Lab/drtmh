@@ -143,6 +143,7 @@ class RWorker : public ndb_thread {
     }
     rdma_sched_->poll_comps();  // poll RDMA completions
 
+#if 0
     //handles timeout events tr
     for(uint i = 0;i < total_worker_coroutine + 1;++i) {
       if(next_routine_array[i].active_ == false && 
@@ -153,7 +154,7 @@ class RWorker : public ndb_thread {
           // fprintf(stdout, "routine %d added back.\n", next_routine_array[i].id_);
       }
     }
-
+#endif
 
   }
 

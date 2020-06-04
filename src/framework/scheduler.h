@@ -7,6 +7,7 @@
 #include "core/utils/thread.h"
 #include "util/util.h"
 #include "util/spinlock.h"
+#include "util/mapped_log.h"
 #include "bench_worker.h"
 #include <string>
 #include <vector>
