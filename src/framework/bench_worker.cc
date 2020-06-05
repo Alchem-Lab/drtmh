@@ -394,8 +394,10 @@ BenchWorker::worker_routine(yield_func_t &yield) {
         if(scheduler->locks_4_locked_transactions[worker_id_]->Trylock()) {
           cpu_relax();
           yield_next(yield);
+          continue;
         }
 
+        ASSERT(scheduler->locks_4_locked_transactions[worker_id_]->IsLocked()) << "Lock NOT held.";
         // locked
         if (scheduler->locked_transactions[worker_id_][cor_id_]->empty()) {
           scheduler->locks_4_locked_transactions[worker_id_]->Unlock();

@@ -204,6 +204,8 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
     yield_next(yield);
   }
+
+  rpc_->free_static_buf(req_buf);
 }
 
 void Sequencer::broadcast(char* const req_buf, char* const req_buf_end, yield_func_t &yield) {
@@ -252,18 +254,19 @@ void Sequencer::broadcast(char* const req_buf, char* const req_buf_end, yield_fu
                          cor_id_,RRpc::REQ,mac_set_);
       indirect_yield(yield);
       cur += size;  
-      fprintf(stderr, "%d: Sequencer chunk %d posted to remote. size = %d\n", worker_id_, chunk_id, size);
+      // fprintf(stderr, "%d: Sequencer chunk %d posted to remote. size = %d\n", worker_id_, chunk_id, size);
       chunk_id++;
     }
     ASSERT(nchunks == chunk_id) << nchunks << " " << chunk_id;
     // fprintf(stderr, "Sequencer: %d chunks broadcasted for requests at epoch %lu. \n", nchunks, header->epoch_id);
+    rpc_->free_static_buf(send_buf);
 }
 
 
 void Sequencer::sequence_rpc_handler(int id,int cid,char *msg,void *arg) {
   assert(id < cm_->get_num_nodes());
   calvin_header* h = (calvin_header*)msg;
-  fprintf(stderr, "%d: Received batch from machine %d for epoch id = %d\n", worker_id_, id, h->epoch_id);
+  // fprintf(stderr, "%d: Received batch from machine %d for epoch id = %d\n", worker_id_, id, h->epoch_id);
   // assert(!scheduler->req_buffer_ready[id]);
 
   char* buf = scheduler->req_buffers[id];
@@ -306,10 +309,10 @@ void Sequencer::epoch_sync(yield_func_t &yield) {
       }
     }
 
+#if ONE_SIDED_READ == 0
     char* send_buf = rpc_->get_static_buf(MAX_MSG_SIZE);
     char reply_buf[64];
 
-#if ONE_SIDED_READ == 0
     // epoch_status_[cm_->get_nodeid()] = CALVIN_EPOCH_DONE;
     *(uint8_t*)send_buf = CALVIN_EPOCH_DONE;
 
@@ -319,9 +322,12 @@ void Sequencer::epoch_sync(yield_func_t &yield) {
                        sizeof(uint8_t),
                        cor_id_,RRpc::REQ,mac_set_);
     indirect_yield(yield);
+
+    rpc_->free_static_buf(send_buf);
 #else
     assert(false);
 #endif
+
 
   // fprintf(stderr, "EPOCH DONE broadcasted.\n");
 

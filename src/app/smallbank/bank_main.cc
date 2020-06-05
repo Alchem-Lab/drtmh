@@ -165,7 +165,7 @@ BankMainRunner::BankMainRunner(std::string &config_file) : BenchRunner(config_fi
     //pass
   }
 
-  fprintf(stdout,"[Bank]: check workload %u, %u, %u, %u, %u, %u\n",
+  fprintf(stdout,"[Bank]: check workload %u, %u, %u, %u, %u, %u, %u\n",
           g_txn_workload_mix[0],g_txn_workload_mix[1],g_txn_workload_mix[2],g_txn_workload_mix[3],
           g_txn_workload_mix[4],g_txn_workload_mix[5],g_txn_workload_mix[6]);
 }
