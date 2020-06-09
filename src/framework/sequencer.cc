@@ -113,7 +113,8 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
   //main loop for sequencer
   // while (true)
-  while(iteration < 100000)
+  // while(iteration < 100000)
+  while(iteration < 1000)
   {
     scheduler->epoch_done = false; // start next sequencing iteration.
     #if ONE_SIDED_READ == 0
@@ -393,6 +394,7 @@ void Sequencer::logging(char* req_buf, char* req_buf_end, yield_func_t &yield) {
       chunk_id++;
     }
     ASSERT(nchunks == chunk_id) << nchunks << " " << chunk_id;
+    rpc_->free_static_buf(send_buf);
     fprintf(stderr, "Sequencer: %d chunks logged with ts = %lu. \n", nchunks, header->epoch_id);
 }
 
