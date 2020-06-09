@@ -414,51 +414,68 @@ BenchWorker::worker_routine(yield_func_t &yield) {
         ASSERT(req.req_idx < workload.size()) << 
                         "in execution seq = " << req.req_seq <<
                         ":  workload " << req.req_idx << " does not exist.";
+        // printf("%d: req_idx: %d, req_seq: %d, ts: %d, reads %d, writes %d.\n", 
+        //                                       req.req_initiator, 
+        //                                       req.req_idx, req.req_seq, req.timestamp, 
+        //                                      ((rwsets_t*)req.req_info)->nReads,
+        //                                      ((rwsets_t*)req.req_info)->nWrites);
+
+
+
         (*txn_counts)[req.req_idx] += 1;
     abort_retry:
         if (req.req_initiator == cm_->get_nodeid())
           ntxn_executed_ += 1;
 
-        // mock releasing locks
-        // std::vector<ReadSetItem> rs;
-        // std::vector<ReadSetItem> ws;
-        // rwsets_t* sets = (rwsets_t*)req.req_info;
-        // int reads = sets->nReads, writes = sets->nWrites;
-        // for (int i = 0; i < reads; i++) {
-        //   rs.push_back(sets->access[i]);
-        // }
-        // for (int i = 0; i < writes; i++) {
-        //   ws.push_back(sets->access[reads+i]);
-        // }
+// #define MOCK_WORKLOAD
+#ifdef MOCK_WORKLOAD
+        {
+          // fake the read set and write set
+          std::vector<ReadSetItem> rs;
+          std::vector<ReadSetItem> ws;
+          rwsets_t* sets = (rwsets_t*)req.req_info;
+          int reads = sets->nReads, writes = sets->nWrites;
+          for (int i = 0; i < reads; i++) {
+            rs.push_back(sets->access[i]);
+          }
+          for (int i = 0; i < writes; i++) {
+            ws.push_back(sets->access[reads+i]);
+          }
 
-        // actual workload
-        // auto ret = workload[req.req_idx].fn(this, &req, yield);
-        usleep(5);
+          // fake txn workload
+          usleep(5);
+       
+          // fake releasing locks
+          for(auto it = rs.begin();it != rs.end();++it) {
+            if((*it).pid != cm_->get_nodeid())  // remote case
+              continue;
+            else {
+              assert(it->node != NULL);
+              volatile uint64_t* lock_ptr = &it->node->lock;
+              // assert ((*lock_ptr & 0x1) == 0x1);
+              // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
+              *lock_ptr = 0;
+            }
+          }
 
-        // for(auto it = rs.begin();it != rs.end();++it) {
-        //   if((*it).pid != cm_->get_nodeid())  // remote case
-        //     continue;
-        //   else {
-        //     assert(it->node != NULL);
-        //     volatile uint64_t* lock_ptr = &it->node->lock;
-        //     // assert ((*lock_ptr & 0x1) == 0x1);
-        //     // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
-        //     *lock_ptr = 0;
-        //   }
-        // }
+          for(auto it = ws.begin();it != ws.end();++it) {
+            if((*it).pid != cm_->get_nodeid())  // remote case
+              continue;
+            else {
+              assert(it->node != NULL);
+              volatile uint64_t* lock_ptr = &it->node->lock;
+              // assert ((*lock_ptr & 0x1) == 0x1);
+              // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
+              *lock_ptr = 0;
+            }
+          }
+        }
 
-        // for(auto it = ws.begin();it != ws.end();++it) {
-        //   if((*it).pid != cm_->get_nodeid())  // remote case
-        //     continue;
-        //   else {
-        //     assert(it->node != NULL);
-        //     volatile uint64_t* lock_ptr = &it->node->lock;
-        //     // assert ((*lock_ptr & 0x1) == 0x1);
-        //     // fprintf(stderr, "releasing read %d %d\n", it->tableid, it->key);
-        //     *lock_ptr = 0;
-        //   }
-        // }
         auto ret = txn_result_t(true, 73);
+#else
+        // actual workload
+        auto ret = workload[req.req_idx].fn(this, &req, yield);
+#endif
         // fprintf(stderr, "txn with ts %lx committed.\n", req.timestamp);
     #if NO_ABORT == 1
         ret.first = true;
