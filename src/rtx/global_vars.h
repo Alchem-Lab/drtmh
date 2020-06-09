@@ -7,7 +7,7 @@
 
 // #define MAX_CALVIN_REQ_CNTS (200*1000)
 // #define MAX_CALVIN_REQ_CNTS (2000)
-#define MAX_CALVIN_REQ_CNTS 1000
+#define MAX_CALVIN_REQ_CNTS 100
 #define MAX_CALVIN_SETS_SUPPRTED_IN_BITS (5)
 #define MAX_CALVIN_SETS_SUPPORTED (1U<<(MAX_CALVIN_SETS_SUPPRTED_IN_BITS))  // 32 SETS
 #define CALVIN_REQ_INFO_SIZE 256  // obselete, to be deleted.
@@ -60,11 +60,11 @@ struct det_request {
           req_idx(req_idx), req_initiator(req_initiator), timestamp(timestamp) {}
 
   det_request(det_request* copy) :
-          req_idx(copy->req_idx), req_initiator(copy->req_initiator), timestamp(copy->timestamp) {
+          req_idx(copy->req_idx), req_seq(copy->req_seq), req_initiator(copy->req_initiator), timestamp(copy->timestamp) {
           memcpy(req_info, copy->req_info, sizeof(rwsets_t));
   }
   det_request(const det_request& copy) :
-          req_idx(copy.req_idx), req_initiator(copy.req_initiator), timestamp(copy.timestamp) {
+          req_idx(copy.req_idx), req_seq(copy.req_seq), req_initiator(copy.req_initiator), timestamp(copy.timestamp) {
           memcpy(req_info, copy.req_info, sizeof(rwsets_t));
   }
   det_request() {}
