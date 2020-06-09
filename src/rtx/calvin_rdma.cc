@@ -151,6 +151,7 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
         auto it = fv.find(key);
         if (it != fv.end()) {
           read_set_[i].data_ptr = (char*)malloc(it->second.len);
+          // fprintf(stderr, "read Malloc %p.\n", read_set_[i].data_ptr);
           memcpy(read_set_[i].data_ptr, it->second.value, it->second.len);
           // fprintf(stdout, "key %d read idx %d found.\n", key, i);
         } else {
@@ -166,6 +167,7 @@ bool CALVIN::sync_reads(int req_seq, yield_func_t &yield) {
         auto it = fv.find(key);
         if (it != fv.end()) {
           write_set_[i].data_ptr = (char*)malloc(it->second.len);
+          // fprintf(stderr, "write Malloc %p.\n", write_set_[i].data_ptr);
           memcpy(write_set_[i].data_ptr, it->second.value, it->second.len);
           // fprintf(stdout, "key %d write idx %d found.\n", key, i);
         } else {

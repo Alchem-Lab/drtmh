@@ -39,7 +39,7 @@ protected:
     assert(node->value != NULL);
 
     // add to read-set
-    read_set_.emplace_back(tableid,key,(MemNode *)node,(char*)NULL,0,len,node_id_);
+    read_set_.emplace_back(tableid,key,(MemNode *)node,(char*)NULL,0,len,response_node_);
     return read_set_.size() - 1;
   }
 
@@ -50,7 +50,7 @@ protected:
     assert(node->value != NULL);
 
     // add to write-set
-    write_set_.emplace_back(tableid,key,(MemNode *)node,(char*)NULL,0,len,node_id_);
+    write_set_.emplace_back(tableid,key,(MemNode *)node,(char*)NULL,0,len,response_node_);
     return write_set_.size() - 1;
   }
 
@@ -123,9 +123,13 @@ protected:
    */
   void gc_helper(std::vector<ReadSetItem> &set) {
     for(auto it = set.begin();it != set.end();++it) {
+      // ASSERT(node_id_ == response_node_) << 
+              // "node_id_ = " << node_id_ << ", response_node_ =" << response_node_;
       if(it->pid == response_node_) {
+        // fprintf(stderr, "Rfreed %p.\n", (*it).data_ptr);
         Rfree((*it).data_ptr);
       } else {
+        // fprintf(stderr, "Freed %p.\n", (*it).data_ptr);
         free((*it).data_ptr);
       }
     }
@@ -186,7 +190,7 @@ public:
   virtual int read(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
     int index;
     // step 1: find offset of the key in either local/remote memory
-    if(pid == node_id_)
+    if(pid == response_node_)
       index = local_read(tableid,key,len,yield);
     else {
       // remote case
@@ -215,7 +219,7 @@ public:
   inline __attribute__((always_inline))
   int  read(int pid,uint64_t key,yield_func_t &yield) {
     int index;
-    if(pid == node_id_)
+    if(pid == response_node_)
       index = local_read(tableid,key,sizeof(V),yield);
     else {
       // remote case
@@ -233,7 +237,7 @@ public:
     int index;
 
     // step 1: find offset of the key in either local/remote memory
-    if(pid == node_id_)
+    if(pid == response_node_)
       index = local_write(tableid,key,len,yield);
     else {
       // remote case
@@ -416,7 +420,7 @@ public:
   template <int tableid,typename V>
   inline __attribute__((always_inline))
   int insert(int pid,uint64_t key,V *val,yield_func_t &yield) {
-    if(pid == node_id_)
+    if(pid == response_node_)
       return local_insert(tableid,key,(char *)val,sizeof(V),yield);
     else {
       return remote_insert(pid,tableid,key,sizeof(V),yield);
