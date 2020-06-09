@@ -191,9 +191,11 @@ void Scheduler::worker_routine(yield_func_t &yield) {
     }
 
     // for debug
-    // printf("plan:\n");
-    // for (det_request c : deterministic_plan) {
-    //   printf("%d: ts: %d, reads %d, writes %d.\n", c.req_initiator, c.timestamp, 
+    // // printf("plan:\n");
+    // for (det_request& c : deterministic_plan) {
+    //   printf("%d: req_idx: %d, req_seq: %d, ts: %d, reads %d, writes %d.\n", 
+    //                                         c.req_initiator, 
+    //                                         c.req_idx, c.req_seq, c.timestamp, 
     //                                        ((rwsets_t*)c.req_info)->nReads,
     //                                        ((rwsets_t*)c.req_info)->nWrites);
     // }
@@ -202,17 +204,17 @@ void Scheduler::worker_routine(yield_func_t &yield) {
     std::set<int> out_of_waitinglist;
     for(i = 0; !waitinglist.empty() || i < deterministic_plan.size(); i++) {
         // for mocking
-        {
-          // put transaction into threads to execute in a round-robin manner.
-          det_request& req = deterministic_plan[i];
-          int tid = req.req_seq % nthreads;
-          int cid = req.req_seq % coroutine_num + 1; // note that the coroutine 0 is the message handler
-          locks_4_locked_transactions[tid]->Lock();
-          // fprintf(stderr, "enqueue to thread%d, coroutine%d\n", tid, cid);
-          locked_transactions[tid][cid]->push(req);
-          locks_4_locked_transactions[tid]->Unlock();
-          continue;
-        }
+        // {
+        //   // put transaction into threads to execute in a round-robin manner.
+        //   det_request& req = deterministic_plan[i];
+        //   int tid = req.req_seq % nthreads;
+        //   int cid = req.req_seq % coroutine_num + 1; // note that the coroutine 0 is the message handler
+        //   locks_4_locked_transactions[tid]->Lock();
+        //   // fprintf(stderr, "enqueue to thread%d, coroutine%d\n", tid, cid);
+        //   locked_transactions[tid][cid]->push(req);
+        //   locks_4_locked_transactions[tid]->Unlock();
+        //   continue;
+        // }
 
         // check waiting list first
         auto waiter = waitinglist.begin(); 
@@ -227,7 +229,7 @@ void Scheduler::worker_routine(yield_func_t &yield) {
               waiter = waitinglist.erase(waiter);
             else
               ++waiter;
-              continue;
+            continue;
           }
 
           if (request_lock(req.req_seq, true)) {
@@ -254,11 +256,12 @@ void Scheduler::worker_routine(yield_func_t &yield) {
           // request locks for each transaction
           det_request& req = deterministic_plan[i];
           if (!request_lock(req.req_seq, false)) {
-            // indirect_yield(yield);
             cpu_relax();
+            yield_next(yield);
             continue;
           }
 
+          out_of_waitinglist.insert(req.req_seq);
           fprintf(stderr, "request %d with ts: %d locked.\n", req.req_seq, req.timestamp);
           // const rwsets_t* set = (rwsets_t*)req.req_info;
           // fprintf(stderr, "reads=%d writes=%d\n", set->nReads, set->nWrites);
@@ -331,9 +334,10 @@ bool Scheduler::request_lock(int req_seq, bool from_waitinglist) {
   for (auto i = 0; i < nReads + nWrites; i++) {
     ReadSetItem& item = ((rwsets_t*)req.req_info)->access[i];
     auto it = &item;
-    if (it->pid != cm_->get_nodeid())  // skip remote read
+    if (it->pid != cm_->get_nodeid()) { // skip remote read
+      // fprintf(stderr, "remote-skipped table=%d key=%d for req %d\n", it->tableid, it->key, req_seq);      
       continue;
-
+    }
     if (it->node == NULL) {
       MemNode *node = db_->stores_[it->tableid]->Get(it->key);
       assert(node != NULL);
@@ -341,37 +345,38 @@ bool Scheduler::request_lock(int req_seq, bool from_waitinglist) {
       it->node = node;
     }
 
-    // // fprintf(stderr, "requesting lock for req %d: table %d, key %d\n", req_seq, it->tableid, it->key);
-    // // fprintf(stderr, "locking write. key = %d\n", it->key);
-    // std::vector<uint64_t*> locked;
-    // while (true) {
-    //   volatile uint64_t *lockptr = &(it->node->lock);
-    //   volatile uint64_t l = *lockptr;
-    //   // already locked by me previously
-    //   if (l == LOCKED(req_seq)) 
-    //     break;
+    // fprintf(stderr, "requesting lock for req %d: table %d, key %d\n", req_seq, it->tableid, it->key);
+    // fprintf(stderr, "locking write. key = %d\n", it->key);
+    std::vector<uint64_t*> locked;
+    while (true) {
+      volatile uint64_t *lockptr = &(it->node->lock);
+      volatile uint64_t l = *lockptr;
+      // already locked by me previously
+      if (l == LOCKED(req_seq)) 
+        break;
       
-    //   // locked by other txn
-    //   if (l & 1 == 1) {
-    //     if (from_waitinglist)
-    //       return false;
+      // locked by other txn
+      if (l & 1 == 1) {
+        if (from_waitinglist)
+          return false;
 
-    //     if (waitinglist.find(lockptr) == waitinglist.end())
-    //       waitinglist[lockptr] = std::move(std::queue<int>());
-    //     waitinglist[lockptr].push(req_seq);
-    //     // requesting other read/write, but remember to mark this function as failure.
-    //     success &= 0;
-    //     break;
-    //   }
+        if (waitinglist.find(lockptr) == waitinglist.end())
+          waitinglist[lockptr] = std::move(std::queue<int>());
+        waitinglist[lockptr].push(req_seq);
+        // fprintf(stderr, "table=%d key=%d for req %d enters waiting list.\n", it->tableid, it->key, req_seq);        
+        // requesting other read/write, but remember to mark this function as failure.
+        success &= 0;
+        break;
+      }
 
-    //   if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
-    //                LOCKED(req_seq)))) {
-    //     continue;
-    //   } else {
-    //     // fprintf(stderr, "locked read %d %d\n", it->tableid, it->key);
-    //     break; // lock the next local read
-    //   }
-    // }
+      if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
+                   LOCKED(req_seq)))) {
+        continue;
+      } else {
+        // fprintf(stderr, "locked table=%d key=%d for req %d\n", it->tableid, it->key, req_seq);
+        break; // lock the next local read
+      }
+    }
   }
 
   END(lock);
