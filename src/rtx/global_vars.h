@@ -7,7 +7,12 @@
 
 // #define MAX_CALVIN_REQ_CNTS (200*1000)
 // #define MAX_CALVIN_REQ_CNTS (2000)
-#define MAX_CALVIN_REQ_CNTS 100
+#define MAX_CALVIN_REQ_CNTS 30  // For now, this value cannot be larger, 
+                                // otherwise it causes Rmalloc() to fail.
+                                // Note: current Rmalloc does not support
+                                // Rmalloc size greater than 64K.
+
+
 #define MAX_CALVIN_SETS_SUPPRTED_IN_BITS (5)
 #define MAX_CALVIN_SETS_SUPPORTED (1U<<(MAX_CALVIN_SETS_SUPPRTED_IN_BITS))  // 32 SETS
 #define CALVIN_REQ_INFO_SIZE 256  // obselete, to be deleted.

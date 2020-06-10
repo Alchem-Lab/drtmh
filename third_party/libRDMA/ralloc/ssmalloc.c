@@ -967,6 +967,9 @@ void *Rmalloc(size_t size) {
   if (likely(size_cls < DEFAULT_BLOCK_CLASS)) {
     ret = r_small_malloc(size_cls);
   } else {
+    fprintf(stderr, "warning: Rmalloc %d bytes while DEFAULT_BLOCK_CLASS is %d, " \
+                    "which means ssmalloc size is greater than 64K, whose Rfree is not supported."  \
+                    "May incur segmentation fault later after.\n", size, DEFAULT_BLOCK_CLASS);
     ret = r_large_malloc(size);
   }
   return ret;  
