@@ -6,8 +6,9 @@
 #define MVCC_VERSION_NUM 4
 
 // #define MAX_CALVIN_REQ_CNTS (200*1000)
-// #define MAX_CALVIN_REQ_CNTS (2000)
-#define MAX_CALVIN_REQ_CNTS 30  // For now, this value cannot be larger, 
+#define MAX_CALVIN_REQ_CNTS (1000)  // sequencer's req_buffer use malloc() instead
+                                    // so large CALVIN_REQ_CNTS can be supported.
+// #define MAX_CALVIN_REQ_CNTS 30  // For now, this value cannot be larger, 
                                 // otherwise it causes Rmalloc() to fail.
                                 // Note: current Rmalloc does not support
                                 // Rmalloc size greater than 64K.

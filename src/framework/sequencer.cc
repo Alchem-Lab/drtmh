@@ -104,8 +104,9 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
   static const auto& workload = get_workload_func();
   int req_buf_size = sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request);
-  fprintf(stderr, "Rmalloc %d bytes.\n", req_buf_size);
-  char * const req_buf = rpc_->get_static_buf(req_buf_size);
+  // fprintf(stderr, "Rmalloc %d bytes.\n", req_buf_size);
+  // char * const req_buf = rpc_->get_static_buf(req_buf_size);
+  char * const req_buf = (char*)malloc(req_buf_size*sizeof(char));
   uint64_t request_timestamp = 0;
   uint32_t count = 0;
   uint32_t iteration = 0;
@@ -213,7 +214,8 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     yield_next(yield);
   }
 
-  rpc_->free_static_buf(req_buf);
+  // rpc_->free_static_buf(req_buf);
+  free(req_buf);
 }
 
 void Sequencer::broadcast(char* const req_buf, char* const req_buf_end, yield_func_t &yield) {
