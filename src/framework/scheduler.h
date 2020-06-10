@@ -83,7 +83,7 @@ namespace nocc {
 			MemDB * db_;
 			BreakdownTimer timer_;
 			void thread_local_init();
-			bool request_lock(int req_seq, bool from_waitinglist);
+			void request_lock(int req_seq, yield_func_t &yield);
 			#include "rtx/occ_statistics.h"
 		private:
 

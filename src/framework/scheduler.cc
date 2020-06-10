@@ -167,8 +167,9 @@ void Scheduler::worker_routine(yield_func_t &yield) {
           buf_end += sizeof(det_request);
         }
         // free(buf_end);
-
+#if DEBUG_LEVEL==1
         fprintf(stderr, "%d: deterministic_plan installs requests from %d for epoch %d\n", worker_id_, i, h->epoch_id);
+#endif
         req_buffer_state[i] = Scheduler::BUFFER_INIT;
         // sequence_lock.Lock();
         // req_buffer_ready[i] = false;
@@ -201,8 +202,7 @@ void Scheduler::worker_routine(yield_func_t &yield) {
     // }
 
 #if CALVIN_TX
-    std::set<int> out_of_waitinglist;
-    for(i = 0; !waitinglist.empty() || i < deterministic_plan.size(); i++) {
+    for(i = 0; i < deterministic_plan.size(); i++) {
         // for mocking
         // {
         //   // put transaction into threads to execute in a round-robin manner.
@@ -216,65 +216,22 @@ void Scheduler::worker_routine(yield_func_t &yield) {
         //   continue;
         // }
 
-        // check waiting list first
-        auto waiter = waitinglist.begin(); 
-        while(waiter != waitinglist.end()) {
-          assert(!waiter->second.empty());
-          int req_seq = waiter->second.front();
-          det_request& req = deterministic_plan[req_seq];
+        // request locks for each transaction
+        det_request& req = deterministic_plan[i];
+        request_lock(req.req_seq, yield);
 
-          if (out_of_waitinglist.find(req.req_seq) != out_of_waitinglist.end()) {
-            waiter->second.pop();
-            if (waiter->second.empty())
-              waiter = waitinglist.erase(waiter);
-            else
-              ++waiter;
-            continue;
-          }
-
-          if (request_lock(req.req_seq, true)) {
-            waiter->second.pop();
-            if (waiter->second.empty())
-              waiter = waitinglist.erase(waiter);
-            else
-              ++waiter;
-
-            out_of_waitinglist.insert(req.req_seq);
-            fprintf(stderr, "request %d with ts: %d out of waitinglist and locked\n", req.req_seq, req.timestamp);
-            // put transaction into threads to execute in a round-robin manner.
-            int tid = req_seq % nthreads;
-            int cid = req_seq % coroutine_num + 1;
-            locks_4_locked_transactions[tid]->Lock();
-            locked_transactions[tid][cid]->push(req);
-            locks_4_locked_transactions[tid]->Unlock();
-            // sleep(10000);
-          } else
-            ++waiter;
-        }
-
-        if (i < deterministic_plan.size()) {
-          // request locks for each transaction
-          det_request& req = deterministic_plan[i];
-          if (!request_lock(req.req_seq, false)) {
-            cpu_relax();
-            yield_next(yield);
-            continue;
-          }
-
-          out_of_waitinglist.insert(req.req_seq);
-          fprintf(stderr, "request %d with ts: %d locked.\n", req.req_seq, req.timestamp);
-          // const rwsets_t* set = (rwsets_t*)req.req_info;
-          // fprintf(stderr, "reads=%d writes=%d\n", set->nReads, set->nWrites);
-          
-          // put transaction into threads to execute in a round-robin manner.
-          int tid = req.req_seq % nthreads;
-          int cid = req.req_seq % coroutine_num + 1; // note that the coroutine 0 is the message handler
-          locks_4_locked_transactions[tid]->Lock();
-          // fprintf(stderr, "enqueue to thread%d, coroutine%d\n", tid, cid);
-          locked_transactions[tid][cid]->push(req);
-          locks_4_locked_transactions[tid]->Unlock(); 
-          // sleep(10000);
-        }
+        // fprintf(stderr, "request %d with ts: %d locked.\n", req.req_seq, req.timestamp);
+        // const rwsets_t* set = (rwsets_t*)req.req_info;
+        // fprintf(stderr, "reads=%d writes=%d\n", set->nReads, set->nWrites);
+        
+        // put transaction into threads to execute in a round-robin manner.
+        int tid = req.req_seq % nthreads;
+        int cid = req.req_seq % coroutine_num + 1; // note that the coroutine 0 is the message handler
+        locks_4_locked_transactions[tid]->Lock();
+        // fprintf(stderr, "enqueue to thread%d, coroutine%d\n", tid, cid);
+        locked_transactions[tid][cid]->push(req);
+        locks_4_locked_transactions[tid]->Unlock(); 
+        // sleep(10000);
     }
 
     // wait until all transactions in the deterministic plan is finished and all locks
@@ -322,7 +279,7 @@ void Scheduler::thread_local_init() {
   }
 }
 
-bool Scheduler::request_lock(int req_seq, bool from_waitinglist) {
+void Scheduler::request_lock(int req_seq, yield_func_t &yield) {
   using namespace nocc::rtx::rwlock;
   START(lock);
 
@@ -330,7 +287,6 @@ bool Scheduler::request_lock(int req_seq, bool from_waitinglist) {
   uint8_t nReads = ((rwsets_t*)req.req_info)->nReads;
   uint8_t nWrites = ((rwsets_t*)req.req_info)->nWrites;
 
-  int success = 1;
   for (auto i = 0; i < nReads + nWrites; i++) {
     ReadSetItem& item = ((rwsets_t*)req.req_info)->access[i];
     auto it = &item;
@@ -357,20 +313,15 @@ bool Scheduler::request_lock(int req_seq, bool from_waitinglist) {
       
       // locked by other txn
       if (l & 1 == 1) {
-        if (from_waitinglist)
-          return false;
-
-        if (waitinglist.find(lockptr) == waitinglist.end())
-          waitinglist[lockptr] = std::move(std::queue<int>());
-        waitinglist[lockptr].push(req_seq);
-        // fprintf(stderr, "table=%d key=%d for req %d enters waiting list.\n", it->tableid, it->key, req_seq);        
-        // requesting other read/write, but remember to mark this function as failure.
-        success &= 0;
-        break;
+          cpu_relax();
+          yield_next(yield);
+          continue;
       }
 
       if( unlikely(!__sync_bool_compare_and_swap(lockptr,l,
                    LOCKED(req_seq)))) {
+        cpu_relax();
+        yield_next(yield);
         continue;
       } else {
         // fprintf(stderr, "locked table=%d key=%d for req %d\n", it->tableid, it->key, req_seq);
@@ -381,7 +332,7 @@ bool Scheduler::request_lock(int req_seq, bool from_waitinglist) {
 
   END(lock);
   
-  return (success == 1) ? true : false;
+  return;
 }
 
 } // namespace oltp
