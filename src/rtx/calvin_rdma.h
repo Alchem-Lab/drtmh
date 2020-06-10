@@ -442,7 +442,9 @@ public:
   }
 
   void begin(det_request* req, yield_func_t &yield) {
+#if DEBUG_LEVEL==1
     fprintf(stderr, "executing txn with ts %lx of type %d. \n", req->timestamp, req->req_idx);
+#endif
     req_ = req;
     read_set_.clear();
     write_set_.clear();
@@ -474,7 +476,9 @@ public:
     release_writes(yield);
     gc_readset();
     gc_writeset();
+#if DEBUG_LEVEL==1
     fprintf(stderr, "txn with timestamp %lx committed.\n", req_->timestamp);
+#endif
     return true;
   }
 

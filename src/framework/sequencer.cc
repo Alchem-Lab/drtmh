@@ -103,7 +103,9 @@ void Sequencer::worker_routine(yield_func_t &yield) {
   LOG(3) << worker_id_ << " Running Sequencer routine";
 
   static const auto& workload = get_workload_func();
-  char * const req_buf = rpc_->get_static_buf(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
+  int req_buf_size = sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request);
+  fprintf(stderr, "Rmalloc %d bytes.\n", req_buf_size);
+  char * const req_buf = rpc_->get_static_buf(req_buf_size);
   uint64_t request_timestamp = 0;
   uint32_t count = 0;
   uint32_t iteration = 0;
@@ -113,8 +115,8 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
   //main loop for sequencer
   // while (true)
-  // while(iteration < 100000)
-  while(iteration < 1000)
+  while(iteration < 100000)
+  // while(iteration < 1000)
   {
     scheduler->epoch_done = false; // start next sequencing iteration.
     #if ONE_SIDED_READ == 0
@@ -128,7 +130,9 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     ((calvin_header*)req_buf)->node_id = cm_->get_nodeid();
     // epoch_manager->get_current_epoch((char*)&((calvin_header*)req_buf)->epoch_id);
     ((calvin_header*)req_buf)->epoch_id = iteration;
+#if DEBUG_LEVEL==1
     fprintf(stderr, "%d: sequencing @ epoch %lu.\n", worker_id_, ((calvin_header*)req_buf)->epoch_id);
+#endif
     char* req_buf_end = req_buf + sizeof(calvin_header);
     auto start = rdtsc();
 
@@ -173,8 +177,9 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     // END(log)
     // broadcasting to other participants
     broadcast(req_buf, req_buf_end, yield);
+#if DEBUG_LEVEL==1
     LOG(3) << worker_id_ << ": sequencer broadcasted at epoch: " << ((calvin_header*)req_buf)->epoch_id;
-
+#endif
     // while (true) {
     //   int n_ready = 0;
     //   for (int i = 0; i < cm_->get_num_nodes(); i++) {
@@ -198,7 +203,9 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     scheduler->req_buffer_state[1] == Scheduler::BUFFER_INIT;
 
     epoch_sync(yield);
+#if DEBUG_LEVEL==1
     LOG(3) << worker_id_ << ": sequencer epoch " << iteration << "done";
+#endif
     auto latency = rdtsc() - start;
     timer_.emplace(latency);
     iteration += 1;
@@ -290,7 +297,9 @@ void Sequencer::sequence_rpc_handler(int id,int cid,char *msg,void *arg) {
       cpu_relax();
     }
     scheduler->req_buffer_state[id] = Scheduler::BUFFER_RECVED;
+#if DEBUG_LEVEL==1
     fprintf(stderr, "%d: %d buffer all received @ epoch %d.\n", worker_id_, id, h->epoch_id);
+#endif
   }
 
   // scheduler->sequence_lock.Unlock();
