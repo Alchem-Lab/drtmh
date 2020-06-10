@@ -297,7 +297,7 @@ void BankWorker::txn_sp_new_api_gen_rwsets(char* buf, util::fast_random& rand_ge
 
   uint64_t id0,id1;
   GetTwoAccount(rand_gen,&id0,&id1);  
-  // uint64_t id0 = 100, id1 = 101;
+  // id0 = 100, id1 = 103;
   int pid = AcctToPid(id0);
   index = CALVIN::write2(pid, CHECK, id0, sizeof(checking::value), yield);
   nWrites += 1;
@@ -664,11 +664,23 @@ void BankWorker::txn_amal_new_api_gen_rwsets(char* buf, util::fast_random& rand_
   int pid1 = AcctToPid(id1);
 
   index = CALVIN::write2(pid0,SAV,id0,sizeof(savings::value),yield);
+  nWrites += 1;
   assert (index >= 0);
   index = CALVIN::write2(pid0,CHECK,id0,sizeof(checking::value),yield);
+  nWrites += 1;
   assert (index >= 0);
   index = CALVIN::write2(pid1,CHECK,id1,sizeof(checking::value),yield);
+  nWrites += 1;
   assert (index >= 0);
+
+  ((rwsets_t*)buf)->nReads = nReads;
+  ((rwsets_t*)buf)->nWrites = nWrites;
+  for (int j = 0; j < nReads; j++) {
+    ((rwsets_t*)buf)->access[j] = CALVIN::read_set[j];
+  }
+  for (int j = 0; j < nWrites; j++) {
+    ((rwsets_t*)buf)->access[j+nReads] = CALVIN::write_set[j]; 
+  }
   return;
 }
 #endif
