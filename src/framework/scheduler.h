@@ -11,6 +11,7 @@
 #include "bench_worker.h"
 #include <string>
 #include <vector>
+#include <boost/lockfree/queue.hpp>
 
 using namespace std;
 using namespace rdmaio;
@@ -76,8 +77,8 @@ namespace nocc {
 			std::vector<det_request> deterministic_plan;
 			volatile int req_fullfilled = 0;
 			volatile int epoch_done = -1;
-			std::vector<std::vector<std::queue<det_request>* > > locked_transactions;
-			std::vector<SpinLock*> locks_4_locked_transactions;
+			std::vector<std::vector<boost::lockfree::queue<det_request*>* > > locked_transactions;
+			// std::vector<SpinLock*> locks_4_locked_transactions;
 			volatile int det_batch_ready = 0;
 			std::map<volatile uint64_t*, std::queue<int> > waitinglist;
 			MemDB * db_;

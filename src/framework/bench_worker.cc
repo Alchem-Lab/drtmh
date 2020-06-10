@@ -18,6 +18,7 @@
 #endif
 
 #include <queue>
+#include <boost/lockfree/queue.hpp>
 
 extern size_t coroutine_num;
 extern size_t current_partition;
@@ -374,7 +375,7 @@ BenchWorker::worker_routine(yield_func_t &yield) {
     LOG(3) << "running calvin routine on worker " << worker_id_ << " coroutine " << cor_id_;
 
     while(true) {
-        det_request req;
+        // det_request req;
         // req.req_idx = 0;                              // for mocking req
         // req.req_initiator = cm_->get_nodeid();        // for mocking req
 
@@ -391,25 +392,32 @@ BenchWorker::worker_routine(yield_func_t &yield) {
           continue;
         }
 
-        if(scheduler->locks_4_locked_transactions[worker_id_]->Trylock()) {
-          cpu_relax();
-          yield_next(yield);
-          continue;
-        }
+        // if(scheduler->locks_4_locked_transactions[worker_id_]->Trylock()) {
+        //   cpu_relax();
+        //   yield_next(yield);
+        //   continue;
+        // }
 
-        ASSERT(scheduler->locks_4_locked_transactions[worker_id_]->IsLocked()) << "Lock NOT held.";
+        // ASSERT(scheduler->locks_4_locked_transactions[worker_id_]->IsLocked()) << "Lock NOT held.";
         // locked
-        if (scheduler->locked_transactions[worker_id_][cor_id_]->empty()) {
-          scheduler->locks_4_locked_transactions[worker_id_]->Unlock();
-          // LOG(3) << "cccc";
+        // if (scheduler->locked_transactions[worker_id_][cor_id_]->empty()) {
+        //   scheduler->locks_4_locked_transactions[worker_id_]->Unlock();
+        //   // LOG(3) << "cccc";
+        //   cpu_relax();
+        //   yield_next(yield);
+        //   continue;
+        // }
+
+        det_request* req_ptr = NULL;
+        // req = scheduler->locked_transactions[worker_id_][cor_id_]->front();
+        // scheduler->locked_transactions[worker_id_][cor_id_]->pop();
+        // scheduler->locks_4_locked_transactions[worker_id_]->Unlock();
+        if (!scheduler->locked_transactions[worker_id_][cor_id_]->pop(req_ptr)) {
           cpu_relax();
           yield_next(yield);
           continue;
         }
-
-        req = scheduler->locked_transactions[worker_id_][cor_id_]->front();
-        scheduler->locked_transactions[worker_id_][cor_id_]->pop();
-        scheduler->locks_4_locked_transactions[worker_id_]->Unlock();
+        det_request& req = *req_ptr;
 
         ASSERT(req.req_idx < workload.size()) << 
                         "in execution seq = " << req.req_seq <<

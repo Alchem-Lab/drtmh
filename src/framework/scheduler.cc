@@ -31,10 +31,10 @@ namespace oltp {
 Scheduler::Scheduler(unsigned worker_id, RdmaCtrl *cm, MemDB * db):
   RWorker(worker_id,cm), db_(db) {
   for (int i = 0; i < nthreads; i++) {
-    locks_4_locked_transactions.push_back(new SpinLock());
-    std::vector<std::queue<det_request>* >* qv = new std::vector<std::queue<det_request>* >();
+    // locks_4_locked_transactions.push_back(new SpinLock());
+    std::vector<boost::lockfree::queue<det_request*>* >* qv = new std::vector<boost::lockfree::queue<det_request*>* >();
     for (int j = 0; j < coroutine_num + 1; j++) {
-      qv->push_back(new std::queue<det_request>());
+      qv->push_back(new boost::lockfree::queue<det_request*>(0));
     }
     locked_transactions.push_back(*qv);
   }
@@ -227,10 +227,10 @@ void Scheduler::worker_routine(yield_func_t &yield) {
         // put transaction into threads to execute in a round-robin manner.
         int tid = req.req_seq % nthreads;
         int cid = req.req_seq % coroutine_num + 1; // note that the coroutine 0 is the message handler
-        locks_4_locked_transactions[tid]->Lock();
+        // locks_4_locked_transactions[tid]->Lock();
         // fprintf(stderr, "enqueue to thread%d, coroutine%d\n", tid, cid);
-        locked_transactions[tid][cid]->push(req);
-        locks_4_locked_transactions[tid]->Unlock(); 
+        while(!locked_transactions[tid][cid]->push(&req)) {};
+        // locks_4_locked_transactions[tid]->Unlock(); 
         // sleep(10000);
     }
 
