@@ -35,7 +35,7 @@ namespace nocc {
   			virtual void exit_handler();
 		private:
 			std::vector<det_request> batch;
-			std::vector<char*> backup_buffers; // the backup batch for current epoch
+			std::vector<std::vector<std::queue<char*> *> > backup_buffers; // the backup batch for current epoch
 			get_workload_func_t get_workload_func;
 			BreakdownTimer timer_;
 			#if ONE_SIDED_READ == 0

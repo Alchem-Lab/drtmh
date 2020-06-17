@@ -71,8 +71,8 @@ namespace nocc {
 				BUFFER_RECVED = 1,
 				BUFFER_READY = 2
 			} BufferState;
-			char** req_buffers;
-			volatile int* req_buffer_state;
+			char*** req_buffers;
+			volatile int** req_buffer_state;
 
 			std::vector<det_request> deterministic_plan;
 			volatile int req_fullfilled = 0;

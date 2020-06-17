@@ -108,86 +108,37 @@ void Scheduler::worker_routine(yield_func_t &yield) {
     while (true) {
       int n_ready = 0;
       for (int i = 0; i < cm_->get_num_nodes(); i++) {
-        if (req_buffer_state[i] == Scheduler::BUFFER_RECVED)
-          n_ready += 1;
+        for (int j = 1; j < coroutine_num+1; j++) {
+          if (req_buffer_state[i][j] == Scheduler::BUFFER_RECVED)
+            n_ready += 1;
+        }
       }
-      if (n_ready == cm_->get_num_nodes())
+      if (n_ready == cm_->get_num_nodes() * coroutine_num)
         break;
       cpu_relax();
       yield_next(yield);
     }
 
-    int i = 0;
-    for (; i < cm_->get_num_nodes(); i++) {
-      if (true) {
-        // sequence_lock.Lock();
-        // if (!req_buffer_ready[i]) {
-        //   // printf("abc\n");
-        //   // usleep(100);
-        //   cpu_relax();
-        //   asm volatile("" ::: "memory");
-        //   i--;
-        //   continue;
-        // }
-        // if (req_buffers[i].empty()) {
-        //   fprintf(stderr, "error0\n");
-        //   usleep(1000000);
-        //   sequence_lock.Unlock();
-        //   cpu_relax();
-        //   i--;
-        //   continue;
-        // }
+    for (int i = 0; i < cm_->get_num_nodes(); i++) {
+      for (int j = 1; j < coroutine_num+1; j++) {
+        if (true) {
+          char* buf_end = req_buffers[i][j];
 
-        // char* buf_end = req_buffers[i][0];
-        // calvin_header* h = (calvin_header*)buf_end;
-        // if (h->chunk_id < h->nchunks-1) {
-        //   fprintf(stderr, "error1\n");
-        //   sequence_lock.Unlock();
-        //   cpu_relax();
-        //   i--;
-        //   continue;
-        // }
-
-        char* buf_end = req_buffers[i];
-        // req_buffers[i].erase(req_buffers[i].begin());
-        // sequence_lock.Unlock();
-        // cpu_relax();
-
-        calvin_header* h = (calvin_header*)buf_end;
-        buf_end += sizeof(calvin_header);
-        // printf("%d: reads2@%p=%d, writes2%p=%d.\n", ((det_request*)buf_end)->req_initiator,
-                                            // &((rwsets_t*)(((det_request*)buf_end)->req_info))->nReads,
-                                           // ((rwsets_t*)(((det_request*)buf_end)->req_info))->nReads,
-                                           // &((rwsets_t*)(((det_request*)buf_end)->req_info))->nWrites,
-                                           // ((rwsets_t*)(((det_request*)buf_end)->req_info))->nWrites);
-
-        for (int j = 0; j < MAX_REQUESTS_NUM; j++) {
-          deterministic_plan.push_back(*(det_request*)buf_end);
-          deterministic_plan.back().req_seq = deterministic_plan.size()-1;
-          buf_end += sizeof(det_request);
+          calvin_header* h = (calvin_header*)buf_end;
+          buf_end += sizeof(calvin_header);
+ 
+          for (int k = 0; k < MAX_REQUESTS_NUM; k++) {
+            deterministic_plan.push_back(*(det_request*)buf_end);
+            deterministic_plan.back().req_seq = deterministic_plan.size()-1;
+            buf_end += sizeof(det_request);
+          }
+  #if DEBUG_LEVEL==1
+          fprintf(stderr, "%d: deterministic_plan installs requests from %d:%d for epoch %d\n", worker_id_, i, j, h->epoch_id);
+  #endif
+          req_buffer_state[i][j] = Scheduler::BUFFER_INIT;
+        } else {
+          assert(false);
         }
-        // free(buf_end);
-#if DEBUG_LEVEL==1
-        fprintf(stderr, "%d: deterministic_plan installs requests from %d for epoch %d\n", worker_id_, i, h->epoch_id);
-#endif
-        req_buffer_state[i] = Scheduler::BUFFER_INIT;
-        // sequence_lock.Lock();
-        // req_buffer_ready[i] = false;
-        // sequence_lock.Unlock();
-      } else {
-        // for the case when buffer is fullfilled by the sequencer on my machine.
-        // char* buf_end = req_buffers[i][0];
-        // if (!queue->front(buf_end)) {
-        //   indirect_yield(yield);
-        //   i--;
-        //   continue;
-        // }
-
-        // for (int j = 0; j < MAX_REQUESTS_NUM; j++) {
-        //   deterministic_plan.push_back(*(det_request*)buf_end);
-        //   deterministic_plan.back().req_seq = deterministic_plan.size()-1;
-        //   buf_end += sizeof(det_request);
-        // }
       }
     }
 
@@ -202,7 +153,7 @@ void Scheduler::worker_routine(yield_func_t &yield) {
     // }
 
 #if CALVIN_TX
-    for(i = 0; i < deterministic_plan.size(); i++) {
+    for(int i = 0; i < deterministic_plan.size(); i++) {
         // for mocking
         // {
         //   // put transaction into threads to execute in a round-robin manner.
@@ -271,11 +222,19 @@ void Scheduler::exit_handler() {
 }
 
 void Scheduler::thread_local_init() {
-  req_buffers = (char**)malloc(sizeof(char*)*cm_->get_num_nodes());
-  req_buffer_state = (int*)malloc(sizeof(int)*cm_->get_num_nodes());
+  req_buffers = (char***)malloc(sizeof(char**)*cm_->get_num_nodes());
+  for (int i = 0; i < cm_->get_num_nodes(); i++)
+    req_buffers[i] = (char**)malloc(sizeof(char*)*(coroutine_num+1));
+
+  req_buffer_state = (volatile int**)malloc(sizeof(volatile int*)*cm_->get_num_nodes());
+  for (int i = 0; i < cm_->get_num_nodes(); i++)
+    req_buffer_state[i] = (volatile int*)malloc(sizeof(volatile int)*(coroutine_num+1));
+
   for (int i = 0; i < cm_->get_num_nodes(); i++) {
-    req_buffers[i] = (char*)malloc(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
-    req_buffer_state[i] = BUFFER_INIT;
+    for (int j = 0; j < coroutine_num+1; j++) {    
+      req_buffers[i][j] = (char*)malloc(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
+      req_buffer_state[i][j] = BUFFER_INIT;
+    }
   }
 }
 

@@ -12,6 +12,7 @@
 #include "ud_msg.h"
 
 /* global config constants */
+extern size_t coroutine_num;
 extern size_t nthreads;
 extern size_t scale_factor;
 extern size_t current_partition;
@@ -38,7 +39,7 @@ Sequencer::~Sequencer() {
 void Sequencer::run() {
   BindToCore(worker_id_);
   //binding(worker_id_);
-  init_routines(1);
+  init_routines(coroutine_num);
 
 #if 1
   create_logger();
@@ -100,7 +101,7 @@ void Sequencer::run() {
 
 void Sequencer::worker_routine(yield_func_t &yield) {
 
-  LOG(3) << worker_id_ << " Running Sequencer routine";
+  LOG(3) << worker_id_ << ": Running Sequencer on routine " << cor_id_;
 
   static const auto& workload = get_workload_func();
   int req_buf_size = sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request);
@@ -117,22 +118,24 @@ void Sequencer::worker_routine(yield_func_t &yield) {
   //main loop for sequencer
   // while (true)
   while(iteration < 100000)
-  // while(iteration < 1000)
+  // while(iteration < 4)
   {
-    scheduler->epoch_done = false; // start next sequencing iteration.
-    #if ONE_SIDED_READ == 0
-        for (int i = 0; i < cm_->get_num_nodes(); i++)
-          epoch_status_[i] = CALVIN_EPOCH_READY;
-    #else
-        assert(false);
-    #endif
+    if (cor_id_ == 1) {
+      scheduler->epoch_done = false; // start next sequencing iteration.
+      #if ONE_SIDED_READ == 0
+          for (int i = 0; i < cm_->get_num_nodes(); i++)
+            epoch_status_[i] = CALVIN_EPOCH_READY;
+      #else
+          assert(false);
+      #endif
+    }
 
     // initialize calvin_header
     ((calvin_header*)req_buf)->node_id = cm_->get_nodeid();
     // epoch_manager->get_current_epoch((char*)&((calvin_header*)req_buf)->epoch_id);
     ((calvin_header*)req_buf)->epoch_id = iteration;
 #if DEBUG_LEVEL==1
-    fprintf(stderr, "%d: sequencing @ epoch %lu.\n", worker_id_, ((calvin_header*)req_buf)->epoch_id);
+    fprintf(stderr, "%d:%d: sequencing @ epoch %lu.\n", worker_id_, cor_id_, ((calvin_header*)req_buf)->epoch_id);
 #endif
     char* req_buf_end = req_buf + sizeof(calvin_header);
     auto start = rdtsc();
@@ -155,7 +158,7 @@ void Sequencer::worker_routine(yield_func_t &yield) {
             assert(false);
         #endif
 
-        request_timestamp = cm_->get_nodeid();
+        request_timestamp = (cm_->get_nodeid() << 4) + cor_id_;
         request_timestamp <<= 32;
         request_timestamp |= count++;
         *(det_request*)req_buf_end = det_request(tx_idx, cm_->get_nodeid(), request_timestamp);
@@ -169,17 +172,17 @@ void Sequencer::worker_routine(yield_func_t &yield) {
         if (req_buf_end - req_buf >= sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request))
           break;
     }
-
     // LOG(3) << "sequencer generated a batch of request at epoch " << ((calvin_header*)req_buf)->epoch_id;
     
     // logging batch to other replica's sequencer in async-replication mode
-    // START(log)
-    // logging(req_buf, req_buf_end, yield);
-    // END(log)
+    START(log)
+    logging(req_buf, req_buf_end, yield);
+    END(log)
+
     // broadcasting to other participants
     broadcast(req_buf, req_buf_end, yield);
 #if DEBUG_LEVEL==1
-    LOG(3) << worker_id_ << ": sequencer broadcasted at epoch: " << ((calvin_header*)req_buf)->epoch_id;
+    LOG(3) << worker_id_ << ":" << cor_id_ <<": sequencer broadcasted at epoch: " << ((calvin_header*)req_buf)->epoch_id;
 #endif
     // while (true) {
     //   int n_ready = 0;
@@ -200,12 +203,10 @@ void Sequencer::worker_routine(yield_func_t &yield) {
       asm volatile("" ::: "memory");
     }
 
-    scheduler->req_buffer_state[0] == Scheduler::BUFFER_INIT;
-    scheduler->req_buffer_state[1] == Scheduler::BUFFER_INIT;
-
     epoch_sync(yield);
+
 #if DEBUG_LEVEL==1
-    LOG(3) << worker_id_ << ": sequencer epoch " << iteration << "done";
+    LOG(3) << worker_id_ << ":" << cor_id_ << ": sequencer epoch " << iteration << " done";
 #endif
     auto latency = rdtsc() - start;
     timer_.emplace(latency);
@@ -279,7 +280,7 @@ void Sequencer::sequence_rpc_handler(int id,int cid,char *msg,void *arg) {
   // fprintf(stderr, "%d: Received batch from machine %d for epoch id = %d\n", worker_id_, id, h->epoch_id);
   // assert(!scheduler->req_buffer_ready[id]);
 
-  char* buf = scheduler->req_buffers[id];
+  char* buf = scheduler->req_buffers[id][cid];
   if (h->chunk_id == 0) { // new buffer
     // buf = (char*)malloc(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
     memset(buf, 0, sizeof(calvin_header));
@@ -295,12 +296,12 @@ void Sequencer::sequence_rpc_handler(int id,int cid,char *msg,void *arg) {
   ((calvin_header*)buf)->nchunks = h->nchunks;
 
   if (h->chunk_id == h->nchunks-1) {
-    while(scheduler->req_buffer_state[id] != Scheduler::BUFFER_INIT) {
+    while(scheduler->req_buffer_state[id][cid] != Scheduler::BUFFER_INIT) {
       cpu_relax();
     }
-    scheduler->req_buffer_state[id] = Scheduler::BUFFER_RECVED;
+    scheduler->req_buffer_state[id][cid] = Scheduler::BUFFER_RECVED;
 #if DEBUG_LEVEL==1
-    fprintf(stderr, "%d: %d buffer all received @ epoch %d.\n", worker_id_, id, h->epoch_id);
+    fprintf(stderr, "%d: %d:%d buffer all received @ epoch %d.\n", worker_id_, id, cid, h->epoch_id);
 #endif
   }
 
@@ -321,25 +322,26 @@ void Sequencer::epoch_sync(yield_func_t &yield) {
       }
     }
 
+    if (cor_id_ == 1) {
 #if ONE_SIDED_READ == 0
-    char* send_buf = rpc_->get_static_buf(MAX_MSG_SIZE);
-    char reply_buf[64];
+      char* send_buf = rpc_->get_static_buf(MAX_MSG_SIZE);
+      char reply_buf[64];
 
-    // epoch_status_[cm_->get_nodeid()] = CALVIN_EPOCH_DONE;
-    *(uint8_t*)send_buf = CALVIN_EPOCH_DONE;
+      // epoch_status_[cm_->get_nodeid()] = CALVIN_EPOCH_DONE;
+      *(uint8_t*)send_buf = CALVIN_EPOCH_DONE;
 
-    rpc_->prepare_multi_req(reply_buf,mac_set_.size(),cor_id_);
-    rpc_->broadcast_to(send_buf,
-                       RPC_CALVIN_EPOCH_STATUS,
-                       sizeof(uint8_t),
-                       cor_id_,RRpc::REQ,mac_set_);
-    indirect_yield(yield);
+      rpc_->prepare_multi_req(reply_buf,mac_set_.size(),cor_id_);
+      rpc_->broadcast_to(send_buf,
+                         RPC_CALVIN_EPOCH_STATUS,
+                         sizeof(uint8_t),
+                         cor_id_,RRpc::REQ,mac_set_);
+      indirect_yield(yield);
 
-    rpc_->free_static_buf(send_buf);
+      rpc_->free_static_buf(send_buf);
 #else
     assert(false);
 #endif
-
+    }
 
   // fprintf(stderr, "EPOCH DONE broadcasted.\n");
 
@@ -377,61 +379,92 @@ void Sequencer::logging(char* req_buf, char* req_buf_end, yield_func_t &yield) {
     // logging to others replica
     calvin_header* header = (calvin_header*)req_buf;
     char* cur = req_buf + sizeof(calvin_header);
-    char* send_buf = rpc_->get_static_buf(MAX_MSG_SIZE);
+    char* send_buf = rpc_->get_fly_buf(cor_id_);
     memcpy(send_buf, req_buf, sizeof(calvin_header));
     char reply_buf[64];
 
-    int nchunks = (req_buf_end - cur + (MAX_MSG_SIZE - sizeof(calvin_header)) - 1) / (MAX_MSG_SIZE - sizeof(calvin_header));
+    int max_chunk_size = 2048;
+    int nchunks = (req_buf_end - cur + (max_chunk_size - sizeof(calvin_header)) - 1) / (max_chunk_size - sizeof(calvin_header));
     int chunk_id = 0;
     while (cur < req_buf_end) {
-      int size = (req_buf_end - cur < MAX_MSG_SIZE - sizeof(calvin_header)) ?
+      int size = (req_buf_end - cur < max_chunk_size - sizeof(calvin_header)) ?
                  req_buf_end - cur :
-                 MAX_MSG_SIZE - sizeof(calvin_header);
+                 max_chunk_size - sizeof(calvin_header);
       assert(size > 0);
       ((calvin_header*)send_buf)->chunk_size = size;
       ((calvin_header*)send_buf)->chunk_id = chunk_id;
       ((calvin_header*)send_buf)->nchunks = nchunks;
 
+      // fprintf(stderr, "Sequencer: chunk %d trying to post to remote. size = %d\n", chunk_id, size);
       memcpy(send_buf + sizeof(calvin_header), cur, size);
-      rpc_->prepare_multi_req(reply_buf,mac_set_.size(),cor_id_);
+
+      // note that we will not prepare the reply buffer since we use asynchronous logging and don't expect replies
+      // rpc_->prepare_multi_req(reply_buf,0,cor_id_);
       rpc_->broadcast_to(send_buf,
                          RPC_DET_BACKUP,
                          sizeof(calvin_header) + size,
                          cor_id_,RRpc::REQ,mac_set_);
-      // don't need to yield since we assume passive ack (PA), or, asyncronous logging.
+      // note that we don't need to yield to wait for replies
       // indirect_yield(yield);
-      cur += size;
-      // fprintf(stdout, "chunk %d logged.\n", chunk_id);
+      cur += size;  
+      // fprintf(stderr, "%d: Sequencer chunk %d posted to remote. size = %d\n", worker_id_, chunk_id, size);
       chunk_id++;
     }
     ASSERT(nchunks == chunk_id) << nchunks << " " << chunk_id;
-    rpc_->free_static_buf(send_buf);
-    fprintf(stderr, "Sequencer: %d chunks logged with ts = %lu. \n", nchunks, header->epoch_id);
+    // fprintf(stderr, "Sequencer: %d chunks broadcasted for requests at epoch %lu. \n", nchunks, header->epoch_id);
+    // rpc_->free_static_buf(send_buf);
+    // fprintf(stderr, "Sequencer: %d chunks logged with ts = %lu. \n", nchunks, header->epoch_id);
 }
 
 void Sequencer::logging_rpc_handler(int id,int cid,char *msg,void *arg) {
-  fprintf(stderr, "backup server received batch from machine %d.\n", id);
+  // fprintf(stderr, "backup server received batch from machine %d.\n", id);
   assert(id < backup_buffers.size() && id != cm_->get_nodeid());
   calvin_header* h = (calvin_header*)msg;
+  /******************************************
+  This function must NOT assume that chunks are received in order from 1,2,3,...
+  since the logging rpc does not yield to wait for the previous chunk to be sent
+  before current chunk can be sent (asynchronous logging). Therefore, in-flight 
+  chunks can be received in arbitrary order by this handler.
+  So we must use the received size to determine if all chunks have been received. 
+  *******************************************/
 
-  if (backup_buffers[id] == NULL) {
-    char* buf = (char*)malloc(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
-    backup_buffers[id] = buf;
-    memset(backup_buffers[id], 0, sizeof(calvin_header));
-    ((calvin_header*)backup_buffers[id])->epoch_id = h->epoch_id;
-  }
+  char* buf = NULL;
+  if (backup_buffers[id][cid]->empty() ||
+    ((calvin_header*)backup_buffers[id][cid]->back())->received_size == MAX_REQUESTS_NUM*sizeof(det_request)) {
+    buf = (char*)malloc(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
+    memset(buf, 0, sizeof(calvin_header));
+    ((calvin_header*)buf)->epoch_id = h->epoch_id;
+    ((calvin_header*)buf)->received_size = 0;
+    if (!backup_buffers[id][cid]->empty()) {
+      while (!backup_buffers[id][cid]->empty()) {
+        free(backup_buffers[id][cid]->front());
+        backup_buffers[id][cid]->pop();
+      }
+    }
+    backup_buffers[id][cid]->push(buf);
+  } else
+    buf = backup_buffers[id][cid]->back();
 
-  int received = ((calvin_header*)backup_buffers[id])->received_size;
-  memcpy(backup_buffers[id] + sizeof(calvin_header) + received, msg + sizeof(calvin_header), h->chunk_size);
-  ((calvin_header*)backup_buffers[id])->received_size += h->chunk_size;
-  ((calvin_header*)backup_buffers[id])->chunk_id = h->chunk_id;
-  ((calvin_header*)backup_buffers[id])->nchunks = h->nchunks;
+  assert(buf != NULL);
+  int received = ((calvin_header*)buf)->received_size;
+  int max_chunk_size = 2048;
+  int chunk_size = max_chunk_size - sizeof(calvin_header);
+  memcpy(buf + sizeof(calvin_header) + h->chunk_id*chunk_size, msg + sizeof(calvin_header), h->chunk_size);
+  ((calvin_header*)buf)->received_size += h->chunk_size;
+  ((calvin_header*)buf)->chunk_id = h->chunk_id;
+  ((calvin_header*)buf)->nchunks = h->nchunks;
+
+  // no reply for logging
+  // char* reply_msg = rpc_->get_reply_buf();
+  // rpc_->send_reply(reply_msg, 0, id, cid);
 }
 
 
 void Sequencer::thread_local_init() {
   for (int i = 0; i < cm_->get_num_nodes(); i++) {
-      backup_buffers.push_back(NULL);
+      backup_buffers.push_back(std::vector<std::queue<char*> *>());
+      for (int j = 0; j < coroutine_num+1; j++)
+        backup_buffers[i].push_back(new std::queue<char*>());
   }
 
   epoch_status_ = new uint8_t[cm_->get_num_nodes()];
