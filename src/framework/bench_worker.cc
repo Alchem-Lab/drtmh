@@ -14,7 +14,6 @@
 #include "db/txs/epoch_manager.hpp"
 #include "framework/sequencer.h"
 #include "framework/scheduler.h"
-#include "rtx/qp_selection_helper.h"
 #endif
 
 #include <queue>
@@ -49,7 +48,7 @@ oltp::Scheduler* scheduler = NULL;
 extern uint64_t per_thread_calvin_request_buffer_sz;
 extern uint64_t per_thread_calvin_forward_buffer_sz;
 namespace oltp {
-extern char* calvin_request_buffer;
+// extern char* calvin_request_buffer;
 extern char* calvin_forward_buffer;
 }
 #elif defined(BOHM_TX)
@@ -197,34 +196,6 @@ void BenchWorker::init_calvin() {
 
   const char *start_ptr = (char *)(cm_->conn_buf_);
   LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
-
-  /*set up req_buffer and req offsets*/
-  req_buffers = new std::vector<char*>[1+server_routine];
-  int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(calvin_request);
-  char* req_base_ptr_ = oltp::calvin_request_buffer + 
-                    per_thread_calvin_request_buffer_sz * worker_id_;
-  // uint64_t req_base_offset_ = req_base_ptr_ - start_ptr;
-  for (int i = 0; i < server_routine+1; i++) {
-    LOG(3) << "routine " << i;
-    for (int j = 0; j < cm_->get_num_nodes(); j++) {
-      char* buf = req_base_ptr_ + buf_len * i * cm_->get_num_nodes() + buf_len * j;
-      req_buffers[i].push_back(buf);
-      calvin_header* ch = (calvin_header*)req_buffers[i][req_buffers[i].size()-1];
-      ch->epoch_status = CALVIN_EPOCH_READY;
-      LOG(3) << "node " << j << "'s addrs: " << static_cast<void*>(req_buffers[i][j]);
-    }
-  }
-
-  LOG(3) << "offsets:";
-  offsets_ = new uint64_t*[1 + server_routine];
-  for (int i = 0; i < server_routine+1; i++) {
-    offsets_[i] = new uint64_t[cm_->get_num_nodes()];
-    LOG(3) << "routine " << i;
-    for (int j = 0; j < cm_->get_num_nodes(); j++) {
-      offsets_[i][j] = req_buffers[i][j] - start_ptr;
-        LOG(3) << "node " << j << "'s offset: " << offsets_[i][j];
-    }
-  }
 
   /* set up forward addresses and offsets */
   forward_addresses = new char*[1 + server_routine];
@@ -451,7 +422,7 @@ BenchWorker::worker_routine(yield_func_t &yield) {
           }
 
           // fake txn workload
-          usleep(5);
+          // usleep(5);
        
           // fake releasing locks
           for(auto it = rs.begin();it != rs.end();++it) {

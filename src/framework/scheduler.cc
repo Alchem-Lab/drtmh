@@ -28,6 +28,10 @@ extern __thread MappedLog local_log;
 
 namespace oltp {
 
+#ifdef CALVIN_TX
+extern char * calvin_request_buffer;
+#endif
+
 Scheduler::Scheduler(unsigned worker_id, RdmaCtrl *cm, MemDB * db):
   RWorker(worker_id,cm), db_(db) {
   for (int i = 0; i < nthreads; i++) {
@@ -109,8 +113,16 @@ void Scheduler::worker_routine(yield_func_t &yield) {
       int n_ready = 0;
       for (int i = 0; i < cm_->get_num_nodes(); i++) {
         for (int j = 1; j < coroutine_num+1; j++) {
+#if ONE_SIDED_READ == 0
           if (req_buffer_state[i][j] == Scheduler::BUFFER_RECVED)
             n_ready += 1;
+#elif ONE_SIDED_READ == 1
+          calvin_header* h = (calvin_header*)req_buffers[j][i];
+          if (h->received_size == sizeof(det_request)*MAX_REQUESTS_NUM) {
+            n_ready += 1;
+          }
+#else
+#endif
         }
       }
       if (n_ready == cm_->get_num_nodes() * coroutine_num)
@@ -122,8 +134,14 @@ void Scheduler::worker_routine(yield_func_t &yield) {
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       for (int j = 1; j < coroutine_num+1; j++) {
         if (true) {
+#if ONE_SIDED_READ == 0
           char* buf_end = req_buffers[i][j];
-
+#elif ONE_SIDED_READ == 1
+          char* buf_end = req_buffers[j][i];
+#else
+          char* buf_end = NULL;
+          assert(false);
+#endif
           calvin_header* h = (calvin_header*)buf_end;
           buf_end += sizeof(calvin_header);
  
@@ -135,7 +153,13 @@ void Scheduler::worker_routine(yield_func_t &yield) {
   #if DEBUG_LEVEL==1
           fprintf(stderr, "%d: deterministic_plan installs requests from %d:%d for epoch %d\n", worker_id_, i, j, h->epoch_id);
   #endif
+
+  #if ONE_SIDED_READ == 0
           req_buffer_state[i][j] = Scheduler::BUFFER_INIT;
+  #elif ONE_SIDED_READ == 1
+          h->received_size = 0;
+  #else
+  #endif
         } else {
           assert(false);
         }
@@ -222,6 +246,7 @@ void Scheduler::exit_handler() {
 }
 
 void Scheduler::thread_local_init() {
+#if ONE_SIDED_READ == 0
   req_buffers = (char***)malloc(sizeof(char**)*cm_->get_num_nodes());
   for (int i = 0; i < cm_->get_num_nodes(); i++)
     req_buffers[i] = (char**)malloc(sizeof(char*)*(coroutine_num+1));
@@ -236,6 +261,44 @@ void Scheduler::thread_local_init() {
       req_buffer_state[i][j] = BUFFER_INIT;
     }
   }
+
+#elif ONE_SIDED_READ == 1
+
+  const char *start_ptr = (char *)(cm_->conn_buf_);
+  LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
+  /*set up req_buffer and req offsets*/
+  int buf_len = sizeof(calvin_header) + MAX_CALVIN_REQ_CNTS*sizeof(det_request);
+  char* req_base_ptr_ = oltp::calvin_request_buffer;
+
+  // uint64_t req_base_offset_ = req_base_ptr_ - start_ptr;
+  req_buffers = new char**[1+coroutine_num];
+  for (int i = 0; i < coroutine_num+1; i++) {
+    req_buffers[i] = new char*[cm_->get_num_nodes()];
+    LOG(3) << "routine " << i;
+    for (int j = 0; j < cm_->get_num_nodes(); j++) {
+      char* buf = req_base_ptr_ + buf_len * i * cm_->get_num_nodes() + buf_len * j;
+      req_buffers[i][j] = buf;
+      calvin_header* ch = (calvin_header*)req_buffers[i][j];
+      ch->epoch_status = CALVIN_EPOCH_READY;
+      LOG(3) << "node " << j << "'s addrs: " << static_cast<void*>(req_buffers[i][j]);
+    }
+  }
+
+  LOG(3) << "offsets:";
+  offsets_ = new uint64_t*[1 + coroutine_num];
+  for (int i = 0; i < coroutine_num+1; i++) {
+    offsets_[i] = new uint64_t[cm_->get_num_nodes()];
+    LOG(3) << "routine " << i;
+    for (int j = 0; j < cm_->get_num_nodes(); j++) {
+      offsets_[i][j] = req_buffers[i][j] - start_ptr;
+        LOG(3) << "node " << j << "'s offset: " << offsets_[i][j];
+    }
+  }
+
+#else
+  assert(false);
+#endif
+
 }
 
 void Scheduler::request_lock(int req_seq, yield_func_t &yield) {

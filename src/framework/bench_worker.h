@@ -256,9 +256,11 @@ class BenchWorker : public RWorker {
   //forwarded related structures are used by the CALVIN CLASS
 #if ONE_SIDED_READ == 0
   std::map<uint64_t, read_val_t>* forwarded_values;
-#else
+#elif ONE_SIDED_READ == 1
+  std::map<uint64_t, read_val_t>* forwarded_values; // unused. only to make compiler happy.
   uint64_t* forward_offsets_;
   char** forward_addresses;
+#else
 #endif
 
 #endif

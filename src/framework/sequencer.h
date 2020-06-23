@@ -34,23 +34,27 @@ namespace nocc {
   			virtual void worker_routine(yield_func_t &yield);
   			virtual void exit_handler();
 		private:
-			std::vector<det_request> batch;
 			std::vector<std::vector<std::queue<char*> *> > backup_buffers; // the backup batch for current epoch
 			get_workload_func_t get_workload_func;
 			BreakdownTimer timer_;
 			#if ONE_SIDED_READ == 0
 			  uint8_t* epoch_status_;
+			#elif ONE_SIDED_READ == 1
+			  uint8_t* epoch_status_;   //unused. declared here to make compiler happy.
+			  bool* cor_epoch_done;
 			#else
-			  uint64_t** offsets_;
 			#endif // ONE_SIDED_READ
 			void thread_local_init();
 			void logging(char* buffer_start, char* buffer_end, yield_func_t &yield);
+			void logging_rdma(char* buffer_start, char* buffer_end, yield_func_t &yield);			
 			void broadcast(char* buffer_start, char* buffer_end, yield_func_t &yield);
-			
+			void broadcast_rdma(char* buffer_start, char* buffer_end, yield_func_t &yield);			
 			void epoch_sync(yield_func_t &yield);
+			void epoch_sync_rdma(yield_func_t &yield);			
 		public:
 			#include "rtx/occ_statistics.h"
-
+  			// Use a lot more QPs to emulate a larger cluster, if necessary
+			#include "rtx/qp_selection_helper.h"
 		private:
 			//backup rpc handler
 			void logging_rpc_handler(int id,int cid,char *msg,void *arg);

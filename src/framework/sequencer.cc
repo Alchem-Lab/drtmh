@@ -5,7 +5,7 @@
 #include "db/txs/epoch_manager.hpp"
 #include "sequencer.h"
 #include "scheduler.h"
-
+#include "rtx/rdma_req_helper.hpp"
 #include "ralloc.h"
 
 #include "ring_msg.h"
@@ -82,8 +82,9 @@ void Sequencer::run() {
   ROCC_BIND_STUB(rpc_, &Sequencer::sequence_rpc_handler, this, RPC_DET_SEQUENCE);
 
   ROCC_BIND_STUB(rpc_, &Sequencer::epoch_sync_rpc_handler, this, RPC_CALVIN_EPOCH_STATUS);
+  
   // fetch QPs
-  // fill_qp_vec(cm_,worker_id_);
+  fill_qp_vec(cm_,worker_id_);
 
   // waiting for master to start workers
   this->inited = true;
@@ -104,10 +105,18 @@ void Sequencer::worker_routine(yield_func_t &yield) {
   LOG(3) << worker_id_ << ": Running Sequencer on routine " << cor_id_;
 
   static const auto& workload = get_workload_func();
+
+#if ONE_SIDED_READ == 0
+  //TODO use req_buffers instead of allocating new buffer here
   int req_buf_size = sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request);
   // fprintf(stderr, "Rmalloc %d bytes.\n", req_buf_size);
   // char * const req_buf = rpc_->get_static_buf(req_buf_size);
   char * const req_buf = (char*)malloc(req_buf_size*sizeof(char));
+#elif ONE_SIDED_READ == 1
+  char * const req_buf = scheduler->req_buffers[cor_id_][cm_->get_nodeid()];
+#else
+#endif
+
   uint64_t request_timestamp = 0;
   uint32_t count = 0;
   uint32_t iteration = 0;
@@ -117,7 +126,8 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
   //main loop for sequencer
   // while (true)
-  while(iteration < 100000)
+  // while(iteration < 100000)
+while(iteration < 1000)
   // while(iteration < 4)
   {
     if (cor_id_ == 1) {
@@ -125,8 +135,8 @@ void Sequencer::worker_routine(yield_func_t &yield) {
       #if ONE_SIDED_READ == 0
           for (int i = 0; i < cm_->get_num_nodes(); i++)
             epoch_status_[i] = CALVIN_EPOCH_READY;
-      #else
-          assert(false);
+      #elif ONE_SIDED_READ == 1
+          // already handled at the end of previous iteration.
       #endif
     }
 
@@ -172,15 +182,30 @@ void Sequencer::worker_routine(yield_func_t &yield) {
         if (req_buf_end - req_buf >= sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request))
           break;
     }
+    ((calvin_header*)req_buf)->batch_size = req_buf_end - req_buf - sizeof(calvin_header);
+
     // LOG(3) << "sequencer generated a batch of request at epoch " << ((calvin_header*)req_buf)->epoch_id;
     
     // logging batch to other replica's sequencer in async-replication mode
     START(log)
+#if ONE_SIDED_READ == 0
     logging(req_buf, req_buf_end, yield);
+#elif ONE_SIDED_READ == 1
+    // logging_rdma(req_buf, req_buf_end, yield);
+#else
+    assert(false);
+#endif
     END(log)
 
     // broadcasting to other participants
+#if ONE_SIDED_READ == 0
     broadcast(req_buf, req_buf_end, yield);
+#elif ONE_SIDED_READ == 1
+    broadcast_rdma(req_buf, req_buf_end, yield);
+#else
+    assert(false);
+#endif
+
 #if DEBUG_LEVEL==1
     LOG(3) << worker_id_ << ":" << cor_id_ <<": sequencer broadcasted at epoch: " << ((calvin_header*)req_buf)->epoch_id;
 #endif
@@ -203,7 +228,11 @@ void Sequencer::worker_routine(yield_func_t &yield) {
       asm volatile("" ::: "memory");
     }
 
+#if ONE_SIDED_READ == 0
     epoch_sync(yield);
+#elif ONE_SIDED_READ == 1
+    epoch_sync_rdma(yield);
+#endif
 
 #if DEBUG_LEVEL==1
     LOG(3) << worker_id_ << ":" << cor_id_ << ": sequencer epoch " << iteration << " done";
@@ -215,8 +244,10 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     yield_next(yield);
   }
 
+#if ONE_SIDED_READ == 0
   // rpc_->free_static_buf(req_buf);
   free(req_buf);
+#endif
 }
 
 void Sequencer::broadcast(char* const req_buf, char* const req_buf_end, yield_func_t &yield) {
@@ -273,6 +304,52 @@ void Sequencer::broadcast(char* const req_buf, char* const req_buf_end, yield_fu
     rpc_->free_static_buf(send_buf);
 }
 
+void Sequencer::broadcast_rdma(char* const req_buf, char* const req_buf_end, yield_func_t &yield) {
+    std::set<int> mac_set_;
+    for (int i = 0; i < cm_->get_num_nodes(); i++) {
+      if (i != cm_->get_nodeid()) {
+        mac_set_.insert(i);
+      }
+    }
+
+    calvin_header* header = (calvin_header*)req_buf;
+    header->received_size = req_buf_end-req_buf-sizeof(calvin_header);
+
+    // LOG(3) << "trying to broadcast_rdma to dest nodes";
+    nocc::rtx::RDMAWriteReq req(cor_id_, PA);
+    bool need_yield = false;    
+    for (auto mac : mac_set_) {
+      // for all other partitions
+      // Qp *qp = get_qp(mac);
+      Qp *qp = cm_->get_rc_qp(worker_id_,mac);
+      assert(qp != NULL);
+
+      uint64_t remote_off = scheduler->offsets_[cor_id_][cm_->get_nodeid()];
+      // LOG(3) << "broadcasting to remote off:" << remote_off;
+
+      req.set_write_meta_for<0>(remote_off + sizeof(calvin_header), 
+                    req_buf + sizeof(calvin_header), req_buf_end-req_buf-sizeof(calvin_header));
+    
+      // calvin_header* h = new calvin_header;
+      // memcpy(h, req_buf, sizeof(calvin_header));
+
+      req.set_write_meta_for<1>(remote_off,
+                                    (char*)header, sizeof(calvin_header));
+
+      req.post_reqs(rdma_sched_, qp);
+
+      need_yield = true;
+      if (unlikely(qp->rc_need_poll())) {
+          indirect_yield(yield);
+          need_yield = false;
+      }
+    }
+
+    if (need_yield)
+      indirect_yield(yield);
+ 
+    // fprintf(stderr, "Sequencer: coroutine %d broadcasted requests at epoch %lu. \n", cor_id_, header->epoch_id);
+}
 
 void Sequencer::sequence_rpc_handler(int id,int cid,char *msg,void *arg) {
   assert(id < cm_->get_num_nodes());
@@ -323,7 +400,6 @@ void Sequencer::epoch_sync(yield_func_t &yield) {
     }
 
     if (cor_id_ == 1) {
-#if ONE_SIDED_READ == 0
       char* send_buf = rpc_->get_static_buf(MAX_MSG_SIZE);
       char reply_buf[64];
 
@@ -338,25 +414,85 @@ void Sequencer::epoch_sync(yield_func_t &yield) {
       indirect_yield(yield);
 
       rpc_->free_static_buf(send_buf);
-#else
-    assert(false);
-#endif
     }
 
   // fprintf(stderr, "EPOCH DONE broadcasted.\n");
 
   for (int i = 0; i < cm_->get_num_nodes(); i++) {
       if (i == cm_->get_nodeid()) continue;
-#if ONE_SIDED_READ == 0
       if (epoch_status_[i] != CALVIN_EPOCH_DONE) {
         yield_next(yield);
         asm volatile("" ::: "memory");
         i--;
       }
-#else
-      assert(false);
-#endif
   }
+}
+
+void Sequencer::epoch_sync_rdma(yield_func_t &yield) {
+    std::set<int> mac_set_;
+    for (int i = 0; i < cm_->get_num_nodes(); i++) {
+      if (i != cm_->get_nodeid()) {
+        mac_set_.insert(i);
+      }
+    }
+
+    if (cor_id_ == 1) {
+      nocc::rtx::RDMAWriteOnlyReq req(cor_id_, PA);
+      bool need_yield = false;    
+      for (auto mac : mac_set_) {
+        // for all other partitions
+        Qp *qp = get_qp(mac);
+        assert(qp != NULL);
+
+        uint64_t remote_off = scheduler->offsets_[cor_id_][cm_->get_nodeid()];
+        uint8_t* epoch_status = new uint8_t;
+        *epoch_status = CALVIN_EPOCH_DONE;
+        req.set_write_meta(remote_off + OFFSETOF(calvin_header, epoch_status), 
+                                    (char*)epoch_status, sizeof(uint8_t));
+
+        req.post_reqs(rdma_sched_, qp);
+
+        need_yield = true;
+        if (unlikely(qp->rc_need_poll())) {
+          indirect_yield(yield);
+          need_yield = false;
+        }
+      }
+
+      if (need_yield)
+        indirect_yield(yield);
+    }
+
+    if (cor_id_ == 1) {
+      for (int i = 0; i < cm_->get_num_nodes(); i++) {
+        if (i == cm_->get_nodeid()) continue;
+        //note that we only need to look at the req_buffer for co-routine 1
+        calvin_header* h = (calvin_header*)scheduler->req_buffers[1][i];
+        if (h->epoch_status != CALVIN_EPOCH_DONE) {
+          yield_next(yield);
+          asm volatile("" ::: "memory");
+          i--;
+        } else
+          h->epoch_status = CALVIN_EPOCH_READY;
+      }
+      cor_epoch_done[cor_id_] = true;
+
+      //reset
+      for (int i = 2; i < coroutine_num+1; i++) {
+        if (!cor_epoch_done[i]) {
+          yield_next(yield);
+          asm volatile("" ::: "memory");
+          i--;
+        } else
+          cor_epoch_done[i] = false;
+      }
+      cor_epoch_done[cor_id_] = false;
+
+    } else {
+      while (!cor_epoch_done[1])
+          yield_next(yield);
+      cor_epoch_done[cor_id_] = true;
+    }
 }
 
 void Sequencer::epoch_sync_rpc_handler(int id,int cid,char *msg,void *arg) {
@@ -369,6 +505,55 @@ void Sequencer::epoch_sync_rpc_handler(int id,int cid,char *msg,void *arg) {
 }
 
 void Sequencer::logging(char* req_buf, char* req_buf_end, yield_func_t &yield) {
+    std::set<int> mac_set_;
+    for (int i = 0; i < cm_->get_num_nodes(); i++) {
+      if (i != cm_->get_nodeid()) {
+        mac_set_.insert(i);
+      }
+    }
+
+    // logging to others replica
+    calvin_header* header = (calvin_header*)req_buf;
+    char* cur = req_buf + sizeof(calvin_header);
+    char* send_buf = rpc_->get_fly_buf(cor_id_);
+    memcpy(send_buf, req_buf, sizeof(calvin_header));
+    char reply_buf[64];
+
+    int max_chunk_size = 2048;
+    int nchunks = (req_buf_end - cur + (max_chunk_size - sizeof(calvin_header)) - 1) / (max_chunk_size - sizeof(calvin_header));
+    int chunk_id = 0;
+    while (cur < req_buf_end) {
+      int size = (req_buf_end - cur < max_chunk_size - sizeof(calvin_header)) ?
+                 req_buf_end - cur :
+                 max_chunk_size - sizeof(calvin_header);
+      assert(size > 0);
+      ((calvin_header*)send_buf)->chunk_size = size;
+      ((calvin_header*)send_buf)->chunk_id = chunk_id;
+      ((calvin_header*)send_buf)->nchunks = nchunks;
+
+      // fprintf(stderr, "Sequencer: chunk %d trying to post to remote. size = %d\n", chunk_id, size);
+      memcpy(send_buf + sizeof(calvin_header), cur, size);
+
+      // note that we will not prepare the reply buffer since we use asynchronous logging and don't expect replies
+      // rpc_->prepare_multi_req(reply_buf,0,cor_id_);
+      rpc_->broadcast_to(send_buf,
+                         RPC_DET_BACKUP,
+                         sizeof(calvin_header) + size,
+                         cor_id_,RRpc::REQ,mac_set_);
+      // note that we don't need to yield to wait for replies
+      // indirect_yield(yield);
+      cur += size;  
+      // fprintf(stderr, "%d: Sequencer chunk %d posted to remote. size = %d\n", worker_id_, chunk_id, size);
+      chunk_id++;
+    }
+    ASSERT(nchunks == chunk_id) << nchunks << " " << chunk_id;
+    // fprintf(stderr, "Sequencer: %d chunks broadcasted for requests at epoch %lu. \n", nchunks, header->epoch_id);
+    // rpc_->free_static_buf(send_buf);
+    // fprintf(stderr, "Sequencer: %d chunks logged with ts = %lu. \n", nchunks, header->epoch_id);
+}
+
+void Sequencer::logging_rdma(char* req_buf, char* req_buf_end, yield_func_t &yield) {
+    assert(false);
     std::set<int> mac_set_;
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       if (i != cm_->get_nodeid()) {
@@ -467,9 +652,15 @@ void Sequencer::thread_local_init() {
         backup_buffers[i].push_back(new std::queue<char*>());
   }
 
+#if ONE_SIDED_READ == 0
   epoch_status_ = new uint8_t[cm_->get_num_nodes()];
   for (int i = 0; i < cm_->get_num_nodes(); i++)
     epoch_status_[i] = CALVIN_EPOCH_READY;
+#elif ONE_SIDED_READ == 1
+  cor_epoch_done = new bool[coroutine_num+1];
+  for (int i = 0; i < coroutine_num+1; i++)
+    cor_epoch_done[i] = false;
+#endif
 }
 
 void Sequencer::exit_handler() {
