@@ -4,6 +4,7 @@
 
 #include "bench_worker.h"
 #include "scheduler.h"
+#include "sequencer.h"
 #include "ralloc.h"
 #include "core/utils/latency_profier.h"
 
@@ -25,6 +26,7 @@ using namespace rdmaio::ringmsg;
 namespace nocc {
 
 extern __thread MappedLog local_log;
+extern oltp::Sequencer* sequencer;
 
 namespace oltp {
 
@@ -104,11 +106,50 @@ void Scheduler::worker_routine(yield_func_t &yield) {
 
   LOG(3) << worker_id_ << ": Running Scheduler routine";
 
+  int iteration = 0;
+
+// #if MOCK_SEQUENCER == 1
+//     for (int i = 0; i < cm_->get_num_nodes(); i++) {
+//       for (int j = 1; j < coroutine_num+1; j++) {
+// #if ONE_SIDED_READ == 0
+//           chars* req_buf = req_buffers[i][j];
+//           req_buffer_state[i][j] == Scheduler::BUFFER_RECVED;
+// #elif ONE_SIDED_READ == 1
+//           char* req_buf = req_buffers[j][i];
+//           calvin_header* h = (calvin_header*)req_buf;
+//           h->received_size = sizeof(det_request)*MAX_REQUESTS_NUM;
+// #endif
+//           ((calvin_header*)req_buf)->node_id = i;
+//           ((calvin_header*)req_buf)->epoch_id = iteration;
+//           sequencer->generate_requests(req_buf, yield);
+//        }
+//     }
+// #endif
+
   while (true)
   {
     deterministic_plan.clear();
     req_fullfilled = 0;
-    
+
+#if MOCK_SEQUENCER == 1
+    for (int i = 0; i < cm_->get_num_nodes(); i++) {
+      for (int j = 1; j < coroutine_num+1; j++) {
+#if ONE_SIDED_READ == 0
+          chars* req_buf = req_buffers[i][j];
+          req_buffer_state[i][j] == Scheduler::BUFFER_RECVED;
+#elif ONE_SIDED_READ == 1
+          char* req_buf = req_buffers[j][i];
+          calvin_header* h = (calvin_header*)req_buf;
+          h->received_size = sizeof(det_request)*MAX_REQUESTS_NUM;
+#endif
+          ((calvin_header*)req_buf)->node_id = i;
+          ((calvin_header*)req_buf)->epoch_id = iteration;
+          sequencer->generate_requests(req_buf, yield);
+      }
+    }
+
+    iteration += 1;
+#else // !MOCK_SEQUENCER
     while (true) {
       int n_ready = 0;
       for (int i = 0; i < cm_->get_num_nodes(); i++) {
@@ -125,11 +166,13 @@ void Scheduler::worker_routine(yield_func_t &yield) {
 #endif
         }
       }
+       
       if (n_ready == cm_->get_num_nodes() * coroutine_num)
         break;
       cpu_relax();
       yield_next(yield);
     }
+#endif // MOCK_SEQUENCER
 
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       for (int j = 1; j < coroutine_num+1; j++) {
@@ -216,12 +259,16 @@ void Scheduler::worker_routine(yield_func_t &yield) {
         yield_next(yield);
         asm volatile("" ::: "memory");        
     }
+
+#if MOCK_SEQUENCER
+#else 
     epoch_done = true;
     while (epoch_done) {
       cpu_relax();
       yield_next(yield);
       asm volatile("" ::: "memory");
     }
+#endif
 
     // fprintf(stderr, "scheduler epoch done.\n");
 #elif defined(BOHM_TX)

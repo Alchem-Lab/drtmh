@@ -104,8 +104,6 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
   LOG(3) << worker_id_ << ": Running Sequencer on routine " << cor_id_;
 
-  static const auto& workload = get_workload_func();
-
 #if ONE_SIDED_READ == 0
   //TODO use req_buffers instead of allocating new buffer here
   int req_buf_size = sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request);
@@ -117,17 +115,22 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 #else
 #endif
 
-  uint64_t request_timestamp = 0;
-  uint32_t count = 0;
   uint32_t iteration = 0;
 
   uint64_t start = nocc::util::get_now();
   // uint64_t batch_size_ = 0;
 
+#if MOCK_SEQUENCER == 1
+  while (true) {
+    cpu_relax();
+    yield_next(yield);
+  }
+#endif
+
   //main loop for sequencer
   // while (true)
-  // while(iteration < 100000)
-while(iteration < 1000)
+  while(iteration < 100000)
+  // while(iteration < 1000)
   // while(iteration < 4)
   {
     if (cor_id_ == 1) {
@@ -136,56 +139,21 @@ while(iteration < 1000)
           for (int i = 0; i < cm_->get_num_nodes(); i++)
             epoch_status_[i] = CALVIN_EPOCH_READY;
       #elif ONE_SIDED_READ == 1
-          // already handled at the end of previous iteration.
+          for (int i = 0; i < cm_->get_num_nodes(); i++) {
+            calvin_header* h = (calvin_header*)scheduler->req_buffers[1][i];
+            h->epoch_status = CALVIN_EPOCH_READY;
+          }
       #endif
     }
 
-    // initialize calvin_header
+    // fprintf(stderr, "cor=%d starting iteration %d.\n", cor_id_, iteration);
+
+    // initialize calvin_header, and generate requests on the request buffer
     ((calvin_header*)req_buf)->node_id = cm_->get_nodeid();
-    // epoch_manager->get_current_epoch((char*)&((calvin_header*)req_buf)->epoch_id);
     ((calvin_header*)req_buf)->epoch_id = iteration;
-#if DEBUG_LEVEL==1
-    fprintf(stderr, "%d:%d: sequencing @ epoch %lu.\n", worker_id_, cor_id_, ((calvin_header*)req_buf)->epoch_id);
-#endif
-    char* req_buf_end = req_buf + sizeof(calvin_header);
-    auto start = rdtsc();
-
-    // generating the batch for MAX_REQUESTS_NUM transactons or ~10ms
-    while (true) {
-        uint tx_idx = 0;
-        #if CS == 0
-            /* select the workload */
-            double d = rand_generator_.next_uniform();
-
-            for(size_t i = 0;i < workload.size();++i) {
-              if((i + 1) == workload.size() || d < workload[i].frequency) {
-                tx_idx = i;
-                break;
-              }
-              d -= workload[i].frequency;
-            }
-        #else
-            assert(false);
-        #endif
-
-        request_timestamp = (cm_->get_nodeid() << 4) + cor_id_;
-        request_timestamp <<= 32;
-        request_timestamp |= count++;
-        *(det_request*)req_buf_end = det_request(tx_idx, cm_->get_nodeid(), request_timestamp);
-        workload[((det_request*)req_buf_end)->req_idx].gen_sets_fn(
-                                    ((det_request*)req_buf_end)->req_info,
-                                    rand_generator_,
-                                    yield);
-        // const rwsets_t* set = (rwsets_t*)((det_request*)req_buf_end)->req_info;
-        // fprintf(stderr, "R%dW%d\n", set->nReads, set->nWrites);
-        req_buf_end += sizeof(det_request);
-        if (req_buf_end - req_buf >= sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request))
-          break;
-    }
-    ((calvin_header*)req_buf)->batch_size = req_buf_end - req_buf - sizeof(calvin_header);
-
+    char* req_buf_end = generate_requests(req_buf, yield);
     // LOG(3) << "sequencer generated a batch of request at epoch " << ((calvin_header*)req_buf)->epoch_id;
-    
+
     // logging batch to other replica's sequencer in async-replication mode
     START(log)
 #if ONE_SIDED_READ == 0
@@ -228,6 +196,8 @@ while(iteration < 1000)
       asm volatile("" ::: "memory");
     }
 
+    // fprintf(stderr, "cor %d noticed epoch_done from scheduler for iteration %d.\n", cor_id_, iteration);
+
 #if ONE_SIDED_READ == 0
     epoch_sync(yield);
 #elif ONE_SIDED_READ == 1
@@ -239,8 +209,8 @@ while(iteration < 1000)
 #endif
     auto latency = rdtsc() - start;
     timer_.emplace(latency);
+    // fprintf(stderr, "cor %d finish iteration %d.\n", cor_id_, iteration);
     iteration += 1;
-
     yield_next(yield);
   }
 
@@ -248,6 +218,54 @@ while(iteration < 1000)
   // rpc_->free_static_buf(req_buf);
   free(req_buf);
 #endif
+}
+
+// precondition: set up the epoch_id and node_id field of the request buffer
+char* Sequencer::generate_requests(char* const &req_buf, yield_func_t &yield) {  
+#if DEBUG_LEVEL==1
+    fprintf(stderr, "%d:%d: sequencing @ epoch %lu.\n", worker_id_, cor_id_, ((calvin_header*)req_buf)->epoch_id);
+#endif
+    char* req_buf_end = req_buf + sizeof(calvin_header);
+    static const auto& workload = get_workload_func();
+    static uint32_t count = 0;
+    uint64_t request_timestamp = 0;
+    auto start = rdtsc();
+
+    // generating the batch for MAX_REQUESTS_NUM transactons or ~10ms
+    while (true) {
+        uint tx_idx = 0;
+        #if CS == 0
+            /* select the workload */
+            double d = rand_generator_.next_uniform();
+
+            for(size_t i = 0;i < workload.size();++i) {
+              if((i + 1) == workload.size() || d < workload[i].frequency) {
+                tx_idx = i;
+                break;
+              }
+              d -= workload[i].frequency;
+            }
+        #else
+            assert(false);
+        #endif
+
+        uint8_t node_id = ((calvin_header*)req_buf)->node_id;
+        request_timestamp = (node_id << 4) + cor_id_;
+        request_timestamp <<= 32;
+        request_timestamp |= count++;
+        *(det_request*)req_buf_end = det_request(tx_idx, node_id, request_timestamp);
+        workload[((det_request*)req_buf_end)->req_idx].gen_sets_fn(
+                                    ((det_request*)req_buf_end)->req_info,
+                                    rand_generator_,
+                                    yield);
+        // const rwsets_t* set = (rwsets_t*)((det_request*)req_buf_end)->req_info;
+        // fprintf(stderr, "R%dW%d\n", set->nReads, set->nWrites);
+        req_buf_end += sizeof(det_request);
+        if (req_buf_end - req_buf >= sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request))
+          break;
+    }
+    ((calvin_header*)req_buf)->batch_size = req_buf_end - req_buf - sizeof(calvin_header);
+    return req_buf_end;
 }
 
 void Sequencer::broadcast(char* const req_buf, char* const req_buf_end, yield_func_t &yield) {
@@ -314,6 +332,7 @@ void Sequencer::broadcast_rdma(char* const req_buf, char* const req_buf_end, yie
 
     calvin_header* header = (calvin_header*)req_buf;
     header->received_size = req_buf_end-req_buf-sizeof(calvin_header);
+    assert(header->received_size == sizeof(det_request)*MAX_REQUESTS_NUM);
 
     // LOG(3) << "trying to broadcast_rdma to dest nodes";
     nocc::rtx::RDMAWriteReq req(cor_id_, PA);
@@ -333,8 +352,9 @@ void Sequencer::broadcast_rdma(char* const req_buf, char* const req_buf_end, yie
       // calvin_header* h = new calvin_header;
       // memcpy(h, req_buf, sizeof(calvin_header));
 
-      req.set_write_meta_for<1>(remote_off,
-                                    (char*)header, sizeof(calvin_header));
+      req.set_write_meta_for<1>(remote_off + OFFSETOF(calvin_header, node_id),
+                                (char*)header + OFFSETOF(calvin_header, node_id), 
+                                sizeof(calvin_header) - sizeof(uint8_t));
 
       req.post_reqs(rdma_sched_, qp);
 
@@ -463,6 +483,25 @@ void Sequencer::epoch_sync_rdma(yield_func_t &yield) {
         indirect_yield(yield);
     }
 
+    // while (true) {
+    //   int count = 0;
+    //   for (int i = 0; i < cm_->get_num_nodes(); i++) {
+    //     if (i == cm_->get_nodeid()) continue;
+    //     for (int j = 1; j < coroutine_num+1; j++) {
+    //       //note that we only need to look at the req_buffer for co-routine 1
+    //       calvin_header* h = (calvin_header*)scheduler->req_buffers[j][i];
+    //       if (h->epoch_status == CALVIN_EPOCH_DONE) {
+    //         count += 1;
+    //       }
+    //     }
+    //   }
+
+    //   if (count == (cm_->get_num_nodes()-1) * coroutine_num)
+    //     break;
+    //   yield_next(yield);
+    //   asm volatile("" ::: "memory");
+    // }
+
     if (cor_id_ == 1) {
       for (int i = 0; i < cm_->get_num_nodes(); i++) {
         if (i == cm_->get_nodeid()) continue;
@@ -493,6 +532,7 @@ void Sequencer::epoch_sync_rdma(yield_func_t &yield) {
           yield_next(yield);
       cor_epoch_done[cor_id_] = true;
     }
+
 }
 
 void Sequencer::epoch_sync_rpc_handler(int id,int cid,char *msg,void *arg) {
@@ -657,9 +697,17 @@ void Sequencer::thread_local_init() {
   for (int i = 0; i < cm_->get_num_nodes(); i++)
     epoch_status_[i] = CALVIN_EPOCH_READY;
 #elif ONE_SIDED_READ == 1
+
   cor_epoch_done = new bool[coroutine_num+1];
   for (int i = 0; i < coroutine_num+1; i++)
     cor_epoch_done[i] = false;
+
+  // for (int i = 0; i < cm_->get_num_nodes(); i++) {
+  //   for (int j = 0; j < coroutine_num+1; j++) {
+  //     calvin_header* h = (calvin_header*)scheduler->req_buffers[j][i];
+  //     h->epoch_status = CALVIN_EPOCH_DONE;
+  //   }
+  // }
 #endif
 }
 

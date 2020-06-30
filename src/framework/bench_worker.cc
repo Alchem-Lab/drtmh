@@ -406,8 +406,7 @@ BenchWorker::worker_routine(yield_func_t &yield) {
         if (req.req_initiator == cm_->get_nodeid())
           ntxn_executed_ += 1;
 
-// #define MOCK_WORKLOAD
-#ifdef MOCK_WORKLOAD
+#if MOCK_WORKLOAD==1
         {
           // fake the read set and write set
           std::vector<ReadSetItem> rs;

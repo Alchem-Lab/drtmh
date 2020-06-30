@@ -45,6 +45,7 @@ namespace nocc {
 			#else
 			#endif // ONE_SIDED_READ
 			void thread_local_init();
+			char* generate_requests(char* const &req_buf, yield_func_t &yield);
 			void logging(char* buffer_start, char* buffer_end, yield_func_t &yield);
 			void logging_rdma(char* buffer_start, char* buffer_end, yield_func_t &yield);			
 			void broadcast(char* buffer_start, char* buffer_end, yield_func_t &yield);
@@ -62,6 +63,8 @@ namespace nocc {
 			void sequence_rpc_handler(int id,int cid,char *msg,void *arg);
 			//epoch sync rpc handler
 			void epoch_sync_rpc_handler(int id,int cid,char *msg,void *arg);
+
+			friend class Scheduler;
 		};
 	}
 

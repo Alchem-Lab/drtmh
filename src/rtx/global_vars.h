@@ -6,7 +6,7 @@
 #define MVCC_VERSION_NUM 4
 
 // #define MAX_CALVIN_REQ_CNTS (200*1000)
-#define MAX_CALVIN_REQ_CNTS (1000)  // sequencer's req_buffer use malloc() instead
+#define MAX_CALVIN_REQ_CNTS (10)  // sequencer's req_buffer use malloc() instead
                                     // so large CALVIN_REQ_CNTS can be supported.
 // #define MAX_CALVIN_REQ_CNTS 30  // For now, this value cannot be larger, 
                                 // otherwise it causes Rmalloc() to fail.
@@ -17,6 +17,7 @@
 #define MAX_CALVIN_SETS_SUPPRTED_IN_BITS (5)
 #define MAX_CALVIN_SETS_SUPPORTED (1U<<(MAX_CALVIN_SETS_SUPPRTED_IN_BITS))  // 32 SETS
 #define CALVIN_REQ_INFO_SIZE 256  // obselete, to be deleted.
+#define CALVIN_EPOCH_INIT  61
 #define CALVIN_EPOCH_READY 53
 #define CALVIN_EPOCH_DONE  59
 #define MAX_VAL_LENGTH 128
@@ -93,8 +94,12 @@ public:
 };
 
 struct calvin_header {
-  uint8_t node_id;
   volatile uint8_t epoch_status;
+
+  // note that the following field must be AFTER the epoch_status field.
+  // to ensure that correct one-sided broadcast while not writing the remote epoch_status.
+  // the remote epoch_status can only be updated at epoch_sync_rdma method.
+  uint8_t node_id;
   uint64_t epoch_id;
   volatile uint64_t batch_size; // the batch size
 
