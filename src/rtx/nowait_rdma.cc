@@ -258,6 +258,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
         (*it).data_ptr = (char*)malloc((*it).len);
       }
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
+      // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " r locked.";
       return true;
     }
     else if (resp_lock_status == LOCK_FAIL_MAGIC)
@@ -289,6 +290,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
         }
         else {
           END(lock);
+          // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " r locally locked.";
           return true;
         }
       }
@@ -324,10 +326,13 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
         (*it).data_ptr = (char*)malloc((*it).len);
       }
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
+      // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " w locked.";
       return true;
     }
-    else if (resp_lock_status == LOCK_FAIL_MAGIC)
+    else if (resp_lock_status == LOCK_FAIL_MAGIC){
+      abort_cnt[2]++;    
       return false;
+    }
     else {
         ASSERT(false) << (int)resp_lock_status;
     }
@@ -354,6 +359,7 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
         }
         else {
           END(lock);
+          // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " w locally locked.";
           return true;
         }
       }
@@ -379,7 +385,7 @@ void NOWAIT::release_reads(yield_func_t &yield, bool release_all) {
       add_batch_entry<RTXLockRequestItem>(write_batch_helper_, read_set_[i].pid,
                                    /*init RTXLockRequestItem */ 
         RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,read_set_[i].len,
-        read_set_[i].key,read_set_[i].seq, txn_start_time);
+        read_set_[i].key,read_set_[i].seq, txn_start_time);    
     }
     else {
       auto res = local_try_release_op(read_set_[i].node,R_LEASE(txn_start_time));
@@ -414,6 +420,89 @@ void NOWAIT::release_writes(yield_func_t &yield, bool release_all) {
   END(release_write);
 }
 
+void NOWAIT::prepare_write_contents() {
+    write_batch_helper_.clear_buf();
+
+    for(auto it = write_set_.begin();it != write_set_.end();++it) {
+        if(it->pid != node_id_) {
+            add_batch_entry_wo_mac<RtxWriteItem>(write_batch_helper_,
+                    (*it).pid,
+                    /* init write item */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+            memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
+            write_batch_helper_.req_buf_end_ += (*it).len;
+        }
+    }
+}
+
+void NOWAIT::log_remote(yield_func_t &yield) {
+
+  if(write_set_.size() > 0 && global_view->rep_factor_ > 0) {
+
+    // re-use write_batch_helper_'s data structure
+    BatchOpCtrlBlock cblock(write_batch_helper_.req_buf_,write_batch_helper_.reply_buf_);
+    cblock.batch_size_  = write_batch_helper_.batch_size_;
+    cblock.req_buf_end_ = write_batch_helper_.req_buf_end_;
+
+#if EM_FASST
+    global_view->add_backup(response_node_,cblock.mac_set_);
+    ASSERT(cblock.mac_set_.size() == global_view->rep_factor_)
+        << "FaSST should uses rep-factor's log entries, current num "
+        << cblock.mac_set_.size() << "; rep-factor " << global_view->rep_factor_;
+#else
+    for(auto it = write_batch_helper_.mac_set_.begin();
+        it != write_batch_helper_.mac_set_.end();++it) {
+      global_view->add_backup(*it,cblock.mac_set_);
+    }
+    // add local server
+    global_view->add_backup(current_partition,cblock.mac_set_);
+#endif
+
+#if CHECKS
+    LOG(3) << "log to " << cblock.mac_set_.size() << " macs";
+#endif
+
+    START(log);
+    logger_->log_remote(cblock,cor_id_);
+    abort_cnt[18]++;
+    worker_->indirect_yield(yield);
+    END(log);
+#if 1
+    cblock.req_buf_ = rpc_->get_fly_buf(cor_id_);
+    memcpy(cblock.req_buf_,write_batch_helper_.req_buf_,write_batch_helper_.batch_msg_size());
+    cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
+    //log ack
+    logger_->log_ack(cblock,cor_id_); // need to yield
+    abort_cnt[18]++;
+    worker_->indirect_yield(yield);
+#endif
+  } // end check whether it is necessary to log
+}
+
+bool NOWAIT::prepare_commit(yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc prepare message sent due to read-only txn.";
+      return true;
+    }
+    // LOG(3) << "sending prepare messages to " << clk.mac_set_.size() << " macs";
+    return two_phase_committer_->prepare(this, clk, cor_id_, yield);
+}
+
+void NOWAIT::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc decision message sent due to read-only txn.";
+      return;
+    }
+    // LOG(3) << "sending decision messages to " << clk.mac_set_.size() << " macs";
+    two_phase_committer_->broadcast_global_decision(this, clk, commit_or_abort ? 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_COMMIT : 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_ABORT, cor_id_, yield);
+}
 
 void NOWAIT::write_back(yield_func_t &yield) {
   START(commit);
@@ -585,6 +674,7 @@ void NOWAIT::release_rpc_handler(int id,int cid,char *msg,void *arg) {
         << R_LEASE(item->txn_starting_timestamp);
       header->lock = 0;
       // LOG(3) << "read release " << item->key << R_LEASE(item->txn_starting_timestamp);
+      // LOG(3) << item->pid << " " << item->tableid << " " << item->key << " r released.";
     }
     else if (item->type == RTX_REQ_LOCK_WRITE) {
       // auto res = local_try_release_op(item->tableid,item->key,
@@ -595,6 +685,7 @@ void NOWAIT::release_rpc_handler(int id,int cid,char *msg,void *arg) {
         << R_LEASE(item->txn_starting_timestamp) + 1;
       header->lock = 0;
       // LOG(3) << "write release " << item->key << R_LEASE(item->txn_starting_timestamp);
+      // LOG(3) << item->pid << " " << item->tableid << " " << item->key << " w released.";
     }
     
   }

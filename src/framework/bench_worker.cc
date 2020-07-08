@@ -102,7 +102,8 @@ BenchWorker::BenchWorker(unsigned worker_id,bool set_core,unsigned seed,uint64_t
     context_(context),
     db_logger_(db_logger),
     // r-set some local members
-    new_logger_(NULL)
+    new_logger_(NULL),
+    two_phase_committer_(NULL)
 {
   assert(cm_ != NULL);
   INIT_LAT_VARS(yield);
@@ -300,6 +301,8 @@ void BenchWorker::run() {
 #endif
 
   this->init_new_logger(backup_stores_);
+  this->init_two_phase_committer();
+  
   this->thread_local_init();   // application specific init
 
   register_callbacks();

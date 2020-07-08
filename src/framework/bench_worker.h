@@ -78,6 +78,8 @@ extern __thread int *pending_counts_;
 
 namespace oltp {
 
+extern uint64_t twophase_commit_mem_base_offset; 
+
 class BenchWorker;
 class BenchRunner;
 extern View* my_view; // replication setting of the data
@@ -219,6 +221,31 @@ class BenchWorker : public RWorker {
     }
   }
 
+  void init_two_phase_committer() {
+    assert(two_phase_committer_ == NULL);
+    uint64_t M2 = HUGE_PAGE_SZ;
+
+#if TX_TWO_PHASE_COMMIT_STYLE == 1
+    if(worker_id_ == 0)
+      LOG(3) << "Use two-sided RPC for two-phase-commit.";
+    two_phase_committer_ = new rtx::RpcTwoPhaseCommitter(cm_,this,rpc_,
+                                                        RTX_2PC_PREPARE_RPC_ID,RTX_2PC_DECIDE_RPC_ID);
+#elif TX_TWO_PHASE_COMMIT_STYLE == 2
+    if(worker_id_ == 0)
+      LOG(3) << "Use one-sided for two-phase-commit.";
+    // fprintf(stderr, "mem_base_offset = %lu\n", nocc::oltp::twophase_commit_mem_base_offset);
+    fprintf(stderr, "starting ptr: %p, mem_base_offset = %lu\n", 
+            (char *)(cm_->conn_buf_), nocc::oltp::twophase_commit_mem_base_offset);
+    assert((char *)(cm_->conn_buf_) == rdma_buffer);
+    two_phase_committer_ = new rtx::RDMATwoPhaseCommitter(cm_,this,rdma_sched_,
+                                                         current_partition,worker_id_,
+                                                         nocc::oltp::twophase_commit_mem_base_offset,
+                                                         (char *)(cm_->conn_buf_),
+                                                         total_partition,nthreads,coroutine_num
+                                                         );
+#endif
+  }
+
   virtual ~BenchWorker() { }
   virtual workload_desc_vec_t get_workload() const = 0;
   virtual void register_callbacks() = 0;     /*register read-only callback*/
@@ -232,6 +259,7 @@ class BenchWorker : public RWorker {
   */
   DBLogger *db_logger_;
   rtx::Logger *new_logger_;
+  rtx::TwoPhaseCommitter* two_phase_committer_;
   TXHandler *tx_;       /* current coroutine's tx handler */
 
 #ifdef OCC_TX

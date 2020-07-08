@@ -11,7 +11,7 @@
 #include "rdma_sched.h"
 #include "routine.h"
 #include "rtx/global_vars.h"
-
+#include "rtx/two_phase_commit_mem_manager.hpp"
 #include <vector>
 #include <string>
 #include <stdint.h>
@@ -20,6 +20,9 @@
 using namespace rdmaio;
 using namespace rdmaio::udmsg;
 using namespace nocc::util;
+using namespace nocc::rtx;
+
+extern size_t nthreads;                      // total server threads used
 
 namespace nocc {
 
@@ -32,10 +35,9 @@ namespace oltp {
 #define INDIRECT_YIELD(yield) RWorker::thread_worker->indirect_yield(yield);
 #define DIRECT_YIELD(yield)   RWorker::thread_worker->yield_next(yield);
 
-// #ifdef CALVIN_TX
-// extern std::vector<SingleQueue*> locked_transactions;
-// extern std::vector<Spinlock*> locks_4_locked_transactions;
-// #endif
+extern char *rdma_buffer;
+extern uint64_t twophase_commit_mem_base_offset;
+extern TwoPhaseCommitMemManager* twophase_mem;
 
 // abstract worker
 class RWorker : public ndb_thread {
@@ -156,6 +158,21 @@ class RWorker : public ndb_thread {
     }
 #endif
 
+    //serving as the txn manager for handling remote two-phase-commit prepare and decision messages
+    ASSERT(twophase_mem != NULL) << "two-phase-commit mem does not set up.";
+    for (int i = 1; i < total_worker_coroutine + 1;++i) {
+      for (int from_mac = 0; from_mac < cm_->get_num_nodes(); ++from_mac) {
+        char* local_ptr = twophase_mem->get_local_ptr(from_mac, worker_id_, i);
+        if((*(uint8_t*)local_ptr) == TwoPhaseCommitMemManager::TWO_PHASE_PREPARE) {
+          (*(uint8_t*)local_ptr) = TwoPhaseCommitMemManager::VOTE_COMMIT;
+          // LOG(3) << "offset " << local_ptr - (char *)(cm_->conn_buf_) << " written vote commit.";
+        }
+        if ((*(uint8_t*)local_ptr) == TwoPhaseCommitMemManager::TWO_PHASE_DECISION_COMMIT) {
+          (*(uint8_t*)local_ptr) = 0; 
+          // LOG(3) << "offset " << local_ptr - (char *)(cm_->conn_buf_) << " written zero.";
+        }
+      }
+    }
   }
 
   void indirect_yield(yield_func_t &yield);
