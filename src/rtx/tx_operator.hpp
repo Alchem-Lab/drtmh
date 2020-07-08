@@ -21,7 +21,8 @@
 #define RTX_RENEW_LEASE_RPC_ID 10
 #define RTX_UPDATE_RPC_ID 9
 #define RTX_LOCK_READ_RPC_ID 14
-
+#define RTX_2PC_PREPARE_RPC_ID 15
+#define RTX_2PC_DECIDE_RPC_ID 16
 #endif
 
 namespace nocc {
@@ -154,7 +155,6 @@ class TXOpBase {
   int worker_id_;
 
   DISABLE_COPY_AND_ASSIGN(TXOpBase);
-
 }; // TX ops
 
 // helper macros for iterating message in rpc handler

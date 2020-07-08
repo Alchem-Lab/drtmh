@@ -6,6 +6,7 @@ LAT_VARS(lock);
 LAT_VARS(validate);
 LAT_VARS(commit);
 LAT_VARS(log);
+LAT_VARS(twopc)
 LAT_VARS(temp);
 LAT_VARS(read_lat);
 LAT_VARS(renew_lease);
@@ -17,6 +18,7 @@ CountVector<double> lock_;
 CountVector<double> validate_;
 CountVector<double> commit_;
 CountVector<double> log_;
+CountVector<double> twopc_;
 CountVector<double> temp_;
 CountVector<double> read_lat_;
 CountVector<double> renew_lease_;
@@ -30,6 +32,7 @@ void report_statics(uint64_t one_second) {
   //validate_.erase(0.1);
   commit_.erase(0.1);
   log_.erase(0.1);
+  twopc_.erase(0.1);
   temp_.erase(0.1);
   read_lat_.erase(0.1);
   renew_lease_.erase(0.1);
@@ -49,6 +52,7 @@ void report_statics(uint64_t one_second) {
   LOG(4) << util::BreakdownTimer::rdtsc_to_ms(commit_.average(),one_second)         ;
 
   LOG(4)<< "log time: " << util::BreakdownTimer::rdtsc_to_ms(log_.average(),one_second)            ;
+  LOG(4)<< "2pc time: " << util::BreakdownTimer::rdtsc_to_ms(twopc_.average(),one_second)            ;
   LOG(4) << "temp time: "  << util::BreakdownTimer::rdtsc_to_ms(temp_.average(),one_second) << "ms";
   LOG(4) << "release_read time: "  << util::BreakdownTimer::rdtsc_to_ms(release_read_.average(),one_second) << "ms";
 }
@@ -60,6 +64,9 @@ void record() {
 
   REPORT_V(log,res);
   log_.push_back(res);
+
+  REPORT_V(twopc,res);
+  twopc_.push_back(res);
 
   REPORT_V(commit,res);
   commit_.push_back(res);

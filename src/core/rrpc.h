@@ -11,7 +11,7 @@
 
 #include "logging.h"
 
-#define MAX_RPC_SUPPORT 16
+#define MAX_RPC_SUPPORT 256
 
 #include <functional>
 

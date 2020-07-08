@@ -32,6 +32,13 @@
 #define TX_LOG_STYLE 1
 #endif
 
+// whether to use two-phase-commit (0 for no and >0 for yes)
+// and which style to use for 2pc? two-sided (1) or one-sided (2)
+#cmakedefine TX_TWO_PHASE_COMMIT_STYLE @TX_TWO_PHASE_COMMIT_STYLE@
+#ifndef TX_TWO_PHASE_COMMIT_STYLE
+#define TX_TWO_PHASE_COMMIT_STYLE 0
+#endif
+
 // whether to use a backup store
 #cmakedefine TX_BACKUP_STORE @TX_BACKUP_STORE@
 

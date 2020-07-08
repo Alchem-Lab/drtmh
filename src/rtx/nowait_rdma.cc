@@ -269,6 +269,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
         (*it).data_ptr = (char*)malloc((*it).len);
       }
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
+      // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " r locked.";
       return true;
     }
     else if (resp_lock_status == LOCK_FAIL_MAGIC){
@@ -302,6 +303,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
         }
         else {
           END(lock);
+          // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " r locally locked.";
           return true;
         }
       }
@@ -337,10 +339,11 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
         (*it).data_ptr = (char*)malloc((*it).len);
       }
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
+      // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " w locked.";
       return true;
     }
     else if (resp_lock_status == LOCK_FAIL_MAGIC){
-      abort_cnt[2]++;
+      abort_cnt[2]++;    
       return false;
     }
     else {
@@ -369,6 +372,7 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
         }
         else {
           END(lock);
+          // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " w locally locked.";
           return true;
         }
       }
@@ -395,7 +399,7 @@ void NOWAIT::release_reads(yield_func_t &yield, bool release_all) {
       add_batch_entry<RTXLockRequestItem>(write_batch_helper_, read_set_[i].pid,
                                    /*init RTXLockRequestItem */ 
         RTX_REQ_LOCK_READ, read_set_[i].pid,read_set_[i].tableid,read_set_[i].len,
-        read_set_[i].key,read_set_[i].seq, txn_start_time);
+        read_set_[i].key,read_set_[i].seq, txn_start_time);    
     }
     else {
       auto res = local_try_release_op(read_set_[i].node,R_LEASE(txn_start_time));
@@ -491,6 +495,31 @@ void NOWAIT::log_remote(yield_func_t &yield) {
   } // end check whether it is necessary to log
 }
 
+bool NOWAIT::prepare_commit(yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc prepare message sent due to read-only txn.";
+      return true;
+    }
+    // LOG(3) << "sending prepare messages to " << clk.mac_set_.size() << " macs";
+    return two_phase_committer_->prepare(this, clk, cor_id_, yield);
+}
+
+void NOWAIT::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc decision message sent due to read-only txn.";
+      return;
+    }
+    // LOG(3) << "sending decision messages to " << clk.mac_set_.size() << " macs";
+    two_phase_committer_->broadcast_global_decision(this, clk, commit_or_abort ? 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_COMMIT : 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_ABORT, cor_id_, yield);
+}
 
 void NOWAIT::write_back(yield_func_t &yield) {
   START(commit);
@@ -663,6 +692,7 @@ void NOWAIT::release_rpc_handler(int id,int cid,char *msg,void *arg) {
         << R_LEASE(item->txn_starting_timestamp);
       header->lock = 0;
       // LOG(3) << "read release " << item->key << R_LEASE(item->txn_starting_timestamp);
+      // LOG(3) << item->pid << " " << item->tableid << " " << item->key << " r released.";
     }
     else if (item->type == RTX_REQ_LOCK_WRITE) {
       // auto res = local_try_release_op(item->tableid,item->key,
@@ -673,6 +703,7 @@ void NOWAIT::release_rpc_handler(int id,int cid,char *msg,void *arg) {
         << R_LEASE(item->txn_starting_timestamp) + 1;
       header->lock = 0;
       // LOG(3) << "write release " << item->key << R_LEASE(item->txn_starting_timestamp);
+      // LOG(3) << item->pid << " " << item->tableid << " " << item->key << " w released.";
     }
     
   }

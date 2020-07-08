@@ -65,11 +65,13 @@ char *store_buffer = NULL;
 char *free_buffer  = NULL;
 
 uint64_t r_buffer_size = 0;
+uint64_t twophase_commit_mem_base_offset = 0;
+TwoPhaseCommitMemManager* twophase_mem = NULL;
+
 std::string config_file_name;
 std::string host_file = "hosts.xml";  // default host file
 
 LogHelper *logger = new LogHelper();
-
 View *my_view = NULL;
 
 MemDB *backup_stores_[MAX_BACKUP_NUM];
@@ -155,6 +157,14 @@ BenchRunner::run() {
 
   uint64_t total_sz = logger_sz + ring_area_sz + M2;
   assert(r_buffer_size > total_sz);
+
+  //Calcuate two-phase-committer status area
+  twophase_commit_mem_base_offset = total_sz;
+  twophase_mem = new TwoPhaseCommitMemManager(rdma_buffer,total_partition,nthreads,coroutine_num,total_sz);
+  uint64_t twophase_mem_sz = twophase_mem->total_size();
+  twophase_mem_sz = Round(twophase_mem_sz, M2);
+  LOG(2) << "Total two-phase committer area " << get_memory_size_g(twophase_mem_sz) << "G.";
+  total_sz += twophase_mem_sz;
 
   uint64_t store_size = 0;
 #if 1
