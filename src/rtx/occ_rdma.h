@@ -151,7 +151,7 @@ class OCCR : public OCC {
   }
 
   bool commit(yield_func_t &yield) {
-    START(commit);
+
 #if TX_ONLY_EXE
     return dummy_commit();
 #endif
@@ -163,7 +163,12 @@ class OCCR : public OCC {
     if(!lock_writes_w_rdma(yield)) {
 #endif
 #if !NO_ABORT
-      goto ABORT;
+      // goto ABORT;
+      release_writes_w_rdma(yield);
+      gc_readset();
+      gc_writeset();
+      write_batch_helper_.clear();
+      return false;
 #endif
     }
 #else
@@ -186,7 +191,12 @@ class OCCR : public OCC {
     if(!validate_reads_w_rdma(yield)) {
 #endif
 #if !NO_ABORT
-      goto ABORT;
+      // goto ABORT;
+      release_writes_w_rdma(yield);
+      gc_readset();
+      gc_writeset();
+      write_batch_helper_.clear();
+      return false;
 #endif
     }
 #else
@@ -194,6 +204,21 @@ class OCCR : public OCC {
 #if !NO_ABORT
       goto ABORT;
 #endif
+    }
+#endif
+
+#if TX_TWO_PHASE_COMMIT_STYLE > 0
+    START(twopc)
+    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
+    broadcast_decision(vote_commit, yield);
+    END(twopc);
+    if (!vote_commit) {
+      // goto ABORT;
+      release_writes_w_rdma(yield);
+      gc_readset();
+      gc_writeset();
+      write_batch_helper_.clear();
+      return false;
     }
 #endif
 
@@ -211,6 +236,7 @@ class OCCR : public OCC {
     asm volatile("" ::: "memory");
 #endif
 
+    START(commit);
 #if 1
 #if USE_DSLR
     write_back_w_FA_rdma(yield);    

@@ -93,6 +93,7 @@ void TpccWorker::thread_local_init() {
       new_txs_[i] = new rtx::OCCFast(this,store_,rpc_,current_partition,i,-1);
 #endif
       new_txs_[i]->set_logger(new_logger_);
+      new_txs_[i]->set_two_phase_committer(two_phase_committer_);
     }
 #elif defined(NOWAIT_TX)
     if(txs_[i]  == NULL) {
@@ -104,6 +105,7 @@ void TpccWorker::thread_local_init() {
                                    cm,rdma_sched_,total_partition);
 #endif
       new_txs_[i]->set_logger(new_logger_);
+      new_txs_[i]->set_two_phase_committer(two_phase_committer_);
     }
 #elif defined(WAITDIE_TX)
     if(txs_[i]  == NULL) {    
@@ -115,6 +117,7 @@ void TpccWorker::thread_local_init() {
                                    cm,rdma_sched_,total_partition);
 #endif
       new_txs_[i]->set_logger(new_logger_);
+      new_txs_[i]->set_two_phase_committer(two_phase_committer_);
     }
 #elif defined(MVCC_TX)
     if(txs_[i]  == NULL) {    
@@ -126,6 +129,7 @@ void TpccWorker::thread_local_init() {
                                    cm,rdma_sched_,total_partition);
 #endif
       new_txs_[i]->set_logger(new_logger_);
+      new_txs_[i]->set_two_phase_committer(two_phase_committer_);
     }
 #elif defined(SUNDIAL_TX)
     if(txs_[i]  == NULL) {    
@@ -137,6 +141,7 @@ void TpccWorker::thread_local_init() {
                                    cm,rdma_sched_,total_partition);
 #endif
       new_txs_[i]->set_logger(new_logger_);
+      new_txs_[i]->set_two_phase_committer(two_phase_committer_);
     }
 #elif defined(SI_TX)
     txs_[i] = new DBSI(store_,worker_id_,rpc_,i);

@@ -490,7 +490,31 @@ void WAITDIE::log_remote(yield_func_t &yield) {
   } // end check whether it is necessary to log
 }
 
+bool WAITDIE::prepare_commit(yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc prepare message sent due to read-only txn.";
+      return true;
+    }
+    // LOG(3) << "sending prepare messages to " << clk.mac_set_.size() << " macs";
+    return two_phase_committer_->prepare(this, clk, cor_id_, yield);
+}
 
+void WAITDIE::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc decision message sent due to read-only txn.";
+      return;
+    }
+    // LOG(3) << "sending decision messages to " << clk.mac_set_.size() << " macs";
+    two_phase_committer_->broadcast_global_decision(this, clk, commit_or_abort ? 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_COMMIT : 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_ABORT, cor_id_, yield);
+}
 
 void WAITDIE::write_back(yield_func_t &yield) {
   START(commit);
