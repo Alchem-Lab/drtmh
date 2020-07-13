@@ -29,7 +29,7 @@ CountVector<double> release_read_;
 void report_statics(uint64_t one_second) {
 
   lock_.erase(0.1);
-  //validate_.erase(0.1);
+  validate_.erase(0.1);
   commit_.erase(0.1);
   log_.erase(0.1);
   twopc_.erase(0.1);
@@ -42,7 +42,11 @@ void report_statics(uint64_t one_second) {
   LOG(4) << "read_lat time: "  << util::BreakdownTimer::rdtsc_to_ms(read_lat_.average(),one_second) << "ms";
   LOG(4) << "lock time: "    << util::BreakdownTimer::rdtsc_to_ms(lock_.average(),one_second) << "ms";
   LOG(4) << "release_write time: "  << util::BreakdownTimer::rdtsc_to_ms(release_write_.average(),one_second) << "ms";
+  LOG(4) << "release_read time: "  << util::BreakdownTimer::rdtsc_to_ms(release_read_.average(),one_second) << "ms";
   LOG(4) << "renew_lease time: "  << util::BreakdownTimer::rdtsc_to_ms(renew_lease_.average(),one_second) << "ms";
+  LOG(4) << "validate time: "  << util::BreakdownTimer::rdtsc_to_ms(validate_.average(),one_second) << "ms";
+  LOG(4)<< "log time: " << util::BreakdownTimer::rdtsc_to_ms(log_.average(),one_second) << "ms";
+  LOG(4)<< "2pc time: " << util::BreakdownTimer::rdtsc_to_ms(twopc_.average(),one_second) << "ms";
   LOG(4) << "commit time: "  << util::BreakdownTimer::rdtsc_to_ms(commit_.average(),one_second) << "ms";
 
   LOG(4)   << util::BreakdownTimer::rdtsc_to_ms(read_lat_.average(),one_second)     ;
@@ -51,16 +55,18 @@ void report_statics(uint64_t one_second) {
   LOG(4)  << util::BreakdownTimer::rdtsc_to_ms(renew_lease_.average(),one_second)   ;
   LOG(4) << util::BreakdownTimer::rdtsc_to_ms(commit_.average(),one_second)         ;
 
-  LOG(4)<< "log time: " << util::BreakdownTimer::rdtsc_to_ms(log_.average(),one_second)            ;
-  LOG(4)<< "2pc time: " << util::BreakdownTimer::rdtsc_to_ms(twopc_.average(),one_second)            ;
+
   LOG(4) << "temp time: "  << util::BreakdownTimer::rdtsc_to_ms(temp_.average(),one_second) << "ms";
-  LOG(4) << "release_read time: "  << util::BreakdownTimer::rdtsc_to_ms(release_read_.average(),one_second) << "ms";
+
 }
 
 void record() {
   double res;
   REPORT_V(lock,res);
   lock_.push_back(res);
+
+  REPORT_V(validate,res);
+  validate_.push_back(res);
 
   REPORT_V(log,res);
   log_.push_back(res);
@@ -79,7 +85,6 @@ void record() {
 
   REPORT_V(renew_lease, res);
   renew_lease_.push_back(res);
-
 
   REPORT_V(release_read,res);
   release_read_.push_back(res);

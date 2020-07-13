@@ -45,7 +45,6 @@ void OCC::begin(yield_func_t &yield) {
 
 bool OCC::commit(yield_func_t &yield) {
   // only execution phase
-  START(commit);
 #if TX_ONLY_EXE
   gc_readset();
   gc_writeset();
@@ -55,24 +54,43 @@ bool OCC::commit(yield_func_t &yield) {
   bool ret = true;
   if(abort_) {
     abort_cnt[22]++;
-    goto ABORT;
+    // goto ABORT;
+    release_writes(yield);
+    return false;
   }
 
   // first, lock remote records
   ret = lock_writes(yield);
   if(unlikely(!ret)) {
     abort_cnt[21]++;
-    goto ABORT;
+    // goto ABORT;
+    release_writes(yield);
+    return false;
   }
 
   if(unlikely(!validate_reads(yield))) {
     abort_cnt[20]++;
-    goto ABORT;
+    // goto ABORT;
+    release_writes(yield);
+    return false;
   }
+
+#if TX_TWO_PHASE_COMMIT_STYLE > 0
+    START(twopc)
+    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
+    broadcast_decision(vote_commit, yield);
+    END(twopc);
+    if (!vote_commit) {
+      // goto ABORT;
+      release_writes(yield);
+      return false;
+    }
+#endif
 
   prepare_write_contents();
   // log_remote(yield); // log remote using *logger_*
 
+  START(commit);
   // write the modifications of records back
   write_back_oneshot(yield);
   END(commit);
@@ -297,6 +315,31 @@ void OCC::prepare_write_contents() {
   }
 }
 
+bool OCC::prepare_commit(yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc prepare message sent due to read-only txn.";
+      return true;
+    }
+    // LOG(3) << "sending prepare messages to " << clk.mac_set_.size() << " macs";
+    return two_phase_committer_->prepare(this, clk, cor_id_, yield);
+}
+
+void OCC::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc decision message sent due to read-only txn.";
+      return;
+    }
+    // LOG(3) << "sending decision messages to " << clk.mac_set_.size() << " macs";
+    two_phase_committer_->broadcast_global_decision(this, clk, commit_or_abort ? 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_COMMIT : 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_ABORT, cor_id_, yield);
+}
 
 // the handler for write_back is commit_rpc_handler
 void OCC::write_back(yield_func_t &yield) {
@@ -408,6 +451,7 @@ void OCC::log_remote(yield_func_t &yield) {
 }
 
 bool OCC::validate_reads(yield_func_t &yield) {
+  START(validate);
 
   start_batch_rpc_op(read_batch_helper_);
 
@@ -436,6 +480,8 @@ bool OCC::validate_reads(yield_func_t &yield) {
 #endif
     }
   }
+
+  END(validate);
   return true;
 }
 

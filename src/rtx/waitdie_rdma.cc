@@ -414,6 +414,89 @@ void WAITDIE::release_writes(yield_func_t &yield, bool release_all) {
   END(release_write);
 }
 
+void WAITDIE::prepare_write_contents() {
+    write_batch_helper_.clear_buf();
+
+    for(auto it = write_set_.begin();it != write_set_.end();++it) {
+        if(it->pid != node_id_) {
+            add_batch_entry_wo_mac<RtxWriteItem>(write_batch_helper_,
+                    (*it).pid,
+                    /* init write item */ (*it).pid,(*it).tableid,(*it).key,(*it).len);
+            memcpy(write_batch_helper_.req_buf_end_,(*it).data_ptr,(*it).len);
+            write_batch_helper_.req_buf_end_ += (*it).len;
+        }
+    }
+}
+
+void WAITDIE::log_remote(yield_func_t &yield) {
+
+  if(write_set_.size() > 0 && global_view->rep_factor_ > 0) {
+
+    // re-use write_batch_helper_'s data structure
+    BatchOpCtrlBlock cblock(write_batch_helper_.req_buf_,write_batch_helper_.reply_buf_);
+    cblock.batch_size_  = write_batch_helper_.batch_size_;
+    cblock.req_buf_end_ = write_batch_helper_.req_buf_end_;
+
+#if EM_FASST
+    global_view->add_backup(response_node_,cblock.mac_set_);
+    ASSERT(cblock.mac_set_.size() == global_view->rep_factor_)
+        << "FaSST should uses rep-factor's log entries, current num "
+        << cblock.mac_set_.size() << "; rep-factor " << global_view->rep_factor_;
+#else
+    for(auto it = write_batch_helper_.mac_set_.begin();
+        it != write_batch_helper_.mac_set_.end();++it) {
+      global_view->add_backup(*it,cblock.mac_set_);
+    }
+    // add local server
+    global_view->add_backup(current_partition,cblock.mac_set_);
+#endif
+
+#if CHECKS
+    LOG(3) << "log to " << cblock.mac_set_.size() << " macs";
+#endif
+
+    START(log);
+    logger_->log_remote(cblock,cor_id_);
+    abort_cnt[18]++;
+    worker_->indirect_yield(yield);
+    END(log);
+#if 1
+    cblock.req_buf_ = rpc_->get_fly_buf(cor_id_);
+    memcpy(cblock.req_buf_,write_batch_helper_.req_buf_,write_batch_helper_.batch_msg_size());
+    cblock.req_buf_end_ = cblock.req_buf_ + write_batch_helper_.batch_msg_size();
+    //log ack
+    logger_->log_ack(cblock,cor_id_); // need to yield
+    abort_cnt[18]++;    
+    worker_->indirect_yield(yield);
+#endif
+  } // end check whether it is necessary to log
+}
+
+bool WAITDIE::prepare_commit(yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc prepare message sent due to read-only txn.";
+      return true;
+    }
+    // LOG(3) << "sending prepare messages to " << clk.mac_set_.size() << " macs";
+    return two_phase_committer_->prepare(this, clk, cor_id_, yield);
+}
+
+void WAITDIE::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
+    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc decision message sent due to read-only txn.";
+      return;
+    }
+    // LOG(3) << "sending decision messages to " << clk.mac_set_.size() << " macs";
+    two_phase_committer_->broadcast_global_decision(this, clk, commit_or_abort ? 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_COMMIT : 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_ABORT, cor_id_, yield);
+}
 
 void WAITDIE::write_back(yield_func_t &yield) {
   START(commit);

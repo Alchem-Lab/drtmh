@@ -12,7 +12,8 @@
 #endif
 
 #include "logger.hpp"
-
+#include "two_phase_committer.hpp"
+#include "two_phase_commit_mem_manager.hpp"
 #include "core/logging.h"
 
 #include "rdma_req_helper.hpp"
@@ -291,6 +292,12 @@ protected:
   void release_reads(yield_func_t &yield, bool all = true);
   void release_writes(yield_func_t &yield, bool all = true);
 
+  bool prepare_commit(yield_func_t &yield);
+  void broadcast_decision(bool commit_or_abort, yield_func_t &yield);
+
+  void prepare_write_contents();
+  void log_remote(yield_func_t &yield);
+
   void write_back_w_rdma(yield_func_t &yield);
   void write_back(yield_func_t &yield);
 
@@ -327,6 +334,8 @@ public:
   }
 
   void set_logger(Logger *log) { logger_ = log; }
+
+  void set_two_phase_committer(TwoPhaseCommitter *committer) { two_phase_committer_ = committer; }
 
 #if ENABLE_TXN_API
   // get the read lock of the record and actually read
@@ -602,6 +611,18 @@ public:
     return dummy_commit();
 #endif
 
+#if TX_TWO_PHASE_COMMIT_STYLE > 0
+    START(twopc)
+    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
+    broadcast_decision(vote_commit, yield);
+    END(twopc);
+    if (!vote_commit) {
+      release_reads_w_rdma(yield);
+      release_writes_w_rdma(yield);
+      return false;
+    }
+#endif
+
     asm volatile("" ::: "memory");
 
     // prepare_write_contents();
@@ -630,9 +651,28 @@ public:
 
 #else
   virtual bool commit(yield_func_t &yield) {
-  write_back(yield);
-  release_reads(yield);
-  return true;
+    asm volatile("" ::: "memory");
+
+#if TX_TWO_PHASE_COMMIT_STYLE > 0
+    START(twopc)
+    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
+    broadcast_decision(vote_commit, yield);
+    END(twopc);
+    if (!vote_commit) {
+      release_writes(yield);
+      release_reads(yield);
+      return false;
+    }
+#endif
+
+    prepare_write_contents();
+    log_remote(yield); // log remote using *logger_*
+
+    asm volatile("" ::: "memory");
+    write_back(yield);
+    release_reads(yield);
+    abort_cnt[27]++;
+    return true;
 }
 
 
@@ -652,6 +692,7 @@ protected:
   const int response_node_;
 
   Logger *logger_ = NULL;
+  TwoPhaseCommitter *two_phase_committer_ = NULL;
 
   char* rpc_op_send_buf_;
   char reply_buf_[MAX_MSG_SIZE];

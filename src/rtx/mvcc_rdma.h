@@ -11,7 +11,8 @@
 #endif
 
 #include "logger.hpp"
-
+#include "two_phase_committer.hpp"
+#include "two_phase_commit_mem_manager.hpp"
 #include "core/logging.h"
 
 #include "rdma_req_helper.hpp"
@@ -42,6 +43,11 @@ protected:
   void release_writes(yield_func_t &yield, bool all = true);
   bool try_update_rdma(yield_func_t &yield);
 
+  void prepare_write_contents();
+  void log_remote(yield_func_t &yield);
+  bool prepare_commit(yield_func_t &yield);
+  void broadcast_decision(bool commit_or_abort, yield_func_t &yield);
+  
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     char* data_ptr = (char*)malloc(len);
     for(auto&item : write_set_) {
@@ -235,6 +241,20 @@ public:
   }
 
   virtual bool commit(yield_func_t &yield) {
+#if TX_TWO_PHASE_COMMIT_STYLE > 0
+    START(twopc)
+    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
+    broadcast_decision(vote_commit, yield);
+    END(twopc);
+    if (!vote_commit) {
+      release_reads(yield);
+      release_writes(yield);
+      return false;
+    }
+#endif
+
+    prepare_write_contents();
+    log_remote(yield); // log remote using *logger_*
 #if ONE_SIDED_READ
     try_update_rdma(yield);
 #else
@@ -280,6 +300,8 @@ protected:
   RDMAFAUnlockReq* unlock_req_ = NULL;
   RDMAWriteReq* write_req_ = NULL;
 
+  Logger *logger_       = NULL;
+  TwoPhaseCommitter *two_phase_committer_ = NULL;
 
   char* Rmempool[100];
   int memptr = 0;
@@ -292,6 +314,8 @@ public:
     }
   }
 #include "occ_statistics.h"
+  void set_logger(Logger *log) { logger_ = log; }
+  void set_two_phase_committer(TwoPhaseCommitter *committer) { two_phase_committer_ = committer; }
 
   void register_default_rpc_handlers();
 private:

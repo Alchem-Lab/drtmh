@@ -10,6 +10,8 @@
 #endif
 
 #include "logger.hpp"
+#include "two_phase_committer.hpp"
+#include "two_phase_commit_mem_manager.hpp"
 
 #include "core/rworker.h"
 #include "core/utils/latency_profier.h"
@@ -58,6 +60,7 @@ class OCC : public TXOpBase {
   }
 
   void set_logger(Logger *log) { logger_ = log; }
+  void set_two_phase_committer(TwoPhaseCommitter *committer) { two_phase_committer_ = committer; }
 
   // start a TX
   virtual void begin(yield_func_t &yield);
@@ -271,6 +274,8 @@ class OCC : public TXOpBase {
   virtual bool release_writes(yield_func_t &yield);
   virtual bool validate_reads(yield_func_t &yield);
   virtual void log_remote(yield_func_t &yield);
+  virtual bool prepare_commit(yield_func_t &yield);
+  virtual void broadcast_decision(bool commit_or_abort, yield_func_t &yield);
   virtual void write_back(yield_func_t &yield);
   void write_back_oneshot(yield_func_t &yield);
 
@@ -286,7 +291,8 @@ class OCC : public TXOpBase {
   const int response_node_;
 
   Logger *logger_       = NULL;
-
+  TwoPhaseCommitter *two_phase_committer_ = NULL;
+  
   bool abort_ = false;
   char* rpc_op_send_buf_;
   char reply_buf_[MAX_MSG_SIZE];
