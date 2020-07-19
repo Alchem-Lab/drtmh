@@ -16,7 +16,11 @@ namespace rtx {
 struct MVCCHeader {
 	uint64_t lock;
 	uint64_t rts;
+#if USE_LINKED_LIST_FOR_MVCC
+	uint64_t wts;
+#else
 	uint64_t wts[MVCC_VERSION_NUM];
+#endif
 	// uint64_t off[MVCC_VERSION_NUM];
 };
 

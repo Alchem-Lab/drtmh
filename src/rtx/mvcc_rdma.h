@@ -325,6 +325,29 @@ private:
   void release_rpc_handler(int id,int cid,char *msg,void *arg);
   void update_rpc_handler(int id,int cid,char *msg,void *arg);
   
+
+#if USE_LINKED_LIST_FOR_MVCC
+
+  inline __attribute__((always_inline))
+  MemNode* check_read(MemNode* node, uint64_t timestamp) {
+    assert(node != NULL && node->value != NULL);
+    MVCCHeader* header = (MVCCHeader*)node->value;
+    // earlier write is processing
+    if(header->lock != 0 && header->lock < timestamp) return NULL;
+    
+    MemNode* cur = node;
+    while (cur != NULL) {
+      header = (MVCCHeader*)cur->value;
+      if (header->wts < timestamp)
+        break;
+      cur = cur->next;
+    }
+
+    return cur;
+  }
+
+#else
+
   inline __attribute__((always_inline))
   uint64_t check_write(MVCCHeader* header, uint64_t timestamp) {
     volatile uint64_t rts = header->rts;
@@ -357,6 +380,7 @@ private:
     // pos can be -1 here, meaning no available item
     return pos;
   }
+
 
   void process_received_data(char* ptr, ReadSetItem& item, bool process_pos = false) {
     char* reply = ptr + 1;
@@ -395,6 +419,7 @@ private:
     item.data_ptr = (char*)item.data_ptr + sizeof(MVCCHeader) + maxpos * item.len;
   }
 
+#endif
 };
 }
 }

@@ -168,7 +168,7 @@ void BankMainRunner::init_store(MemDB* &store){
 #endif
 
   //store->AddSchema(ACCT, TAB_HASH,sizeof(uint64_t),sizeof(account::value),meta_size);
-#if MVCC_TX
+#if MVCC_TX && !USE_LINKED_LIST_FOR_MVCC
   store->AddSchema(SAV,  TAB_HASH,sizeof(uint64_t),sizeof(savings::value) * MVCC_VERSION_NUM,meta_size,
                    NumAccounts() / total_partition * 1.5);
   store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value) * MVCC_VERSION_NUM,meta_size,
@@ -203,7 +203,7 @@ void BankMainRunner::init_backup_store(MemDB* &store){
   meta_size = sizeof(rtx::RdmaValHeader);
 #endif
 
-#if MVCC_TX
+#if MVCC_TX && !USE_LINKED_LIST_FOR_MVCC
   store->AddSchema(SAV,  TAB_HASH,sizeof(uint64_t),sizeof(savings::value) * MVCC_VERSION_NUM,meta_size,
           NumAccounts() / total_partition,false);
   store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value) * MVCC_VERSION_NUM,meta_size,
@@ -258,14 +258,14 @@ class BankLoader : public BenchLoader {
       uint64_t round_sz = CACHE_LINE_SZ << 1; // 128 = 2 * cacheline to avoid false sharing
 
       char *wrapper_acct(NULL), *wrapper_saving(NULL), *wrapper_check(NULL), *wrapper_ycsb(NULL);
-#if MVCC_TX
+#if MVCC_TX && !USE_LINKED_LIST_FOR_MVCC
       int save_size = meta_size + MVCC_VERSION_NUM * sizeof(savings::value);
 #else
       int save_size = meta_size + sizeof(savings::value);
 #endif
       save_size = Round<int>(save_size,sizeof(uint64_t));
       
-#if MVCC_TX
+#if MVCC_TX && !USE_LINKED_LIST_FOR_MVCC
       int check_size = meta_size + MVCC_VERSION_NUM * sizeof(checking::value);
 #else
       int check_size = meta_size + sizeof(checking::value); 
@@ -273,7 +273,7 @@ class BankLoader : public BenchLoader {
       check_size = Round<int>(check_size, sizeof(uint64_t));
       ASSERT(check_size % sizeof(uint64_t) == 0) << "cache size " << check_size;
 
-#if MVCC_TX
+#if MVCC_TX && !USE_LINKED_LIST_FOR_MVCC
       int ycsb_size = meta_size + MVCC_VERSION_NUM * sizeof(ycsb_record::value);
 #else
       int ycsb_size = meta_size + sizeof(ycsb_record::value); 

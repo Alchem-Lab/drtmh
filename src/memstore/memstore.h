@@ -36,6 +36,10 @@ struct MemNode
   };
   uint64_t read_ts;
 
+#if USE_LINKED_LIST_FOR_MVCC
+  MemNode* next;  // used by the linkedlist version of mvcc to retrive the next version
+                  // each version's wts is at the beginning of the value field.
+#endif
   char padding[16];
 
   MemNode()
@@ -48,6 +52,9 @@ struct MemNode
     old_value = NULL;
 #if RECORD_STALE
     time = init_time;
+#endif
+#if USE_LINKED_LIST_FOR_MVCC
+    next = NULL;
 #endif
   }
 } __attribute__ ((aligned (CACHE_LINE_SZ)));

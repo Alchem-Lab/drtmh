@@ -370,6 +370,74 @@ void MVCC::log_remote(yield_func_t &yield) {
   }
 }
 
+#if USE_LINKED_LIST_FOR_MVCC
+void MVCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
+  char* reply_msg = rpc_->get_reply_buf();
+  uint8_t res = LOCK_SUCCESS_MAGIC; // success
+  int request_item_parsed = 0;
+  MemNode *node = NULL;
+  size_t nodelen = 0;
+
+  RTX_ITER_ITEM(msg,sizeof(RTXMVCCWriteRequestItem)) {
+    auto item = (RTXMVCCWriteRequestItem *)ttptr;
+    request_item_parsed++;
+    assert(request_item_parsed <= 1); // no batching of lock request.
+    if(item->pid != response_node_)
+      continue;
+    node = local_lookup_op(item->tableid, item->key);
+    assert(node != NULL && node->value != NULL);
+    MemNode* version = NULL;
+    // 1. find a correct version if any
+    if((version = check_read(node, item->txn_starting_timestamp)) == NULL) {
+      res = LOCK_FAIL_MAGIC;
+      if(version == NULL)
+        abort_cnt[25]++;
+      else
+          abort_cnt[28]++;
+      abort_reason = 25;
+      goto END;
+    }
+
+    // 2. a correct version for read found. 
+    //    atomically update the rts of this version.
+    assert(version != NULL && version->value != NULL);
+    MVCCHeader* header = (MVCCHeader*)(version->value);
+    while(true) {
+      volatile uint64_t rts = header->rts;
+      volatile uint64_t* rts_ptr = &(header->rts);
+      if(item->txn_starting_timestamp > rts) {
+        if(!__sync_bool_compare_and_swap(rts_ptr, rts, item->txn_starting_timestamp)) {
+          continue;
+        }
+        else break;
+      }
+      else break;
+    }
+
+    uint64_t before_reading_wts = header->wts[pos];
+    char* raw_data = (char*)(node->value) + sizeof(MVCCHeader);
+    char* reply = reply_msg + 1;
+    *(uint64_t*)reply = (uint64_t)pos;
+    memcpy(reply + sizeof(uint64_t), raw_data + pos * item->len, item->len);
+    int new_pos = check_read(header, item->txn_starting_timestamp);
+    if(new_pos != pos || header->wts[new_pos] != before_reading_wts) {
+      res = LOCK_FAIL_MAGIC;
+      abort_cnt[26]++;
+      abort_reason = 26;
+      goto END;
+    }
+    nodelen = sizeof(uint64_t) + item->len;
+    goto END;
+  }
+END:
+  *((uint8_t*)reply_msg) = res;
+  rpc_->send_reply(reply_msg, sizeof(uint8_t) + nodelen, id, cid);
+NO_REPLY:
+  ;
+}
+
+#else
+
 void MVCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
   uint8_t res = LOCK_SUCCESS_MAGIC; // success
@@ -428,7 +496,7 @@ END:
 NO_REPLY:
   ;
 }
-
+#endif // USE_LINKED_LIST
 
 void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
