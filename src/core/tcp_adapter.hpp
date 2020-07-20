@@ -8,6 +8,15 @@
 #include <vector>
 #include <mutex>
 #include <unordered_map>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <zmq.hpp>    // a wrapper over zeromq
 
@@ -89,21 +98,23 @@ class Adapter : public MsgHandler {
                                     zmq::context_t &context) {
     
     assert(sockets.size() == 0 && locks.size() == 0);
-    
-    std::unordered_map<std::string, std::string> host2ip({
-            {"gorgon1", "172.23.33.31"}, 
-            {"gorgon2", "172.23.33.32"},
-            {"gorgon3", "172.23.33.33"},
-            {"gorgon4", "172.23.33.34"},
-            {"gorgon5", "172.23.33.35"},
-            {"gorgon6", "172.23.33.36"},
-            {"gorgon7", "172.23.33.37"},
-            {"gorgon8", "172.23.33.38"}});
-
     for(uint i = 0;i < network.size();++i) {
+      char* ip;
+      // find the ip of host i
+      char host[256];
+      memcpy(host, network[i].c_str(), strlen(network[i].c_str()));
+      struct hostent *host_entry;
+      host_entry = gethostbyname(host); //find host information
+      if (host_entry == NULL){
+        fprintf(stderr, "cannot find ip for host %s\n", host);
+        perror("gethostbyname");
+        exit(1);
+      }
+      ip = inet_ntoa(*((struct in_addr*) host_entry->h_addr_list[0])); //Convert into IP string
+
       auto s = new zmq::socket_t(context, ZMQ_PUSH);
       char address[32] = "";
-      snprintf(address, 32, "tcp://%s:%d", host2ip[network[i]].c_str(), tcp_port);
+      snprintf(address, 32, "tcp://%s:%d", ip, tcp_port);
       // snprintf(address, 32, "tcp://%s:%d", network[i].c_str(), tcp_port);
       fprintf(stdout, "[TCP] creating shared sockets for %s\n", address);
       s->connect(address);
