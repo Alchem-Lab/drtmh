@@ -479,9 +479,12 @@ void NOWAIT::log_remote(yield_func_t &yield) {
 }
 
 bool NOWAIT::prepare_commit(yield_func_t &yield) {
-    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    BatchOpCtrlBlock& clk = write_batch_helper_;
+    start_batch_rpc_op(clk);
+
     for (auto it = write_set_.begin();it != write_set_.end();++it)
       clk.add_mac(it->pid);
+
     if (clk.mac_set_.size() == 0) {
       // LOG(3) << "no 2pc prepare message sent due to read-only txn.";
       return true;
@@ -491,7 +494,9 @@ bool NOWAIT::prepare_commit(yield_func_t &yield) {
 }
 
 void NOWAIT::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
-    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    BatchOpCtrlBlock& clk = write_batch_helper_;
+    start_batch_rpc_op(clk);
+
     for (auto it = write_set_.begin();it != write_set_.end();++it)
       clk.add_mac(it->pid);
     if (clk.mac_set_.size() == 0) {

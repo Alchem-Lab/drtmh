@@ -350,7 +350,7 @@ public:
 #if TX_TWO_PHASE_COMMIT_STYLE > 0
     START(twopc)
     bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
-    broadcast_decision(vote_commit, yield);
+    // broadcast_decision(vote_commit, yield);
     END(twopc);
     if (!vote_commit) {
       release_reads(yield);

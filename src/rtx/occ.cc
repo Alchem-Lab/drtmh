@@ -78,7 +78,7 @@ bool OCC::commit(yield_func_t &yield) {
 #if TX_TWO_PHASE_COMMIT_STYLE > 0
     START(twopc)
     bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
-    broadcast_decision(vote_commit, yield);
+    // broadcast_decision(vote_commit, yield);
     END(twopc);
     if (!vote_commit) {
       // goto ABORT;
@@ -316,7 +316,8 @@ void OCC::prepare_write_contents() {
 }
 
 bool OCC::prepare_commit(yield_func_t &yield) {
-    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    BatchOpCtrlBlock& clk = write_batch_helper_;
+    start_batch_rpc_op(clk);
     for (auto it = write_set_.begin();it != write_set_.end();++it)
       clk.add_mac(it->pid);
     if (clk.mac_set_.size() == 0) {
@@ -328,7 +329,8 @@ bool OCC::prepare_commit(yield_func_t &yield) {
 }
 
 void OCC::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
-    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    BatchOpCtrlBlock& clk = write_batch_helper_;
+    start_batch_rpc_op(clk);
     for (auto it = write_set_.begin();it != write_set_.end();++it)
       clk.add_mac(it->pid);
     if (clk.mac_set_.size() == 0) {
