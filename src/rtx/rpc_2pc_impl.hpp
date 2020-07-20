@@ -42,11 +42,12 @@ class RpcTwoPhaseCommitter : public TwoPhaseCommitter {
     // collect votes
     int cnt_vote_commit = 0, cnt_vote_abort = 0;
     for (int i = 0; i < replies; i++) {
+
       uint8_t* vote = tx->get_batch_res<uint8_t>(clk, i);
       if (*vote == TwoPhaseCommitMemManager::VOTE_ABORT) {
         cnt_vote_abort += 1;
       } else {
-        ASSERT(*vote == TwoPhaseCommitMemManager::VOTE_COMMIT) << "vote should be either VOTE_COMMIT or VOTE_ABORT.";
+        ASSERT(*vote == TwoPhaseCommitMemManager::VOTE_COMMIT) << "vote should be either VOTE_COMMIT or VOTE_ABORT. vote = " << *vote;
         cnt_vote_commit += 1;
       }
     }

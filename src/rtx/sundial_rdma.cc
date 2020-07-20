@@ -6,7 +6,8 @@ namespace nocc {
 namespace rtx {
 
 bool SUNDIAL::prepare_commit(yield_func_t &yield) {
-    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    BatchOpCtrlBlock& clk = write_batch_helper_;
+    start_batch_rpc_op(clk);
     for (auto it = write_set_.begin();it != write_set_.end();++it)
       clk.add_mac(it->pid);
     if (clk.mac_set_.size() == 0) {
@@ -18,7 +19,8 @@ bool SUNDIAL::prepare_commit(yield_func_t &yield) {
 }
 
 void SUNDIAL::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
-    BatchOpCtrlBlock clk(rpc_->get_fly_buf(cor_id_), rpc_->get_reply_buf());
+    BatchOpCtrlBlock& clk = write_batch_helper_;
+    start_batch_rpc_op(clk);
     for (auto it = write_set_.begin();it != write_set_.end();++it)
       clk.add_mac(it->pid);
     if (clk.mac_set_.size() == 0) {
