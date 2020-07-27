@@ -101,12 +101,12 @@ class Adapter : public MsgHandler {
     for(uint i = 0;i < network.size();++i) {
       char* ip;
       // find the ip of host i
-      char host[256];
-      memcpy(host, network[i].c_str(), strlen(network[i].c_str()));
+      // char host[256];
+      // memcpy(host, network[i].c_str(), strlen(network[i].c_str()));
       struct hostent *host_entry;
-      host_entry = gethostbyname(host); //find host information
+      host_entry = gethostbyname(network[i].c_str()); //find host information
       if (host_entry == NULL){
-        fprintf(stderr, "cannot find ip for host %s\n", host);
+        fprintf(stderr, "cannot find ip for host %s\n", network[i].c_str());
         perror("gethostbyname");
         exit(1);
       }
