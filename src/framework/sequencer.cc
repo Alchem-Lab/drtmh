@@ -24,6 +24,8 @@ namespace nocc {
 extern __thread MappedLog local_log;
 extern db::EpochManager* epoch_manager;
 extern oltp::Scheduler* scheduler;
+extern std::vector<SingleQueue *>   local_comm_queues;
+extern zmq::context_t send_context;
 
 namespace oltp {
 
@@ -82,10 +84,12 @@ void Sequencer::run() {
   ROCC_BIND_STUB(rpc_, &Sequencer::sequence_rpc_handler, this, RPC_DET_SEQUENCE);
 
   ROCC_BIND_STUB(rpc_, &Sequencer::epoch_sync_rpc_handler, this, RPC_CALVIN_EPOCH_STATUS);
-  
+
+#if USE_TCP_MSG == 0  
   // fetch QPs
   fill_qp_vec(cm_,worker_id_);
-
+#endif
+  
   // waiting for master to start workers
   this->inited = true;
 #if 1

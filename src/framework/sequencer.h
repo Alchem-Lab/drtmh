@@ -39,6 +39,7 @@ namespace nocc {
 			BreakdownTimer timer_;
 			#if ONE_SIDED_READ == 0
 			  uint8_t* epoch_status_;
+			  bool* cor_epoch_done;		//unused for the rpc version.
 			#elif ONE_SIDED_READ == 1
 			  uint8_t* epoch_status_;   //unused. declared here to make compiler happy.
 			  bool* cor_epoch_done;

@@ -20,6 +20,7 @@ extern size_t nclients;
 extern size_t scale_factor;
 extern size_t current_partition;
 extern size_t total_partition;
+extern int tcp_port;
 
 using namespace rdmaio::ringmsg;
 
@@ -27,6 +28,8 @@ namespace nocc {
 
 extern __thread MappedLog local_log;
 extern oltp::Sequencer* sequencer;
+extern std::vector<SingleQueue *>   local_comm_queues;
+extern zmq::context_t send_context;
 
 namespace oltp {
 

@@ -74,6 +74,7 @@ namespace nocc {
 #if ONE_SIDED_READ == 0
 			char*** req_buffers;
 			volatile int** req_buffer_state;
+			uint64_t** offsets_;			   //unused for rpc version.
 #elif ONE_SIDED_READ == 1
 			volatile int** req_buffer_state;   //unused. only declared to make compiler happy.
 			char*** req_buffers;

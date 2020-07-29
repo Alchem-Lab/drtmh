@@ -40,7 +40,7 @@
 
 using namespace nocc::util;
 using namespace nocc::db;
-using namespace nocc::rtx;
+// using namespace nocc::rtx;
 #define CS 0
 #define LOCAL_CLIENT 0
 

@@ -323,7 +323,7 @@ void BenchWorker::run() {
 #endif
 
   // fetch QPs
-  fill_qp_vec(cm_,worker_id_);
+  // fill_qp_vec(cm_,worker_id_);
 
   // waiting for master to start workers
   this->inited = true;

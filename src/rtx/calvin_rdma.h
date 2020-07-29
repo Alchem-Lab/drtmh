@@ -12,7 +12,8 @@
 #endif
 
 #include "logger.hpp"
-
+#include "two_phase_committer.hpp"
+#include "two_phase_commit_mem_manager.hpp"
 #include "core/logging.h"
 
 #include "rdma_req_helper.hpp"
@@ -183,6 +184,8 @@ public:
   }
 
   void set_logger(Logger *log) { logger_ = log; }
+
+  void set_two_phase_committer(TwoPhaseCommitter *committer) { two_phase_committer_ = committer; }
 
 #if ENABLE_TXN_API
   // get the read lock of the record and actually read
@@ -501,7 +504,8 @@ protected:
   const int response_node_;
 
   Logger *logger_ = NULL;
-
+  TwoPhaseCommitter *two_phase_committer_ = NULL;
+  
   char* rpc_op_send_buf_;
   char reply_buf_[MAX_MSG_SIZE];
 
