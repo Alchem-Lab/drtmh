@@ -152,6 +152,10 @@ protected:
     return true;
   }
 
+  
+  bool prepare_commit(yield_func_t &yield);
+  void broadcast_decision(bool commit_or_abort, yield_func_t &yield);
+
   void release_reads(yield_func_t &yield);
   void release_writes(yield_func_t &yield);
   void write_back(yield_func_t &yield);
@@ -468,6 +472,24 @@ public:
     return dummy_commit();
 #endif
 
+#if TX_TWO_PHASE_COMMIT_STYLE > 0
+    START(twopc)
+    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
+    // broadcast_decision(vote_commit, yield);
+    END(twopc);
+    if (!vote_commit) {
+      release_reads(yield);
+      release_writes(yield);
+      gc_readset();
+      gc_writeset();
+      // for calvin, we shouldn't expect an abort, during normal execution.
+      // since the scheduler guarantee's there is no abort after the txn is granted locks.
+      // However, however, with 2pc, aborts do happen, here we won't handle 2pc-induced aborts here
+      // and we simply return false like other txns.
+      return false;
+    }
+#endif
+
     asm volatile("" ::: "memory");
 
     // prepare_write_contents();
@@ -505,7 +527,7 @@ protected:
 
   Logger *logger_ = NULL;
   TwoPhaseCommitter *two_phase_committer_ = NULL;
-  
+
   char* rpc_op_send_buf_;
   char reply_buf_[MAX_MSG_SIZE];
 

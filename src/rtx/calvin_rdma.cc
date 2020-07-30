@@ -345,6 +345,37 @@ void CALVIN::release_writes(yield_func_t &yield) {
   }
 }
 
+bool CALVIN::prepare_commit(yield_func_t &yield) {
+    BatchOpCtrlBlock& clk = write_batch_helper_;
+    start_batch_rpc_op(clk);
+
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc prepare message sent due to read-only txn.";
+      return true;
+    }
+    // LOG(3) << "sending prepare messages to " << clk.mac_set_.size() << " macs";
+    return two_phase_committer_->prepare(this, clk, cor_id_, yield);
+}
+
+void CALVIN::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
+    BatchOpCtrlBlock& clk = write_batch_helper_;
+    start_batch_rpc_op(clk);
+
+    for (auto it = write_set_.begin();it != write_set_.end();++it)
+      clk.add_mac(it->pid);
+    if (clk.mac_set_.size() == 0) {
+      // LOG(3) << "no 2pc decision message sent due to read-only txn.";
+      return;
+    }
+    // LOG(3) << "sending decision messages to " << clk.mac_set_.size() << " macs";
+    two_phase_committer_->broadcast_global_decision(this, clk, commit_or_abort ? 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_COMMIT : 
+                                                   TwoPhaseCommitMemManager::TWO_PHASE_DECISION_ABORT, cor_id_, yield);
+}
+
 void CALVIN::write_back(yield_func_t &yield) {
   // step 5: applying writes
   // ignore remote writes since they will be viewed as local writes
