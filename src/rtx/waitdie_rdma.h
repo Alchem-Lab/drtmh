@@ -322,7 +322,35 @@ public:
 #endif
 
     if(worker_id_ == 0 && cor_id_ == 0) {
-      LOG(3) << "Use one-sided for read.";
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+      fprintf(stderr, "WAITDIE uses ONE_SIDED LOCK.\n");
+#else
+      fprintf(stderr, "WAITDIE uses RPC LOCK.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOG) != 0
+      fprintf(stderr, "WAITDIE uses ONE_SIDED LOG.\n");
+#else
+      fprintf(stderr, "WAITDIE uses RPC LOG.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
+      fprintf(stderr, "WAITDIE uses ONE_SIDED 2PC.\n");
+#else
+      fprintf(stderr, "WAITDIE uses RPC 2PC.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+      fprintf(stderr, "WAITDIE uses ONE_SIDED RELEASE.\n");
+#else
+      fprintf(stderr, "WAITDIE uses RPC RELEASE.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
+      fprintf(stderr, "WAITDIE uses ONE_SIDED COMMIT.\n");
+#else
+      fprintf(stderr, "WAITDIE uses RPC COMMIT.");
+#endif
     }
 
     register_default_rpc_handlers();
@@ -355,17 +383,17 @@ public:
       index = remote_read(pid,tableid,key,len,yield);
     }
 
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
     // step 2: get the read lock. If fail, return false
     if(!try_lock_read_w_rdma(index, yield)) {
-      release_reads_w_rdma(yield);
-      release_writes_w_rdma(yield);
+      do_release_reads(yield);
+      do_release_writes(yield);
       return -1;
     }
 #else
     if (!try_lock_read_w_rwlock_rpc(index, yield)) {
-      release_reads(yield, false);
-      release_writes(yield);
+      do_release_reads(yield, false);
+      do_release_writes(yield);
       return -1;
     }
 #endif
@@ -404,7 +432,7 @@ public:
       index = remote_write(pid,tableid,key,len,yield);
     }
 
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
     // step 3: get the write lock. If fail, return false
     // if(!try_lock_write_w_rwlock_rdma(index, yield)) {
     //   release_reads_w_rwlock_rdma(yield);
@@ -412,14 +440,14 @@ public:
     //   return -1;
     // }
     if(!try_lock_write_w_rdma(index, yield)) {
-      release_reads_w_rdma(yield);
-      release_writes_w_rdma(yield);
+      do_release_reads(yield);
+      do_release_writes(yield);
       return -1;
     }
 #else
     if(!try_lock_write_w_rwlock_rpc(index, yield)) {
-      release_reads(yield);
-      release_writes(yield,false);
+      do_release_reads(yield);
+      do_release_writes(yield,false);
       return -1;
     }
 #endif
@@ -620,8 +648,8 @@ public:
     // broadcast_decision(vote_commit, yield);
     END(twopc);
     if (!vote_commit) {
-      release_reads_w_rdma(yield);
-      release_writes_w_rdma(yield);
+      do_release_reads(yield);
+      do_release_writes(yield);
       return false;
     }
 #endif
@@ -638,8 +666,8 @@ public:
     release_reads_w_FA_rdma(yield);
     write_back_w_FA_rdma(yield);    
 #else
-    release_reads_w_rdma(yield);
-    write_back_w_rdma(yield);
+    do_release_reads(yield);
+    do_write_back(yield);
 #endif
 #else
     /**
@@ -663,8 +691,8 @@ public:
     // broadcast_decision(vote_commit, yield);
     END(twopc);
     if (!vote_commit) {
-      release_writes(yield);
-      release_reads(yield);
+      do_release_writes(yield);
+      do_release_reads(yield);
       return false;
     }
 #endif
@@ -673,14 +701,38 @@ public:
     log_remote(yield); // log remote using *logger_*
 
     asm volatile("" ::: "memory");
-    write_back(yield);
-    release_reads(yield);
+    do_write_back(yield);
+    do_release_reads(yield);
     abort_cnt[27]++;
     return true;
 }
 
 
 #endif
+
+  inline void do_release_reads(yield_func_t &yield, bool release_all = true) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+      release_reads_w_rdma(yield);
+#else
+      release_reads(yield, release_all);
+#endif
+  }
+
+  inline void do_release_writes(yield_func_t &yield, bool release_all = true) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+      release_writes_w_rdma(yield);
+#else
+      release_writes(yield, release_all);
+#endif
+  }
+
+  inline void do_write_back(yield_func_t &yield) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
+      write_back_w_rdma(yield);
+#else
+      write_back(yield);
+#endif
+  }
 
 protected:
   std::vector<ReadSetItem>  read_set_;

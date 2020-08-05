@@ -17,11 +17,6 @@ sed -i 's/#define TX_TWO_PHASE_COMMIT_STYLE.*/#define TX_TWO_PHASE_COMMIT_STYLE 
 sed -i 's/#define USE_TCP_MSG.*/#define USE_TCP_MSG 0/g' ../src/framework/config.h
 make -j nocc$1-onesided
 
-
-#sed 's/#define ONE_SIDED_READ/#define ONE_SIDED_READ 2/g' tx_config.h > aaa
-#sed 's/#define RDMA_CACHE_/#define RDMA_CACHE 1/g' aaa > ../src/tx_config.h
-#make -j12 nocc$1-hybrid
-
 sed -i '0,/#define USE_RDMA.*/{s/#define USE_RDMA.*/#define USE_RDMA 1/}' ../src/rocc_config.h
 sed -i 's/#define ONE_SIDED_READ.*/#define ONE_SIDED_READ 0/g' ../src/tx_config.h
 sed -i 's/#define RDMA_CACHE.*/#define RDMA_CACHE 0/g' ../src/tx_config.h
@@ -30,7 +25,6 @@ sed -i "s/#define LARGE_CONNECTION.*/#define LARGE_CONNECTION ${qp_num}/g" ../sr
 sed -i 's/#define TX_TWO_PHASE_COMMIT_STYLE.*/#define TX_TWO_PHASE_COMMIT_STYLE 1/g' ../src/tx_config.h
 sed -i 's/#define USE_TCP_MSG.*/#define USE_TCP_MSG 0/g' ../src/framework/config.h
 make -j nocc$1-rpc
-
 
 sed -i '0,/#define USE_RDMA.*/{s/#define USE_RDMA.*/#define USE_RDMA 0/}' ../src/rocc_config.h
 sed -i 's/#define ONE_SIDED_READ.*/#define ONE_SIDED_READ 0/g' ../src/tx_config.h
