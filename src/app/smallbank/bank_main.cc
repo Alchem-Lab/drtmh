@@ -226,13 +226,20 @@ void BankMainRunner::init_backup_store(MemDB* &store){
 #endif
 
 #if MVCC_TX
-  assert(false);
-#endif
-
+  store->AddSchema(SAV,  TAB_HASH,sizeof(uint64_t),sizeof(savings::value) * MVCC_VERSION_NUM,meta_size,
+          NumAccounts() / total_partition,false);
+  store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value) * MVCC_VERSION_NUM,meta_size,
+          NumAccounts() / total_partition,false);
+  store->AddSchema(YCSB, TAB_HASH, sizeof(uint64_t), sizeof(ycsb_record::value) * MVCC_VERSION_NUM,meta_size,
+          NumAccounts() / total_partition,false);
+#else
   store->AddSchema(SAV,  TAB_HASH,sizeof(uint64_t),sizeof(savings::value),meta_size,
-                   NumAccounts() / total_partition,false);
+          NumAccounts() / total_partition,false);
   store->AddSchema(CHECK,TAB_HASH,sizeof(uint64_t),sizeof(checking::value),meta_size,
-                   NumAccounts() / total_partition,false);
+          NumAccounts() / total_partition,false);
+  store->AddSchema(YCSB, TAB_HASH, sizeof(uint64_t), sizeof(ycsb_record::value),meta_size,
+          NumAccounts() / total_partition,false);
+#endif
 }
 
 class BankLoader : public BenchLoader {
