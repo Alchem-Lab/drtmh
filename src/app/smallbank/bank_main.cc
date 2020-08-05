@@ -204,6 +204,9 @@ void BankMainRunner::init_store(MemDB* &store){
                    NumAccounts() / total_partition * 1.5);
   store->AddSchema(YCSB, TAB_HASH, sizeof(uint64_t), sizeof(ycsb_record::value), meta_size,
                    NumAccounts() / total_partition * 1.5);
+  assert(store->stores_[SAV] != NULL);
+  assert(store->stores_[CHECK] != NULL);
+  assert(store->stores_[YCSB] != NULL);
 #endif
 
 #if 1
@@ -395,7 +398,7 @@ class BankLoader : public BenchLoader {
       // if(is_primary_ && ONE_SIDED_READ) {
         node->off =  (uint64_t)wrapper_check - (uint64_t)(cm->conn_buf_);
         ASSERT(node->off % sizeof(uint64_t) == 0) << "check value size " << check_size;
-      }
+      } 
 
 #if BOHM_TX
       node = store_->Put(YCSB, i, (uint64_t*)wrapper_ycsb, sizeof(BOHMRecord));
