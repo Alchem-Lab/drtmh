@@ -714,7 +714,7 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
   int release_num = write_set_.size();
   if(!all)
     release_num -= 1;
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
   // the back of write set fail to get lock, no need to unlock
   bool need_yield = false;
   abort_cnt[19]+=release_num;

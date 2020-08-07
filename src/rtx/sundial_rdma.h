@@ -73,7 +73,7 @@ protected:
     read_set_.emplace_back(tableid, key, (MemNode*)NULL, (char*)NULL, 0, len, pid, -1, -1);
     int index = read_set_.size() - 1;
 
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
     START(read_lat);
     uint64_t off = 0;
     if(pid != node_id_) {
@@ -168,25 +168,28 @@ protected:
       write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
       write_set_.back().value = (char*)(node->value);
     }
-#if ONE_SIDED_READ == 2
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+    if(!try_lock_read_rdma(index, yield)) {
+      // abort
+      abort_cnt[9]++;
+      release_reads(yield);
+      release_writes(yield, false);
+      return -1;
+    }
+#elif ONE_SIDED_READ == 2
     if(!try_lock_read_rpc(index, yield)) {
+      // abort
+      abort_cnt[10]++;
       release_reads(yield);
       release_writes(yield, false);
       return -1;
     }
     process_received_data(reply_buf_, write_set_.back(), true);
-#elif ONE_SIDED_READ == 1
-    if(!try_lock_read_rdma(index, yield)) {
-      // abort
-      release_reads(yield);
-      release_writes(yield, false);
-      return -1;
-    }
 #else
     assert(false);
 #endif // end HYBRID
 
-#else
+#else // ONE_SIDED_READ == 0
     if(!try_lock_read_rpc(index, yield)) {
       // abort
       abort_cnt[11]++;
@@ -229,7 +232,45 @@ public:
       rpc_op_send_buf_(rpc_->get_static_buf(MAX_MSG_SIZE)),
       cor_id_(cid),response_node_(nid) {
         if(worker_id_ == 0 && cor_id_ == 0) {
-          LOG(3) << "Use one-sided for read.";
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED READ.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC READ.\n");
+#endif
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED LOCK.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC LOCK.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOG) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED LOG.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC LOG.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED 2PC.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC 2PC.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED RELEASE.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC RELEASE.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED COMMIT.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC COMMIT.");
+#endif
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED RENEW.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC RENEW.");
+#endif
         }
 
         register_default_rpc_handlers();
@@ -278,8 +319,9 @@ public:
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     auto& item = read_set_[idx];
     if(item.rts < commit_id_) {
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
         if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
+          abort_cnt[8]++;
         //if(false) {
 #else
         if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
@@ -360,6 +402,7 @@ public:
     // broadcast_decision(vote_commit, yield);
     END(twopc);
     if (!vote_commit) {
+      abort_cnt[17]++;
       release_reads(yield);
       release_writes(yield);
       return false;
@@ -368,7 +411,11 @@ public:
 
     prepare_write_contents();
     log_remote(yield); // log remote using *logger_*
-    #if ONE_SIDED_READ
+    return try_update(yield);
+  }
+  
+  inline bool try_update(yield_func_t &yield) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
     abort_cnt[15]++;
     return try_update_rdma(yield);
 #else
@@ -376,7 +423,7 @@ public:
     return try_update_rpc(yield);
 #endif
   }
-  
+
 protected:
   std::vector<SundialReadSetItem> read_set_;
   std::vector<SundialReadSetItem> write_set_;
