@@ -43,7 +43,7 @@ void MVCC::release_writes(yield_func_t &yield, bool all) {
   if(!all) {
     release_num -= 1;
   }
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
   bool need_yield = false;
   for(int i = 0; i < release_num; ++i) {
     auto& item = write_set_[i];

@@ -72,7 +72,7 @@ protected:
       return index;
     }
 
-#if ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
     if(!try_read_rdma(index, yield)) {
       release_reads(yield);
       release_writes(yield);
@@ -103,7 +103,7 @@ protected:
     }
     write_set_.emplace_back(tableid,key,(MemNode*)NULL,(char *)NULL,0,len,pid);
     index = write_set_.size() - 1;
-#if ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
     int ret = try_lock_read_rdma(index, yield);
     if(ret == -1) {
       release_reads(yield);
@@ -134,13 +134,24 @@ protected:
     if(pid != node_id_) {
       process_received_data_hybrid(reply_buf_, write_set_.back());
     }
-#else
+#else // ONE_SIDED_READ == 0
     if(!try_lock_read_rpc(index, yield)) {
       // abort
       release_reads(yield);
       release_writes(yield, false);
       return -1;
     }
+
+    // // here we must save the off (index) for each item
+    // // so that future one-sided ops can use it if needed.
+    // // in fact, the item.off field is fetched all via the one-sided mode across all
+    // // concurrency control algorithms in hybrid mode.
+    // auto& item = write_set_.back();
+    // char* local_buf = Rmempool[memptr++];
+    // item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
+    //              local_buf, yield, sizeof(MVCCHeader), false);
+    // //LOG(3) << "get off" << item.off;
+
     // get the results
     if(pid != node_id_) {
       process_received_data(reply_buf_, write_set_.back(), true);
@@ -163,7 +174,43 @@ public:
       write_batch_helper_(rpc_->get_static_buf(MAX_MSG_SIZE),reply_buf_),
       rpc_op_send_buf_(rpc_->get_static_buf(MAX_MSG_SIZE)),
       cor_id_(cid),response_node_(nid) {
+        if(worker_id_ == 0 && cor_id_ == 0) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED READ.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC READ.\n");
+#endif
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED LOCK.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC LOCK.\n");
+#endif
 
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOG) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED LOG.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC LOG.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED 2PC.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC 2PC.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED RELEASE.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC RELEASE.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
+          fprintf(stderr, "MVCC uses ONE_SIDED COMMIT.\n");
+#else
+          fprintf(stderr, "MVCC uses RPC COMMIT.");
+#endif
+
+    }
         register_default_rpc_handlers();
         memset(reply_buf_,0,MAX_MSG_SIZE);
         read_set_.clear();
@@ -254,16 +301,20 @@ public:
 
     prepare_write_contents();
     log_remote(yield); // log remote using *logger_*
-#if ONE_SIDED_READ
+    try_update(yield);
+  	return true;
+  }
+  
+  inline void try_update(yield_func_t &yield) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
     try_update_rdma(yield);
     abort_cnt[35]++;
 #else
     try_update_rpc(yield);
     abort_cnt[36]++;
 #endif
-  	return true;
   }
-  
+
   template <typename V>
   inline __attribute__((always_inline))
   V *get_writeset(int idx,yield_func_t &yield) {
