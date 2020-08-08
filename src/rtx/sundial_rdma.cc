@@ -282,6 +282,7 @@ bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &
   uint32_t node_rts = RTS(tss);
   if(item.wts != node_wts || (commit_id > node_rts && l != 0)) { // !!
     abort_cnt[35]++;
+    Rfree(local_buf);
     // END(renew_lease);
     return false;
   }
@@ -299,6 +300,7 @@ bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &
       // }
     }
     END(renew_lease);
+    Rfree(local_buf);
     return true;
   }
   return false;
@@ -706,6 +708,9 @@ NO_REPLY:
 
 
 void SUNDIAL::release_reads(yield_func_t &yield) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+  gc_readset();
+#endif
   return; // no need release read, there is no read lock
 }
 
@@ -774,6 +779,9 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
   }
 #endif
   END(release_write);
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+  gc_writeset();
+#endif
 }
 
 void SUNDIAL::release_rpc_handler(int id,int cid,char *msg,void *arg) {

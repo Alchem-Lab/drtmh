@@ -411,7 +411,10 @@ public:
 
     prepare_write_contents();
     log_remote(yield); // log remote using *logger_*
-    return try_update(yield);
+    bool ret = try_update(yield);
+    gc_readset();
+    gc_writeset();
+    return ret;
   }
   
   inline bool try_update(yield_func_t &yield) {
@@ -422,6 +425,28 @@ public:
     abort_cnt[16]++;
     return try_update_rpc(yield);
 #endif
+  }
+
+  /**
+   * GC the read/write set is a little complex using RDMA.
+   * Since some pointers are allocated from the RDMA heap, not from local heap.
+   */
+  void gc_helper(std::vector<SundialReadSetItem> &set) {
+    for(auto it = set.begin();it != set.end();++it) {
+      if(it->pid != node_id_)
+        Rfree((*it).data_ptr - sizeof(RdmaValHeader));
+      else
+        free((*it).data_ptr - sizeof(RdmaValHeader));
+    }
+  }
+
+  // overwrite GC functions, to use Rfree
+  void gc_readset() {
+    gc_helper(read_set_);
+  }
+
+  void gc_writeset() {
+    gc_helper(write_set_);
   }
 
 protected:
