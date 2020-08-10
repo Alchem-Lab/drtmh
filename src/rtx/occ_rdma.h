@@ -33,8 +33,49 @@ class OCCR : public OCC {
                                  cm, rdma_sched, ms);
 #endif
 
+
     if(worker_id_ == 0 && cor_id_ == 0) {
-      LOG(3) << "Use one-sided for read.";
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
+      fprintf(stderr, "OCC uses ONE_SIDED READ.\n");
+#else
+      fprintf(stderr, "OCC uses RPC READ.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+      fprintf(stderr, "OCC uses ONE_SIDED LOCK.\n");
+#else
+      fprintf(stderr, "OCC uses RPC LOCK.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOG) != 0
+      fprintf(stderr, "OCC uses ONE_SIDED LOG.\n");
+#else
+      fprintf(stderr, "OCC uses RPC LOG.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
+      fprintf(stderr, "OCC uses ONE_SIDED 2PC.\n");
+#else
+      fprintf(stderr, "OCC uses RPC 2PC.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+      fprintf(stderr, "OCC uses ONE_SIDED RELEASE.\n");
+#else
+      fprintf(stderr, "OCC uses RPC RELEASE.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
+      fprintf(stderr, "OCC uses ONE_SIDED COMMIT.\n");
+#else
+      fprintf(stderr, "OCC uses RPC COMMIT.");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_VALIDATE) != 0
+      fprintf(stderr, "OCC uses ONE_SIDED VALIDATE.\n");
+#else
+      fprintf(stderr, "OCC uses RPC VALIDATE.");
+#endif
     }
 
     // register normal RPC handlers
@@ -83,6 +124,7 @@ class OCCR : public OCC {
   }
 
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
     START(read_lat);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
@@ -106,6 +148,9 @@ class OCCR : public OCC {
                            seq,
                            len,pid);
     return read_set_.size() - 1;
+#else
+    return OCC::remote_read(pid,tableid,key,len,yield);
+#endif
   }
 
   int pending_remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
@@ -125,6 +170,7 @@ class OCCR : public OCC {
   }
 
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
     START(read_lat);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
@@ -148,6 +194,9 @@ class OCCR : public OCC {
                            seq,
                            len,pid);
     return write_set_.size() - 1;
+#else
+    return OCC::remote_write(pid,tableid,key,len,yield);
+#endif
   }
 
   bool commit(yield_func_t &yield) {
@@ -156,7 +205,7 @@ class OCCR : public OCC {
     return dummy_commit();
 #endif
 
-#if 1 //USE_RDMA_COMMIT
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
 #if USE_DSLR
     if(!lock_writes_w_FA_rdma(yield)) {    
 #else
@@ -164,7 +213,7 @@ class OCCR : public OCC {
 #endif
 #if !NO_ABORT
       // goto ABORT;
-      release_writes_w_rdma(yield);
+      release_writes(yield);
       gc_readset();
       gc_writeset();
       write_batch_helper_.clear();
@@ -184,7 +233,8 @@ class OCCR : public OCC {
 #endif
 
     asm volatile("" ::: "memory");
-#if 1 //USE_RDMA_COMMIT
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_VALIDATE) != 0
 #if USE_DSLR
     if(!validate_reads_w_FA_rdma(yield)) {
 #else
@@ -192,7 +242,7 @@ class OCCR : public OCC {
 #endif
 #if !NO_ABORT
       // goto ABORT;
-      release_writes_w_rdma(yield);
+      release_writes(yield);
       gc_readset();
       gc_writeset();
       write_batch_helper_.clear();
@@ -214,7 +264,7 @@ class OCCR : public OCC {
     END(twopc);
     if (!vote_commit) {
       // goto ABORT;
-      release_writes_w_rdma(yield);
+      release_writes(yield);
       gc_readset();
       gc_writeset();
       write_batch_helper_.clear();
@@ -237,7 +287,7 @@ class OCCR : public OCC {
 #endif
 
     START(commit);
-#if 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
 #if USE_DSLR
     write_back_w_FA_rdma(yield);    
 #else
@@ -261,15 +311,7 @@ class OCCR : public OCC {
     return true;
 
 ABORT:
-#if 1 //USE_RDMA_COMMIT
-#if USE_DSLR
-    release_writes_w_FA_rdma(yield);
-#else
-    release_writes_w_rdma(yield);
-#endif
-#else
     release_writes(yield);
-#endif
 
     gc_readset();
     gc_writeset();
@@ -277,6 +319,18 @@ ABORT:
     write_batch_helper_.clear();
     // END(commit);
     return false;
+  }
+
+  inline bool release_writes(yield_func_t &yield) {
+    #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+    #if USE_DSLR
+        release_writes_w_FA_rdma(yield);
+    #else
+        release_writes_w_rdma(yield);
+    #endif
+    #else
+        OCC::release_writes(yield);
+    #endif
   }
 
   /**
@@ -300,11 +354,19 @@ ABORT:
 
   // overwrite GC functions, to use Rfree
   void gc_readset() {
-    gc_helper(read_set_);
+    #if ONE_SIDED_READ
+      gc_helper(read_set_);
+    #else
+      OCC::gc_readset();
+    #endif
   }
 
   void gc_writeset() {
-    gc_helper(write_set_);
+    #if ONE_SIDED_READ
+      gc_helper(write_set_);
+    #else
+      OCC::gc_writeset();
+    #endif
   }
 
   bool dummy_commit() {

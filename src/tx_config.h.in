@@ -56,9 +56,10 @@
 #define RCC_USE_ONE_SIDED_2PC		8
 #define RCC_USE_ONE_SIDED_RELEASE	16
 #define RCC_USE_ONE_SIDED_COMMIT	32
-#define RCC_USE_ONE_SIDED_RENEW		64  // for sundial only
-#define RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT	128	// for calvin only
-#define RCC_USE_ONE_SIDED_VALUE_FORWARDING		256	// for calvin only
+#define RCC_USE_ONE_SIDED_VALIDATE	64
+#define RCC_USE_ONE_SIDED_RENEW		128  // for sundial only
+#define RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT	256	// for calvin only
+#define RCC_USE_ONE_SIDED_VALUE_FORWARDING		512	// for calvin only
 
 // hybrid code defines which stage use which communication type
 // hybrid code is only used when ONE_SIDED_READ == 2
