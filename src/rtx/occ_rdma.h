@@ -258,18 +258,8 @@ class OCCR : public OCC {
 #endif
 
 #if TX_TWO_PHASE_COMMIT_STYLE > 0
-    START(twopc)
-    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
-    // broadcast_decision(vote_commit, yield);
-    END(twopc);
-    if (!vote_commit) {
-      // goto ABORT;
-      release_writes(yield);
-      gc_readset();
-      gc_writeset();
-      write_batch_helper_.clear();
+    if(!do_2pc(yield))
       return false;
-    }
 #endif
 
 #if 1
@@ -286,27 +276,7 @@ class OCCR : public OCC {
     asm volatile("" ::: "memory");
 #endif
 
-    START(commit);
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
-#if USE_DSLR
-    write_back_w_FA_rdma(yield);    
-#else
-    write_back_w_rdma(yield);
-#endif
-#else
-    /**
-     * Fixme! write back w RPC now can only work with *lock_w_rpc*.
-     * This is because lock_w_rpc helps fill the mac_set used in write_back.
-     */
-    write_back_oneshot(yield);
-#endif
-
-#if CHECKS
-    RdmaChecker::check_backup_content(this,yield);
-#endif
-    gc_readset();
-    gc_writeset();
-    END(commit);
+    do_commit(yield);
     abort_cnt[10]++;
     return true;
 
@@ -331,6 +301,46 @@ ABORT:
     #else
         OCC::release_writes(yield);
     #endif
+  }
+
+  inline void do_commit(yield_func_t &yield) {
+    START(commit);
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
+#if USE_DSLR
+    write_back_w_FA_rdma(yield);    
+#else
+    write_back_w_rdma(yield);
+#endif
+#else
+    /**
+     * Fixme! write back w RPC now can only work with *lock_w_rpc*.
+     * This is because lock_w_rpc helps fill the mac_set used in write_back.
+     */
+    write_back_oneshot(yield);
+#endif
+
+#if CHECKS
+    RdmaChecker::check_backup_content(this,yield);
+#endif
+    gc_readset();
+    gc_writeset();
+    END(commit);
+  }
+
+  inline bool do_2pc(yield_func_t &yield) {
+    START(twopc)
+    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
+    // broadcast_decision(vote_commit, yield);
+    END(twopc);
+    if (!vote_commit) {
+      // goto ABORT;
+      release_writes(yield);
+      gc_readset();
+      gc_writeset();
+      write_batch_helper_.clear();
+      return false;
+    }
+    return true;
   }
 
   /**
