@@ -93,8 +93,8 @@ txn_result_t TpccWorker::txn_new_order_new_api(yield_func_t &yield) {
         // naive version will not do remote reads here
 
 #if OR  // issue the reads here
-        auto idx = rtx_->pending_read<STOC,stock::value>(WarehouseToPartition(supplier_warehouse_id),s_key,yield);
-        rtx_->add_to_write();
+        auto idx = rtx_->write<STOC,stock::value>(WarehouseToPartition(supplier_warehouse_id),s_key,yield);
+        // rtx_->add_to_write();
 #endif
       } else {
         local_item_ids[num_local_stocks] = item_id;

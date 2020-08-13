@@ -334,11 +334,11 @@ public:
       fprintf(stderr, "WAITDIE uses RPC LOG.\n");
 #endif
 
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
-      fprintf(stderr, "WAITDIE uses ONE_SIDED 2PC.\n");
-#else
-      fprintf(stderr, "WAITDIE uses RPC 2PC.\n");
-#endif
+// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
+//       fprintf(stderr, "WAITDIE uses ONE_SIDED 2PC.\n");
+// #else
+//       fprintf(stderr, "WAITDIE uses RPC 2PC.\n");
+// #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
       fprintf(stderr, "WAITDIE uses ONE_SIDED RELEASE.\n");

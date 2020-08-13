@@ -53,13 +53,12 @@
 #define RCC_USE_ONE_SIDED_LOCK		1
 #define RCC_USE_ONE_SIDED_READ		2
 #define RCC_USE_ONE_SIDED_LOG		4
-#define RCC_USE_ONE_SIDED_2PC		8
-#define RCC_USE_ONE_SIDED_RELEASE	16
-#define RCC_USE_ONE_SIDED_COMMIT	32
-#define RCC_USE_ONE_SIDED_VALIDATE	64
-#define RCC_USE_ONE_SIDED_RENEW		128  // for sundial only
-#define RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT	256	// for calvin only
-#define RCC_USE_ONE_SIDED_VALUE_FORWARDING		512	// for calvin only
+#define RCC_USE_ONE_SIDED_RELEASE	8
+#define RCC_USE_ONE_SIDED_COMMIT	16
+#define RCC_USE_ONE_SIDED_VALIDATE	32
+#define RCC_USE_ONE_SIDED_RENEW		64  // for sundial only
+#define RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT	128	// for calvin only
+#define RCC_USE_ONE_SIDED_VALUE_FORWARDING		256	// for calvin only
 
 // hybrid code defines which stage use which communication type
 // hybrid code is only used when ONE_SIDED_READ == 2
@@ -79,10 +78,10 @@ static_assert(0, "The system needs to setup the hybrid code for running in hybri
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
 #undef TX_TWO_PHASE_COMMIT_STYLE
-#define TX_TWO_PHASE_COMMIT_STYLE 2
+#define TX_TWO_PHASE_COMMIT_STYLE 0
 #else
 #undef TX_TWO_PHASE_COMMIT_STYLE
-#define TX_TWO_PHASE_COMMIT_STYLE 1
+#define TX_TWO_PHASE_COMMIT_STYLE 0
 #endif
 
 

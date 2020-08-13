@@ -233,43 +233,43 @@ public:
       cor_id_(cid),response_node_(nid) {
         if(worker_id_ == 0 && cor_id_ == 0) {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED READ.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED READ.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC READ.\n");
+          fprintf(stderr, "SUNDIAL uses RPC READ.\n");
 #endif
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED LOCK.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED LOCK.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC LOCK.\n");
+          fprintf(stderr, "SUNDIAL uses RPC LOCK.\n");
 #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOG) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED LOG.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED LOG.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC LOG.\n");
+          fprintf(stderr, "SUNDIAL uses RPC LOG.\n");
 #endif
 
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED 2PC.\n");
-#else
-          fprintf(stderr, "MVCC uses RPC 2PC.\n");
-#endif
+// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
+//           fprintf(stderr, "SUNDIAL uses ONE_SIDED 2PC.\n");
+// #else
+//           fprintf(stderr, "SUNDIAL uses RPC 2PC.\n");
+// #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED RELEASE.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED RELEASE.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC RELEASE.\n");
+          fprintf(stderr, "SUNDIAL uses RPC RELEASE.\n");
 #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED COMMIT.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED COMMIT.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC COMMIT.");
+          fprintf(stderr, "SUNDIAL uses RPC COMMIT.");
 #endif
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED RENEW.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED RENEW.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC RENEW.");
+          fprintf(stderr, "SUNDIAL uses RPC RENEW.");
 #endif
         }
 
