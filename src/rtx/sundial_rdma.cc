@@ -170,7 +170,6 @@ void SUNDIAL::log_remote(yield_func_t &yield) {
   }
 }
 
-    
 
 void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
   RTX_ITER_ITEM(msg, sizeof(RTXUpdateItem)) {
@@ -203,65 +202,182 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
 }
 
 bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) {
+#ifdef SUNDIAL_DEBUG
+  LOG(3) << "starting to renew the lease.";
+#endif
   bool need_yield = false;
   START(renew_lease);
+
+  // for(auto& item : read_set_) {
+  //   if(item.pid != node_id_) {
+  //     Qp *qp = get_qp(item.pid);
+  //     assert(qp != NULL);
+  //     char* local_buf = (char*)item.data_ptr - sizeof(RdmaValHeader);
+  //     scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
+  //       sizeof(RdmaValHeader), item.off, IBV_SEND_SIGNALED);
+  //     need_yield = true;
+  //     if(unlikely(qp->rc_need_poll())) {
+  //       abort_cnt[18]++;
+  //       worker_->indirect_yield(yield);
+  //       need_yield = false;
+  //     }
+  //   }
+  //   else {
+  //     assert(false);
+  //   }
+  // }
+
+  // if(need_yield) {
+  //   abort_cnt[18]++;
+  //   worker_->indirect_yield(yield);
+  // }
+
   for(auto& item : read_set_) {
-    if(item.pid != node_id_) {
-      Qp *qp = get_qp(item.pid);
-      assert(qp != NULL);
-      char* local_buf = (char*)item.data_ptr - sizeof(RdmaValHeader);
-      scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
-        sizeof(RdmaValHeader), item.off, IBV_SEND_SIGNALED);
-      need_yield = true;
-      if(unlikely(qp->rc_need_poll())) {
-        abort_cnt[18]++;
-        worker_->indirect_yield(yield);
-        need_yield = false;
-      }
-    }
-    else {
-      assert(false);
-    }
-  }
-  if(need_yield) {
-    abort_cnt[18]++;
-    worker_->indirect_yield(yield);
-  }
-  need_yield = false;
-  for(auto& item : read_set_) {
-    RdmaValHeader* header = (RdmaValHeader*)((char*)item.data_ptr - sizeof(RdmaValHeader));
-    uint32_t node_rts = RTS(header->seq);
-    uint32_t node_wts = WTS(header->seq);
-    if(item.wts != node_wts || (commit_id > node_rts && header->lock != 0)) {
-      abort_cnt[36]++;
-      // END(renew_lease);
-      return false;
-    }
-    else {
-      if(node_rts < commit_id) {
-        header->seq = header->seq & 0xffffffff00000000;
-        header->seq += commit_id;
-        Qp *qp = get_qp(item.pid);
-        assert(qp != NULL);
-        RDMAWriteOnlyReq req(cor_id_, 0);
-        req.set_write_meta(item.off + sizeof(uint64_t), (char*)header + sizeof(uint64_t),
-          sizeof(uint64_t));
-        req.post_reqs(scheduler_, qp);
-        need_yield = true;
-        if(unlikely(qp->rc_need_poll())) {
-          abort_cnt[18]++;
-          worker_->indirect_yield(yield);
+
+      if (commit_id > item.rts) {
+          if (item.pid == node_id_) {
+            assert(false);
+            return false;
+          }
+
+          Qp *qp = get_qp(item.pid);
+          assert(qp != NULL);
           need_yield = false;
-        }
+          bool ret = false;
+
+          //atomically renew
+          while (true) {
+
+              char* local_buf = (char*)item.data_ptr - sizeof(RdmaValHeader);
+              char* local_buf_1 = (char*)Rmalloc(sizeof(RdmaValHeader));
+              RdmaValHeader *header = (RdmaValHeader*)local_buf;
+              RdmaValHeader *header1 = (RdmaValHeader*)local_buf_1;
+    #if READ_ATOMIC_STYLE == 2
+
+              // first read
+              scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
+                sizeof(RdmaValHeader), item.off, IBV_SEND_SIGNALED);
+              need_yield = true;
+              if(unlikely(qp->rc_need_poll())) {
+                abort_cnt[18]++;
+                worker_->indirect_yield(yield);
+                need_yield = false;
+              }
+
+              // second read
+              scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf_1, 
+                sizeof(RdmaValHeader), item.off, IBV_SEND_SIGNALED);
+              abort_cnt[18]++;
+              worker_->indirect_yield(yield);
+
+    #elif READ_ATOMIC_STYLE == 3
+              read_read_req_->set_read_meta(item.off, local_buf, sizeof(RdmaValHeader));
+              read_read_req_->set_read2_meta(item.off, local_buf_1, sizeof(RdmaValHeader));
+              read_read_req_->post_reqs(scheduler_, qp);
+              abort_cnt[18]++;
+              worker_->indirect_yield(yield);
+    #else
+              assert(false);
+    #endif
+
+              // fprintf(stderr, "header->seq=%ld, header1->seq=%d\n", header->seq, header1->seq);
+              // fprintf(stderr, "header->lock=%ld, header1->lock=%d\n", header->lock, header1->lock);
+              bool atomic_read = header->seq == header1->seq && header->lock == header1->lock;
+              Rfree(local_buf_1);
+              if (!atomic_read) {
+                abort_cnt[37]++;
+                worker_->yield_next(yield); 
+                continue;
+              }
+              // RdmaValHeader* header = (RdmaValHeader*)((char*)item.data_ptr - sizeof(RdmaValHeader));
+              uint32_t node_rts = RTS(header->seq);
+              uint32_t node_wts = WTS(header->seq);
+              if(item.wts != node_wts || (commit_id > node_rts && header->lock != 0)) {
+                abort_cnt[36]++;
+                ret = false;
+                break;
+              }
+              else {
+                if(node_rts < commit_id) {
+                  auto old_seq = header->seq;
+                  header->seq = header->seq & 0xffffffff00000000;
+                  header->seq += commit_id;
+                  auto new_seq = header->seq;
+                  // RDMAWriteOnlyReq req(cor_id_, 0);
+                  // req.set_write_meta(item.off + sizeof(uint64_t), (char*)header + sizeof(uint64_t),
+                  //   sizeof(uint64_t));
+                  // req.post_reqs(scheduler_, qp);
+
+                  // need_yield = true;
+                  // if(unlikely(qp->rc_need_poll())) {
+                  //   abort_cnt[18]++;
+                  //   worker_->indirect_yield(yield);
+                  //   need_yield = false;
+                  // }
+
+                  lock_req_->set_lock_meta(item.off + sizeof(uint64_t), old_seq, new_seq, local_buf + sizeof(uint64_t));
+                  lock_req_->post_reqs(scheduler_, qp);
+                  worker_->indirect_yield(yield);
+                  abort_cnt[18]++;
+                  
+                  if (header->seq == old_seq) { // success
+                    ret = true;
+                    break;
+                  } else {
+                    worker_->yield_next(yield); 
+                    continue;
+                  }
+                }
+              }
+          }
+
+          // if(need_yield) {
+          //   abort_cnt[18]++;
+          //   worker_->indirect_yield(yield);
+          // }
+
+          if (!ret) return false;
       }
-    }
-    if(need_yield) {
-      abort_cnt[18]++;
-      worker_->indirect_yield(yield);
-    }
   }
   END(renew_lease);
   return true;
+}
+
+bool SUNDIAL::try_renew_all_lease_rpc(uint32_t commit_id, yield_func_t &yield) {
+#ifdef SUNDIAL_DEBUG
+  LOG(3) << "starting to renew the lease.";
+#endif
+  START(renew_lease);
+
+  for(auto& item : read_set_) {
+    auto pid = item.pid;
+    auto tableid = item.tableid;
+    auto key = item.key;
+    auto wts = item.wts;
+
+    if(item.pid != node_id_) {
+      rpc_op<RTXRenewLeaseItem>(cor_id_, RTX_RENEW_LEASE_RPC_ID, pid,
+                                   rpc_op_send_buf_,reply_buf_,
+                                   /*init RTXRenewLeaseItem*/
+                                   pid, tableid, key, wts, commit_id);
+
+      worker_->indirect_yield(yield);
+      abort_cnt[18]++;
+
+      uint8_t resp_status = *(uint8_t*)reply_buf_;
+      if(resp_status == LOCK_SUCCESS_MAGIC)
+        return true;
+      else
+        return false;      
+    }
+    else {
+      auto node = local_lookup_op(tableid,key);
+      assert(node != NULL);
+      return renew_lease_local(node, wts, commit_id);
+    }
+  }
+
+  END(renew_lease);
 }
 
 bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &yield) {
@@ -310,36 +426,42 @@ bool SUNDIAL::renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id)
   // atomic?
   // retry?
   assert(node != NULL);
+
+  while (true) {
 #if ONE_SIDED_READ
-  // RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value) - sizeof(RdmaValHeader));
-  RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value));
-  uint64_t l = h->lock;
-  uint64_t tss = h->seq;
+      // RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value) - sizeof(RdmaValHeader));
+      RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value));
+      uint64_t l = h->lock;
+      uint64_t tss = h->seq;
 #else
-  // uint64_t l = node->lock;
-  // uint64_t tss = node->read_lock;
-  RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value));
-  uint64_t l = h->lock;
-  uint64_t tss = h->seq;
+      // uint64_t l = node->lock;
+      // uint64_t tss = node->read_lock;
+      RdmaValHeader* h = (RdmaValHeader*)((char*)(node->value));
+      uint64_t l = h->lock;
+      uint64_t tss = h->seq;
 #endif
-  uint32_t node_wts = WTS(tss);
-  uint32_t node_rts = RTS(tss);
-  if(wts != node_wts || (commit_id > node_rts && l != 0)) { // !!
-    return false;
-  }
-  else {
-    if(node_rts < commit_id) {
-      uint64_t newl = tss & 0xffffffff00000000;
-      newl += commit_id;
-// #if ONE_SIDED_READ
-      h->seq = newl;
-// #else
-      // node->read_lock = newl;
-// #endif
-    }
-    else{
-    }
-    return true;
+
+      uint32_t node_wts = WTS(tss);
+      uint32_t node_rts = RTS(tss);
+  
+      if(wts != node_wts || (commit_id > node_rts && l != 0)) { // !!
+        return false;
+      }
+      else {
+        if(node_rts < commit_id) {
+
+          uint64_t newl = tss & 0xffffffff00000000;
+          newl += commit_id;
+
+          volatile uint64_t* seq_ptr = &(h->seq);
+          if(unlikely(!__sync_bool_compare_and_swap(seq_ptr,tss,
+                  newl))) {
+            // worker_->yield_next(yield); 
+            continue;
+          }
+        }
+        return true;
+      }
   }
 }
 
@@ -409,7 +531,6 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
       return true;
     }
     else if (resp_status == LOCK_FAIL_MAGIC){
-      // END(read_lat);
       return false;
     }
     assert(false);
@@ -417,11 +538,110 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
   else {
     global_lock_manager[0].prepare_buf(reply_buf_, (*it).tableid, (*it).key,
       (*it).len, db_);
+    END(read_lat);
     return true;
   }
-  END(read_lat);
 }
 
+bool SUNDIAL::try_read_rdma(int index, yield_func_t &yield) {
+    std::vector<SundialReadSetItem> &set = read_set_;
+    assert(index < set.size());
+    auto it = set.begin() + index;
+    auto pid = (*it).pid;
+    auto tableid = (*it).tableid;
+    auto key = (*it).key;
+    auto len = (*it).len;
+  
+    START(read_lat);
+    if(pid != node_id_) {
+#ifdef SUNDIAL_DEBUG
+        LOG(3) << "reading " << (*it).key << " in try_read_rdma";
+#endif
+      // char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
+      // off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
+      // RdmaValHeader *header = (RdmaValHeader*)data_ptr;
+      // data_ptr += sizeof(RdmaValHeader);
+      // read_set_.back().node = (MemNode*)off;
+      // read_set_.back().data_ptr = data_ptr;
+      // read_set_.back().wts = WTS(header->seq);
+      // read_set_.back().rts = RTS(header->seq);
+
+      auto data_ptr = it->data_ptr;
+      RdmaValHeader *header = (RdmaValHeader*)data_ptr;
+      auto off = it->off;
+
+      // atomicly read?
+#if READ_ATOMIC_STYLE == 2
+      Qp *qp = get_qp(pid);
+      scheduler_->post_send(qp,cor_id_,
+                            IBV_WR_RDMA_READ,data_ptr,len + sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
+
+      if(unlikely(qp->rc_need_poll())) {
+        abort_cnt[18]++;
+        worker_->indirect_yield(yield);
+      }
+
+      it->wts = WTS(header->seq);
+      it->rts = RTS(header->seq);
+      
+      scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, data_ptr, 
+          sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
+      abort_cnt[18]++;
+      worker_->indirect_yield(yield);
+
+      if(WTS(header->seq) != read_set_.back().wts) {
+        abort_cnt[21]++;
+        return false;
+      }
+
+#elif READ_ATOMIC_STYLE == 3
+      char* data_ptr_2 = (char*)Rmalloc(sizeof(MemNode));
+      RdmaValHeader *header2 = (RdmaValHeader*)data_ptr_2;
+      Qp *qp = get_qp(pid);
+      read_read_req_->set_read_meta(off, (char*)data_ptr, len + sizeof(RdmaValHeader));
+      read_read_req_->set_read2_meta(off, data_ptr_2, sizeof(RdmaValHeader));
+      read_read_req_->post_reqs(scheduler_, qp);
+      abort_cnt[18]++;
+      worker_->indirect_yield(yield);
+
+      bool wts_changed = WTS(header->seq) != WTS(header2->seq);
+      Rfree(data_ptr_2);
+      if (wts_changed) {
+        abort_cnt[21]++;
+        return false;
+      }
+      it->wts = WTS(header->seq);
+      it->rts = RTS(header->seq);
+#else
+      assert(false);
+#endif
+    }
+    else {
+      auto node = local_lookup_op(tableid, key);
+      assert(node != NULL);
+      char* value = (char*)(node->value);
+      RdmaValHeader* h = (RdmaValHeader*)value;
+      // get wts and rts
+      read_set_.back().wts = WTS(h->seq);
+      read_set_.back().rts = RTS(h->seq);
+      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
+      
+      memcpy(data_ptr, value, sizeof(RdmaValHeader) + len);
+      // get real value
+      read_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
+      read_set_.back().value = value;
+    }
+
+#ifdef SUNDIAL_DEBUG
+        LOG(3) << "get remote tss for record: " << (*it).key << ": " << (*it).wts << ' ' << (*it).rts;
+#endif
+    commit_id_ = std::max(commit_id_, read_set_.back().wts);
+#ifdef SUNDIAL_DEBUG
+        LOG(3) << "commit_id updated to " << commit_id_ << " in try_read_rdma";
+#endif
+    END(read_lat);
+    return true;
+}
 
 void SUNDIAL::read_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
@@ -459,6 +679,9 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
   RDMALockReq req(cor_id_ /* whether to use passive ack*/);
   if((*it).pid != node_id_) {
   // if((*it).pid != response_node_) {
+#ifdef SUNDIAL_DEBUG
+        LOG(3) << "locking " << (*it).key << " in try_lock_read_rdma";
+#endif
     auto off = (*it).off;
     Qp *qp = get_qp((*it).pid);
     assert(qp != NULL);
@@ -515,9 +738,12 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
         (*it).wts = WTS(tss);
         (*it).rts = RTS(tss);
 #ifdef SUNDIAL_DEBUG
-        LOG(3) << "get remote tss " << (*it).wts << ' ' << (*it).rts;
+        LOG(3) << "get remote tss for record: " << (*it).key << ": " << (*it).wts << ' ' << (*it).rts;
 #endif
         commit_id_ = std::max(commit_id_, (*it).rts + 1);
+#ifdef SUNDIAL_DEBUG
+        LOG(3) << "commit_id updated to " << commit_id_ << " in try_lock_read_rdma";
+#endif
         END(lock);
         return true;
       }
@@ -549,6 +775,9 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
         (*it).wts = WTS(tss);
         (*it).rts = RTS(tss);
         commit_id_ = std::max(commit_id_, (*it).rts + 1);
+#ifdef SUNDIAL_DEBUG
+        LOG(3) << "commit_id updated to " << commit_id_ << " try_lock_read_rdma";
+#endif
         return true;
       }
     }

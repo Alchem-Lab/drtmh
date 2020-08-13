@@ -62,13 +62,15 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
     }
     if(val == NULL) return txn_result_t(false, 73);
   }
+  // int dummy_ret = rtx_->dummy_work(10000, indexes[3]); 
+  // LOG(3) << dummy_ret;
+  usleep(sleep_time);
+
 #if SUNDIAL_TX && ONE_SIDED_READ
   if(!rtx_->prepare(yield))
       return txn_result_t(false, 73);
 #endif
-  // int dummy_ret = rtx_->dummy_work(10000, indexes[3]); 
-  // LOG(3) << dummy_ret;
-  usleep(sleep_time);
+
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret, 73);
 }
@@ -81,7 +83,7 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
 
   uint64_t id0,id1;
   GetTwoAccount(random_generator[cor_id_],&id0,&id1);
-  // uint64_t id0 = 100, id1 = 101;
+  // uint64_t id0 = 100, id1 = 103;
   float amount = 5.0;
 
   checking::value *c0, *c1;
@@ -106,6 +108,11 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
     c0->c_balance -= amount;
     c1->c_balance += amount;
   }
+
+#if SUNDIAL_TX && ONE_SIDED_READ
+  if(!rtx_->prepare(yield))
+      return txn_result_t(false, 73);
+#endif
 
   // transaction commit
   auto ret = rtx_->commit(yield);
@@ -140,6 +147,11 @@ txn_result_t BankWorker::txn_wc_new_api(yield_func_t &yield) {
     cv->c_balance -= amount;
   }
 
+#if SUNDIAL_TX && ONE_SIDED_READ
+  if(!rtx_->prepare(yield))
+      return txn_result_t(false, 73);
+#endif
+
   auto   ret = rtx_->commit(yield);
   return txn_result_t(ret,1);
 }
@@ -162,6 +174,11 @@ retry:
   // fetch cached record from read-set
   assert(cv != NULL);
   cv->c_balance += amount;
+
+#if SUNDIAL_TX && ONE_SIDED_READ
+  if(!rtx_->prepare(yield))
+      return txn_result_t(false, 73);
+#endif
 
   bool ret = rtx_->commit(yield);
 
@@ -196,6 +213,12 @@ txn_result_t BankWorker::txn_ts_new_api(yield_func_t &yield) {
   auto sv = (savings::value*)rtx_->load_write(0, sizeof(savings::value), yield);
 
   sv->s_balance += amount;
+
+#if SUNDIAL_TX && ONE_SIDED_READ
+  if(!rtx_->prepare(yield))
+      return txn_result_t(false, 73);
+#endif
+
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret,73);
 }
@@ -218,6 +241,11 @@ txn_result_t BankWorker::txn_balance_new_api(yield_func_t &yield) {
   auto cv = (checking::value*)rtx_->load_read(0,sizeof(checking::value),yield);
   auto sv = (savings::value*)rtx_->load_read(1,sizeof(savings::value),yield);
   res = cv->c_balance + sv->s_balance;
+
+#if SUNDIAL_TX && ONE_SIDED_READ
+  if(!rtx_->prepare(yield))
+      return txn_result_t(false, 73);
+#endif
 
   bool ret = rtx_->commit(yield);
   return txn_result_t(ret,(uint64_t)0);
@@ -254,6 +282,11 @@ txn_result_t BankWorker::txn_amal_new_api(yield_func_t &yield) {
   c0->c_balance = 0;
 
   c1->c_balance += total;
+
+#if SUNDIAL_TX && ONE_SIDED_READ
+  if(!rtx_->prepare(yield))
+      return txn_result_t(false, 73);
+#endif
 
   auto ret = rtx_->commit(yield);
   return txn_result_t(ret,73); // since readlock success, so no need to abort

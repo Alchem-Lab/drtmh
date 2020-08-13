@@ -32,6 +32,11 @@
 #define TX_LOG_STYLE 1
 #endif
 
+#cmakedefine READ_ATOMIC_STYLE @READ_ATOMIC_STYLE@
+#ifndef READ_ATOMIC_STYLE
+#define READ_ATOMIC_STYLE 3
+#endif
+
 // whether to use two-phase-commit (0 for no and >0 for yes)
 // and which style to use for 2pc? two-sided (1) or one-sided (2)
 #cmakedefine TX_TWO_PHASE_COMMIT_STYLE @TX_TWO_PHASE_COMMIT_STYLE@

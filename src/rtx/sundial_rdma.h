@@ -18,7 +18,7 @@
 #include "rdma_req_helper.hpp"
 
 #include "rwlock.hpp"
-// #define SUNDIAL_DEBUG
+#define SUNDIAL_DEBUG
 // #define SUNDIAL_NO_LOCK
 // #define SUNDIAL_NOWAIT
 namespace nocc {
@@ -33,13 +33,18 @@ class SUNDIAL : public TXOpBase {
 protected:
 // rpc functions
   bool try_lock_read_rpc(int index, yield_func_t &yield);
-  bool try_read_rpc(int index, yield_func_t &yield);
-  bool try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
-  bool try_update_rpc(yield_func_t &yield);
-
-  bool try_renew_lease_rdma(int index, uint32_t commit_id,yield_func_t &yield);
   bool try_lock_read_rdma(int index, yield_func_t &yield);
+
+  bool try_read_rpc(int index, yield_func_t &yield);
+  bool try_read_rdma(int index,yield_func_t &yield);
+
+  bool try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
+  bool try_renew_lease_rdma(int index, uint32_t commit_id,yield_func_t &yield);
+
+  bool try_renew_all_lease_rpc(uint32_t commit_id, yield_func_t &yield);
   bool try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield);
+
+  bool try_update_rpc(yield_func_t &yield);
   bool try_update_rdma(yield_func_t &yield);
 
   void release_reads(yield_func_t &yield);
@@ -54,70 +59,29 @@ protected:
   bool renew_lease_local(MemNode* node, uint32_t wts, uint32_t commit_id);
 
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    // char* data_ptr = (char*)malloc(len);
-    // for(auto&item : write_set_) {
-    //   if(item.key == key && item.tableid == tableid) {
-    //     memcpy(data_ptr, item.data_ptr, len); // not efficient
-    //     read_set_.emplace_back(tableid, key, item.node, data_ptr, 0, len, pid, -1, -1);
-    //     return read_set_.size() - 1;
-    //   }
-    // }
-    // for(auto&item : read_set_) {
-    //   if(item.key == key && item.tableid == tableid) {
-    //     memcpy(data_ptr, item.data_ptr, len); // not efficient
-    //     read_set_.emplace_back(tableid, key, item.node, data_ptr, 0, len, pid, -1, -1);
-    //     return read_set_.size() - 1;
-    //   }
-    // }
-
     read_set_.emplace_back(tableid, key, (MemNode*)NULL, (char*)NULL, 0, len, pid, -1, -1);
     int index = read_set_.size() - 1;
 
+#if ONE_SIDED_READ
+    char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
+    auto off = rdma_lookup_op(pid, tableid, key, data_ptr, yield,sizeof(RdmaValHeader));
+    RdmaValHeader *header = (RdmaValHeader*)data_ptr;
+    data_ptr += sizeof(RdmaValHeader);
+    read_set_.back().off = off;
+    read_set_.back().data_ptr = data_ptr;
+    assert(off != 0);
+    // for now, the data_ptr has no content until actual read using the offset happens.
+#endif
+
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
-    START(read_lat);
-    uint64_t off = 0;
-    if(pid != node_id_) {
-      char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
-      // atomicly read?
-      off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
-      RdmaValHeader *header = (RdmaValHeader*)data_ptr;
-      data_ptr += sizeof(RdmaValHeader);
-      read_set_.back().node = (MemNode*)off;
-      read_set_.back().data_ptr = data_ptr;
-      read_set_.back().wts = WTS(header->seq);
-      read_set_.back().rts = RTS(header->seq);
-      Qp *qp = get_qp(pid);
-      scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, data_ptr, 
-          sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
-      abort_cnt[18]++;
-      worker_->indirect_yield(yield);
-      if(WTS(header->seq) != read_set_.back().wts) {
-        abort_cnt[33]++;
-        release_reads(yield);
-        release_writes(yield);
-        return -1;
-      }
-      assert(off != 0);
+    if(!try_read_rdma(index, yield)) {
+      // abort
+      abort_cnt[33]++;
+      release_reads(yield);
+      release_writes(yield);
+      return -1;
     }
-    else {
-      auto node = local_lookup_op(tableid, key);
-      assert(node != NULL);
-      char* value = (char*)(node->value);
-      RdmaValHeader* h = (RdmaValHeader*)value;
-      // get wts and rts
-      read_set_.back().wts = WTS(h->seq);
-      read_set_.back().rts = RTS(h->seq);
-      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
-      
-      memcpy(data_ptr, value, sizeof(RdmaValHeader) + len);
-      // get real value
-      read_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
-      read_set_.back().value = value;
-    }
-    commit_id_ = std::max(commit_id_, read_set_.back().wts);
-    END(read_lat);
 #else
-    START(read_lat);
     if(!try_read_rpc(index, yield)) {
       // abort
       abort_cnt[14]++;
@@ -126,7 +90,6 @@ protected:
       return -1;
     }
     process_received_data(reply_buf_, read_set_.back(), false);
-    END(read_lat);
 #endif
     return index;
   }
@@ -156,7 +119,7 @@ protected:
       RdmaValHeader *header = (RdmaValHeader*)data_ptr;
       // auto seq = header->seq;
       data_ptr += sizeof(RdmaValHeader);
-      write_set_.back().node = (MemNode*)off;
+      write_set_.back().off = off;
       write_set_.back().data_ptr = data_ptr;
       assert(off != 0);
     }
@@ -168,6 +131,7 @@ protected:
       write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
       write_set_.back().value = (char*)(node->value);
     }
+
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
     if(!try_lock_read_rdma(index, yield)) {
       // abort
@@ -233,43 +197,43 @@ public:
       cor_id_(cid),response_node_(nid) {
         if(worker_id_ == 0 && cor_id_ == 0) {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED READ.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED READ.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC READ.\n");
+          fprintf(stderr, "SUNDIAL uses RPC READ.\n");
 #endif
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED LOCK.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED LOCK.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC LOCK.\n");
+          fprintf(stderr, "SUNDIAL uses RPC LOCK.\n");
 #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOG) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED LOG.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED LOG.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC LOG.\n");
+          fprintf(stderr, "SUNDIAL uses RPC LOG.\n");
 #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED 2PC.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED 2PC.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC 2PC.\n");
+          fprintf(stderr, "SUNDIAL uses RPC 2PC.\n");
 #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED RELEASE.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED RELEASE.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC RELEASE.\n");
+          fprintf(stderr, "SUNDIAL uses RPC RELEASE.\n");
 #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED COMMIT.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED COMMIT.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC COMMIT.");
+          fprintf(stderr, "SUNDIAL uses RPC COMMIT.");
 #endif
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
-          fprintf(stderr, "MVCC uses ONE_SIDED RENEW.\n");
+          fprintf(stderr, "SUNDIAL uses ONE_SIDED RENEW.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC RENEW.");
+          fprintf(stderr, "SUNDIAL uses RPC RENEW.");
 #endif
         }
 
@@ -279,7 +243,7 @@ public:
         write_set_.clear();
         lock_req_ = new RDMACASLockReq(cid);
         unlock_req_ = new RDMAFAUnlockReq(cid, 0);
-
+        read_read_req_ = new RDMAReadReadReq(cid);
       }
 
   inline __attribute__((always_inline))
@@ -318,20 +282,20 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     auto& item = read_set_[idx];
-    if(item.rts < commit_id_) {
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
-        if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
-          abort_cnt[8]++;
-        //if(false) {
-#else
-        if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
-          abort_cnt[12]++;
-#endif
-          release_reads(yield);
-          release_writes(yield);
-          return NULL; // to abort
-        }
-    }
+//     if(item.rts < commit_id_) {
+// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
+//         if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
+//           abort_cnt[8]++;
+//         //if(false) {
+// #else
+//         if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+//           abort_cnt[12]++;
+// #endif
+//           release_reads(yield);
+//           release_writes(yield);
+//           return NULL; // to abort
+//         }
+//     }
     assert(item.data_ptr != NULL);
     return item.data_ptr;
   }
@@ -386,8 +350,12 @@ public:
     txn_start_time = (rwlock::get_now()<<11) + response_node_ * 200 + worker_id_*20 + cor_id_ + 1;;
   }
   bool prepare(yield_func_t &yield) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
     if(!try_renew_all_lease_rdma(commit_id_, yield)) {
     //if(false) {
+#else
+    if(!try_renew_all_lease_rpc(commit_id_, yield)) {
+#endif
       abort_cnt[13]++;
       release_writes(yield);
       release_reads(yield);
@@ -461,6 +429,7 @@ protected:
   RDMACASLockReq* lock_req_;
   RDMAFAUnlockReq* unlock_req_;
   RDMAReadReq* read_req_;
+  RDMAReadReadReq* read_read_req_;
 
   const int cor_id_;
   const int response_node_;

@@ -216,6 +216,48 @@ class RDMAReadReq  : public RDMAReqBase<1> {
   }
 };
 
+
+/* two RDMA READS to implement the functionality of
+ * ATOMIC READ:
+ * the first read reads the metadata + data
+ * the second read reads the metadata
+ * Compare the metadata and both reads to validate that
+ * that the tuple is read atomically.
+ */
+class RDMAReadReadReq  : public RDMAReqBase<2> {
+ public:
+  explicit RDMAReadReadReq(int cid) : RDMAReqBase(cid)
+  {
+    // op code
+    sr[0].opcode = IBV_WR_RDMA_READ;
+    sr[1].opcode = IBV_WR_RDMA_READ;    
+  }
+
+  inline void set_read_meta(uint64_t remote_off,char *local_addr,int len = sizeof(uint64_t)) {
+    sr[0].wr.rdma.remote_addr =  remote_off;
+    sge[0].addr = (uint64_t)local_addr;
+    sge[0].length = len;
+  }
+
+  inline void set_read2_meta(uint64_t remote_off,char *local_addr,int len = sizeof(uint64_t)) {
+    sr[1].wr.rdma.remote_addr =  remote_off;
+    sge[1].addr = (uint64_t)local_addr;
+    sge[1].length = len;
+  }
+
+  inline void post_reqs(oltp::RScheduler *s,Qp *qp) {
+    sr[0].wr.rdma.remote_addr += qp->remote_attr_.memory_attr_.buf;
+    sr[0].wr.rdma.rkey = qp->remote_attr_.memory_attr_.rkey;
+    sge[0].lkey = qp->dev_->conn_buf_mr->lkey;
+
+    sr[1].wr.rdma.remote_addr += qp->remote_attr_.memory_attr_.buf;
+    sr[1].wr.rdma.rkey = qp->remote_attr_.memory_attr_.rkey;
+    sge[1].lkey = qp->dev_->conn_buf_mr->lkey;
+
+    s->post_batch(qp,cor_id,&(sr[0]),&bad_sr,1);
+  }
+};
+
 /**
  * Raw RDMA req to help issue *commit* requests to a record.
  * Here, we assume that:
