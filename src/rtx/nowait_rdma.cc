@@ -545,9 +545,11 @@ void NOWAIT::write_back(yield_func_t &yield) {
     }
   }
 
-  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID);
+  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID, PA);
   abort_cnt[18]++;
+#if PA
   worker_->indirect_yield(yield);
+#endif
   END(commit);
 }
 
