@@ -55,6 +55,8 @@ bool OCC::commit(yield_func_t &yield) {
     abort_cnt[22]++;
     // goto ABORT;
     release_writes(yield);
+    gc_readset();
+    gc_writeset();
     return false;
   }
 
@@ -64,6 +66,8 @@ bool OCC::commit(yield_func_t &yield) {
     abort_cnt[21]++;
     // goto ABORT;
     release_writes(yield);
+    gc_readset();
+    gc_writeset();
     return false;
   }
 
@@ -71,6 +75,8 @@ bool OCC::commit(yield_func_t &yield) {
     abort_cnt[20]++;
     // goto ABORT;
     release_writes(yield);
+    gc_readset();
+    gc_writeset();
     return false;
   }
 
@@ -82,6 +88,8 @@ bool OCC::commit(yield_func_t &yield) {
     if (!vote_commit) {
       // goto ABORT;
       release_writes(yield);
+      gc_readset();
+      gc_writeset();
       return false;
     }
 #endif
@@ -94,9 +102,13 @@ bool OCC::commit(yield_func_t &yield) {
   write_back_oneshot(yield);
   abort_cnt[10]++;
   END(commit);
+  gc_readset();
+  gc_writeset();
   return true;
 ABORT:
   release_writes(yield);
+  gc_readset();
+  gc_writeset();
   // END(commit);
   return false;
 }
@@ -314,6 +326,7 @@ void OCC::write_back_oneshot(yield_func_t &yield) {
   START(commit);
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) {
+      // LOG(3) << "writing back and unlock." << it->key;
 #if !PA
       rpc_->prepare_multi_req(write_batch_helper_.reply_buf_,1,cor_id_);
 #endif
@@ -326,6 +339,7 @@ void OCC::write_back_oneshot(yield_func_t &yield) {
   }
   rpc_->flush_pending();
   abort_cnt[18]++;
+  abort_cnt[19]+=write_set_.size();
   worker_->indirect_yield(yield);
   END(commit);
 }
@@ -468,6 +482,7 @@ bool OCC::lock_writes(yield_func_t &yield) {
 #endif
     }
   }
+  abort_cnt[24]+=write_set_.size();
   return true;
 }
 
@@ -584,6 +599,7 @@ void OCC::commit_rpc_handler(int id,int cid,char *msg,void *arg) {
     if(item->pid != response_node_) {
       continue;
     }
+
     inplace_write_op(item->tableid,item->key,  // find key
                      (char *)item + sizeof(RtxWriteItem),item->len);
   } // end for
@@ -598,6 +614,7 @@ void OCC::commit_oneshot_handler(int id,int cid,char *msg,void *arg) {
   RtxWriteItem *item = (RtxWriteItem *)msg;
   // auto node = local_lookup_op(item->tableid, item->key);
   // node->seq += 2;
+  // LOG(3) << "Actually write back " << item->key << " in handler.";
   inplace_write_op(item->tableid,item->key,msg + sizeof(RtxWriteItem),item->len);
 #if !PA
   char *reply = rpc_->get_reply_buf();

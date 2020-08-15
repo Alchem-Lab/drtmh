@@ -10,7 +10,7 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
   uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
   RDMALockReq req(cor_id_);
 
-  START(lock);
+  START(lock);  
   // send requests
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) { // remote case
@@ -32,7 +32,6 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
 
       req.set_lock_meta(off,0,lock_content,local_buf);
       req.set_read_meta(off + sizeof(uint64_t),local_buf + sizeof(uint64_t));
-      // fprintf(stderr, "post write lock at off %x.\n", off);
       req.post_reqs(scheduler_,qp);
 
       // two request need to be polled
@@ -89,6 +88,9 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
       }
     }
   }
+
+  // fprintf(stderr, "posted write lock at off %lu. \n", write_set_.begin()->off);
+  abort_cnt[24]+=write_set_.size();
   return true;
 }
 
@@ -386,7 +388,10 @@ bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
 #endif
       if(node->seq != (*it).seq || node->lock != 0) { // check lock and versions
 #if !NO_ABORT
-        abort_cnt[0]++;
+        if (node->seq != (*it).seq)
+          abort_cnt[0]++;
+        else
+          abort_cnt[1]++;
         return false;
 #endif
       }

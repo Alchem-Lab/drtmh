@@ -68,13 +68,13 @@ class OCCR : public OCC {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
       fprintf(stderr, "OCC uses ONE_SIDED COMMIT.\n");
 #else
-      fprintf(stderr, "OCC uses RPC COMMIT.");
+      fprintf(stderr, "OCC uses RPC COMMIT.\n");
 #endif
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_VALIDATE) != 0
       fprintf(stderr, "OCC uses ONE_SIDED VALIDATE.\n");
 #else
-      fprintf(stderr, "OCC uses RPC VALIDATE.");
+      fprintf(stderr, "OCC uses RPC VALIDATE.\n");
 #endif
     }
 
@@ -217,6 +217,7 @@ class OCCR : public OCC {
       gc_readset();
       gc_writeset();
       write_batch_helper_.clear();
+      abort_cnt[14]++;
       return false;
 #endif
     }
@@ -246,6 +247,7 @@ class OCCR : public OCC {
       gc_readset();
       gc_writeset();
       write_batch_helper_.clear();
+      abort_cnt[11]++;
       return false;
 #endif
     }
@@ -258,8 +260,10 @@ class OCCR : public OCC {
 #endif
 
 #if TX_TWO_PHASE_COMMIT_STYLE > 0
-    if(!do_2pc(yield))
+    if(!do_2pc(yield)) {
+      abort_cnt[12]++;
       return false;
+    }
 #endif
 
 #if 1
@@ -270,13 +274,12 @@ class OCCR : public OCC {
     RdmaChecker::check_log_content(this,yield);
 #endif
 
-    // clear the mac_set, used for the next time
-    write_batch_helper_.clear();
-
     asm volatile("" ::: "memory");
 #endif
 
     do_commit(yield);
+    // clear the mac_set, used for the next time
+    write_batch_helper_.clear();
     abort_cnt[10]++;
     return true;
 
@@ -288,6 +291,7 @@ ABORT:
     // clear the mac_set, used for the next time
     write_batch_helper_.clear();
     // END(commit);
+    abort_cnt[13]++;
     return false;
   }
 
@@ -350,10 +354,14 @@ ABORT:
   void gc_helper(std::vector<ReadSetItem> &set) {
     for(auto it = set.begin();it != set.end();++it) {
       if(it->pid != node_id_) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
 #if INLINE_OVERWRITE
         Rfree((*it).data_ptr - sizeof(MemNode));
 #else
         Rfree((*it).data_ptr - sizeof(RdmaValHeader));
+#endif
+#else
+        free((*it).data_ptr);
 #endif
       }
       else
