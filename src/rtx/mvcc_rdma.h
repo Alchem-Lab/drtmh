@@ -73,11 +73,13 @@ protected:
     }
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
+    START(read_lat);
     if(!try_read_rdma(index, yield)) {
       release_reads(yield);
       release_writes(yield);
       return -1;
     }
+    END(read_lat);
 #else
     START(read_lat);
     if(!try_read_rpc(index, yield)) {
@@ -106,6 +108,7 @@ protected:
     write_set_.emplace_back(tableid,key,(MemNode*)NULL,(char *)NULL,0,len,pid);
     index = write_set_.size() - 1;
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+    START(lock);
     int ret = try_lock_read_rdma(index, yield);
     if(ret == -1) {
       release_reads(yield);
@@ -120,6 +123,7 @@ protected:
     else if(ret != 0) {
       assert(false);
     }
+    END(lock);
 #elif ONE_SIDED_READ == 2
     START(lock);
     if(!try_lock_read_rpc(index, yield)) {
