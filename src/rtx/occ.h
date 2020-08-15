@@ -143,15 +143,19 @@ class OCC : public TXOpBase {
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
       START(read_lat);
+      CYCLE_START(read);
       // do actual reads here
       auto replies = send_batch_read();
       assert(replies > 0);
       abort_cnt[18]++;
+      CYCLE_PAUSE(read);
       worker_->indirect_yield(yield);
-      END(read_lat);
+      CYCLE_RESUME(read);
       if(!parse_batch_result(replies)) {
         return NULL;
       }
+      CYCLE_END(read);
+      END(read_lat);
       assert(set[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
     }
@@ -194,13 +198,17 @@ class OCC : public TXOpBase {
     if(read_set_[idx].data_ptr == NULL
        && read_set_[idx].pid != node_id_) {
       START(read_lat);
+      CYCLE_START(read);
       // do actual reads here
       auto replies = send_batch_read();
       assert(replies > 0);
       abort_cnt[18]++;
+      CYCLE_PAUSE(read);
       worker_->indirect_yield(yield);
-      END(read_lat);
+      CYCLE_RESUME(read);
       if(!parse_batch_result(replies)) return NULL;
+      CYCLE_END(read);
+      END(read_lat);
       assert(read_set_[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);      
     }

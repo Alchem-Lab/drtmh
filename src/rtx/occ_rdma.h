@@ -126,27 +126,34 @@ class OCCR : public OCC {
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
     START(read_lat);
+    CYCLE_START(read);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
 
     uint64_t off = 0;
 #if INLINE_OVERWRITE
+    CYCLE_PAUSE(read);
     off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
+    CYCLE_RESUME(read);
     MemNode *node = (MemNode *)data_ptr;
     auto seq = node->seq;
     data_ptr = data_ptr + sizeof(MemNode);
 #else
+    CYCLE_PAUSE(read);
     off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
+    CYCLE_RESUME(read);
     RdmaValHeader *header = (RdmaValHeader *)data_ptr;
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
 #endif
-    END(read_lat);
+    
     ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
 
     read_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
                            seq,
                            len,pid);
+    CYCLE_END(read);
+    END(read_lat);
     return read_set_.size() - 1;
 #else
     return OCC::remote_read(pid,tableid,key,len,yield);
@@ -172,27 +179,34 @@ class OCCR : public OCC {
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
     START(read_lat);
+    CYCLE_START(read);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
     ASSERT(data_ptr != NULL);
 
     uint64_t off = 0;
 #if INLINE_OVERWRITE
+    CYCLE_PAUSE(read);
     off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
+    CYCLE_RESUME(read);
     MemNode *node = (MemNode *)data_ptr;
     auto seq = node->seq;
     data_ptr = data_ptr + sizeof(MemNode);
 #else
+    CYCLE_PAUSE(read);
     off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader));
+    CYCLE_RESUME(read);
     RdmaValHeader *header = (RdmaValHeader *)data_ptr;
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
 #endif
-    END(read_lat);
+    
     ASSERT(off != 0) << "RDMA remote read key error: tab " << tableid << " key " << key;
 
     write_set_.emplace_back(tableid,key,(MemNode *)off,data_ptr,
                            seq,
                            len,pid);
+    CYCLE_END(read);
+    END(read_lat);
     return write_set_.size() - 1;
 #else
     return OCC::remote_write(pid,tableid,key,len,yield);
@@ -308,7 +322,6 @@ ABORT:
   }
 
   inline void do_commit(yield_func_t &yield) {
-    START(commit);
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
 #if USE_DSLR
     write_back_w_FA_rdma(yield);    
@@ -328,7 +341,6 @@ ABORT:
 #endif
     gc_readset();
     gc_writeset();
-    END(commit);
   }
 
   inline bool do_2pc(yield_func_t &yield) {

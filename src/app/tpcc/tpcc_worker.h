@@ -155,6 +155,7 @@ class TpccWorker : public TpccMixin, public BenchWorker {
     LOG(4) << "read time: " << util::BreakdownTimer::rdtsc_to_ms(latencys_.average(),one_second) << "ms";
 
     rtx_hook_->report_statics(one_second);
+    rtx_hook_->report_cycle_statics(one_second);
   }
 
   /* Wrapper for implementation of transaction */

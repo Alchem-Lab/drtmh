@@ -10,7 +10,8 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
   uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
   RDMALockReq req(cor_id_);
 
-  START(lock);  
+  START(lock); 
+  CYCLE_START(lock);
   // send requests
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) { // remote case
@@ -37,7 +38,9 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
       // two request need to be polled
       if(unlikely(qp->rc_need_poll())) {
         abort_cnt[18]++;
+        CYCLE_PAUSE(lock);
         worker_->indirect_yield(yield);
+        CYCLE_RESUME(lock);
       }
       write_batch_helper_.mac_set_.insert(it->pid);
     }
@@ -58,9 +61,10 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
     }
   } // end for
   abort_cnt[18]++;
+  CYCLE_PAUSE(lock);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(lock);
   // gather replies
-  END(lock);
 
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) {
@@ -91,6 +95,8 @@ bool OCCR::lock_writes_w_rdma(yield_func_t &yield) {
 
   // fprintf(stderr, "posted write lock at off %lu. \n", write_set_.begin()->off);
   abort_cnt[24]+=write_set_.size();
+  CYCLE_END(lock);
+  END(lock);
   return true;
 }
 
@@ -191,6 +197,7 @@ bool OCCR::lock_writes_w_FA_rdma(yield_func_t &yield) {
 void OCCR::release_writes_w_rdma(yield_func_t &yield) {
   // can only work with lock_w_rdma
   START(release_write);
+  CYCLE_START(release_write);
   uint64_t lock_content =  ENCODE_LOCK_CONTENT(response_node_,worker_id_,cor_id_ + 1);
   abort_cnt[19]+=write_set_.size();
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
@@ -214,7 +221,10 @@ void OCCR::release_writes_w_rdma(yield_func_t &yield) {
     } // check pid
   }   // for
   abort_cnt[18]++;
+  CYCLE_PAUSE(release_write);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(release_write);
+  CYCLE_END(release_write);
   END(release_write);
   return;
 }
@@ -257,6 +267,7 @@ void OCCR::write_back_w_rdma(yield_func_t &yield) {
    */
   RDMAWriteReq req(cor_id_,PA /* whether to use passive ack*/);
   START(commit);
+  CYCLE_START(commit);
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
 
     if((*it).pid != node_id_) {
@@ -281,7 +292,9 @@ void OCCR::write_back_w_rdma(yield_func_t &yield) {
       // avoid send queue from overflow
       if(unlikely(qp->rc_need_poll())) {
         abort_cnt[18]++;
+        CYCLE_PAUSE(commit);
         worker_->indirect_yield(yield);
+        CYCLE_RESUME(commit);
       }
 
     } else { // local write
@@ -290,7 +303,10 @@ void OCCR::write_back_w_rdma(yield_func_t &yield) {
   }   // for
   // gather results
   abort_cnt[18]++;
+  CYCLE_PAUSE(commit);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(commit);
+  CYCLE_END(commit);
   END(commit);
 }
 
@@ -346,7 +362,7 @@ void OCCR::write_back_w_FA_rdma(yield_func_t &yield) {
 
 bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
   START(validate);
-
+  CYCLE_START(validate);
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
     if((*it).tableid == 7) continue;
     if((*it).pid != node_id_) {
@@ -377,8 +393,9 @@ bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
     }
   }
   abort_cnt[18]++;
+  CYCLE_PAUSE(validate);
   worker_->indirect_yield(yield);
-
+  CYCLE_RESUME(validate);
   for(auto it = read_set_.begin();it != read_set_.end();++it) {
     if((*it).pid != node_id_) {
 #if INLINE_OVERWRITE
@@ -398,6 +415,7 @@ bool OCCR::validate_reads_w_rdma(yield_func_t &yield) {
     }
   }
   
+  CYCLE_END(validate);
   END(validate);
   return true;
 }

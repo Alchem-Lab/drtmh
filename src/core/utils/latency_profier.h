@@ -55,6 +55,50 @@ uint64_t rdtsc(void)
     _pre_## X ##_lat_ = temp;                                           \
   }
 
+
+
+/*
+ * the cycle time profiler
+ */
+#define CYCLE_VARS(X)  uint64_t _## X ##_cycle_; uint64_t _pre_## X ##_cycle_; \
+  uint64_t _## X ##_cycle_count_; uint64_t _pre_## X ##_cycle_count_;
+#define INIT_CYCLE_VARS(X) _## X ##_cycle_= 0,_pre_## X ##_cycle_ = 0,_## X ##_cycle_count_ = 0,_pre_## X ##_cycle_count_ = 0;
+
+/**
+ * record the start time
+ */
+#define CYCLE_START(X) auto _## X ##_cycle_start = rdtsc(); auto _## X ##_cycle_temp = 0;
+
+#define CYCLE_PAUSE(X) { _## X ##_cycle_temp += rdtsc() - _## X ##_cycle_start; \
+}
+
+#define CYCLE_RESUME(X) { _## X ##_cycle_start = rdtsc(); \
+}
+
+/**
+ * record the end time, add to the report
+ */
+#define CYCLE_END(X) { _## X ##_cycle_temp += rdtsc() - _## X ##_cycle_start;  \
+    _## X ##_cycle_ = _## X ##_cycle_temp;                          \
+    _## X ##_cycle_count_    += 1;                                 \
+  }
+
+/**
+ * Add user specific value to the report
+ */
+#define CYCLE_ADD(X,v) { _## X ##_cycle_ += v;          \
+    _## X ##_cycle_count_    += 1;                     \
+}
+
+#define CYCLE_REPORT_V(X,v) { auto counts = _## X ##_cycle_count_ - _pre_## X ##_cycle_count_; \
+    _pre_## X ##_cycle_count_ = _## X ##_cycle_count_;                                \
+    counts = ((counts == 0)?1:counts);                                  \
+    auto temp = _## X ##_cycle_;                                          \
+    v  = (temp - _pre_## X ##_cycle_) / (double)counts;                   \
+    LOG(3) << #X << " cpu cycles: " << v << " ;counts " << counts;             \
+    _pre_## X ##_cycle_ = temp;                                           \
+  }
+
 #else
 // clear the counting stats to reduce performance impact
 #define LAT_VARS(X) ;
@@ -65,13 +109,24 @@ uint64_t rdtsc(void)
 #define ADD(X,v);
 #define REPORT_V(X,v) ;
 
+#define CYCLE_VARS(X) ;
+#define INIT_CYCLE_VARS(X) ;
+#define CYCLE_START(X) ;
+#define CYCLE_PAUSE(X) ;
+#define CYCLE_RESUME(X) ;
+#define CYCLE_END(X) ;
+#define CYCLE_ADD(X,v);
+#define CYCLE_REPORT_V(X,v) ;
+
 #endif
 
 #define REPORT(X) { double res;                 \
     REPORT_V(X,res);                            \
   }
 
-
+#define CYCLE_REPORT(X) { double res;                 \
+    CYCLE_REPORT_V(X,res);                            \
+  }
 } // namespace nocc
 
 #endif
