@@ -280,6 +280,12 @@ bool MVCC::try_update_rpc(yield_func_t &yield) {
   for(auto& item : write_set_) {
     if(item.pid != node_id_) {
       need_send = true;
+
+#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) == 0
+      ASSERT(item.seq < MVCC_VERSION_NUM * MVCC_VERSION_NUM) << item.seq;
+      item.seq = item.seq % MVCC_VERSION_NUM;
+#endif
+      
       assert(item.seq < MVCC_VERSION_NUM);
       add_batch_entry<RTXMVCCUpdateItem>(write_batch_helper_, item.pid,
         /* init RTXMVCCUpdateItem*/

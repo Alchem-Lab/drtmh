@@ -207,7 +207,7 @@ public:
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
           fprintf(stderr, "MVCC uses ONE_SIDED COMMIT.\n");
 #else
-          fprintf(stderr, "MVCC uses RPC COMMIT.");
+          fprintf(stderr, "MVCC uses RPC COMMIT.\n");
 #endif
 
     }
