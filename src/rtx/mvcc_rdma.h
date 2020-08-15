@@ -217,7 +217,7 @@ public:
         write_set_.clear();
         lock_req_ = new RDMACASLockReq(cid);
         unlock_req_ = new RDMAFAUnlockReq(cid, 0);
-        write_req_ = new RDMAWriteReq(cid, 0);
+        write_req_ = new RDMAWriteReq(cid, PA);
         memset(abort_cnt, 0, sizeof(int) * 40);
         for(int i = 0; i < 100; ++i) {
           Rmempool[i] = (char*)Rmalloc(2048);

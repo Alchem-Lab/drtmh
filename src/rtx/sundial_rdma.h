@@ -77,6 +77,7 @@ protected:
     START(read_lat);
     uint64_t off = 0;
     if(pid != node_id_) {
+      abort_cnt[37]++;
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // atomicly read?
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
@@ -95,6 +96,8 @@ protected:
         abort_cnt[33]++;
         release_reads(yield);
         release_writes(yield);
+        gc_readset();
+        gc_writeset();
         return -1;
       }
       assert(off != 0);
@@ -123,6 +126,8 @@ protected:
       abort_cnt[14]++;
       release_reads(yield);
       release_writes(yield);
+      gc_readset();
+      gc_writeset();
       return -1;
     }
     process_received_data(reply_buf_, read_set_.back(), false);
@@ -145,10 +150,11 @@ protected:
     write_set_.emplace_back(tableid,key,(MemNode*)NULL,(char *)NULL,0,len,pid, -1, -1);
     index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
     // if(pid != response_node_) {
     if(pid != node_id_) {
       uint64_t off = 0;
+      abort_cnt[37]++;
       char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
       // LOG(3) << "before get off, key " << (int)key;
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader), false);
@@ -168,38 +174,28 @@ protected:
       write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
       write_set_.back().value = (char*)(node->value);
     }
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+
     if(!try_lock_read_rdma(index, yield)) {
       // abort
       abort_cnt[9]++;
       release_reads(yield);
       release_writes(yield, false);
+      gc_readset();
+      gc_writeset();
       return -1;
     }
-#elif ONE_SIDED_READ == 2
+#else
     if(!try_lock_read_rpc(index, yield)) {
       // abort
       abort_cnt[10]++;
       release_reads(yield);
       release_writes(yield, false);
+      gc_readset();
+      gc_writeset();
       return -1;
     }
     process_received_data(reply_buf_, write_set_.back(), true);
-#else
-    assert(false);
-#endif // end HYBRID
-
-#else // ONE_SIDED_READ == 0
-    if(!try_lock_read_rpc(index, yield)) {
-      // abort
-      abort_cnt[11]++;
-      release_reads(yield);
-      release_writes(yield, false);
-      return -1;
-    }
-    // get the results
-    process_received_data(reply_buf_, write_set_.back(), true);
-#endif
+#endif // ONE_SIDED_READ
     return index;
   }
 
@@ -208,6 +204,7 @@ protected:
     SundialResponse* header = (SundialResponse*)(received_data_ptr + 1);
     item.wts = header->wts;
     item.rts = header->rts;
+    assert(item.data_ptr == NULL);
     if(item.data_ptr == NULL) {
       item.data_ptr = (char*)malloc(item.len);
     }
@@ -264,12 +261,12 @@ public:
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
           fprintf(stderr, "SUNDIAL uses ONE_SIDED COMMIT.\n");
 #else
-          fprintf(stderr, "SUNDIAL uses RPC COMMIT.");
+          fprintf(stderr, "SUNDIAL uses RPC COMMIT.\n");
 #endif
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
           fprintf(stderr, "SUNDIAL uses ONE_SIDED RENEW.\n");
 #else
-          fprintf(stderr, "SUNDIAL uses RPC RENEW.");
+          fprintf(stderr, "SUNDIAL uses RPC RENEW.\n");
 #endif
         }
 
@@ -329,6 +326,8 @@ public:
 #endif
           release_reads(yield);
           release_writes(yield);
+          gc_readset();
+          gc_writeset();
           return NULL; // to abort
         }
     }
@@ -391,6 +390,8 @@ public:
       abort_cnt[13]++;
       release_writes(yield);
       release_reads(yield);
+      gc_readset();
+      gc_writeset();
       return false;
     }
     return true;
@@ -405,6 +406,8 @@ public:
       abort_cnt[17]++;
       release_reads(yield);
       release_writes(yield);
+      gc_readset();
+      gc_writeset();
       return false;
     }
 #endif
@@ -414,6 +417,7 @@ public:
     bool ret = try_update(yield);
     gc_readset();
     gc_writeset();
+    abort_cnt[30]++;
     return ret;
   }
   
@@ -431,22 +435,35 @@ public:
    * GC the read/write set is a little complex using RDMA.
    * Since some pointers are allocated from the RDMA heap, not from local heap.
    */
-  void gc_helper(std::vector<SundialReadSetItem> &set) {
-    for(auto it = set.begin();it != set.end();++it) {
-      if(it->pid != node_id_)
-        Rfree((*it).data_ptr - sizeof(RdmaValHeader));
-      else
-        free((*it).data_ptr - sizeof(RdmaValHeader));
-    }
-  }
-
   // overwrite GC functions, to use Rfree
   void gc_readset() {
-    gc_helper(read_set_);
+//     auto& set = read_set_;
+//     for(auto it = set.begin();it != set.end();++it) {
+// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
+//       if(it->pid != node_id_) {
+//         abort_cnt[36]++;
+//         Rfree((*it).data_ptr - sizeof(RdmaValHeader));
+//       } else
+//         free((*it).data_ptr - sizeof(RdmaValHeader));
+// #else
+//       free((*it).data_ptr - sizeof(RdmaValHeader));  
+// #endif
+//     }
   }
 
   void gc_writeset() {
-    gc_helper(write_set_);
+//     auto& set = write_set_;
+//     for(auto it = set.begin();it != set.end();++it) {
+// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+//       if(it->pid != node_id_) {
+//         abort_cnt[36]++;
+//         Rfree((*it).data_ptr - sizeof(RdmaValHeader));
+//       } else
+//         free((*it).data_ptr - sizeof(RdmaValHeader));
+// #else
+//       free((*it).data_ptr - sizeof(RdmaValHeader));   
+// #endif
+//     }
   }
 
 protected:

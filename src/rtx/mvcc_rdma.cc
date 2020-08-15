@@ -306,9 +306,11 @@ bool MVCC::try_update_rpc(yield_func_t &yield) {
     }
   }
   if(need_send) {
-    send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
+    send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID, PA);
+#if PA == 0
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
+#endif
   }
   END(commit);
   return true;
@@ -584,9 +586,11 @@ void MVCC::update_rpc_handler(int id, int cid, char* msg, void* arg) {
       item->len);
     header->lock = 0; // unlock
   }
+
+#if PA == 0
   char* reply_msg = rpc_->get_reply_buf();
   rpc_->send_reply(reply_msg, 0, id, cid);
-
+#endif
 }
 
 int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {

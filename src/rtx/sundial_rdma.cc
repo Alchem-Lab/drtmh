@@ -34,7 +34,7 @@ void SUNDIAL::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
 }
 
 bool SUNDIAL::try_update_rdma(yield_func_t &yield) {
-  RDMAWriteReq req(cor_id_,0 /* whether to use passive ack*/);
+  RDMAWriteReq req(cor_id_,PA /* whether to use passive ack*/);
   bool need_yield = false;
   START(commit);
   for(auto& item : write_set_){
@@ -104,9 +104,11 @@ bool SUNDIAL::try_update_rpc(yield_func_t &yield) {
     }
   }
   if(need_send) {
-    send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID);
+    send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_UPDATE_RPC_ID, PA);
+#if PA == 0
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
+#endif
   }
   END(commit);
   return true;
@@ -198,8 +200,11 @@ void SUNDIAL::update_rpc_handler(int id,int cid,char *msg,void *arg) {
       }
     }
   }
+
+#if PA == 0
   char* reply_msg = rpc_->get_reply_buf();
   rpc_->send_reply(reply_msg, 0, id, cid);
+#endif
 }
 
 bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) {
@@ -269,6 +274,7 @@ bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &
   START(renew_lease);
   Qp *qp = get_qp(item.pid);
   assert(qp != NULL);
+  abort_cnt[36]++;
   char* local_buf = (char*)Rmalloc(sizeof(RdmaValHeader));
   RdmaValHeader* header = (RdmaValHeader*)local_buf;
 
@@ -300,6 +306,7 @@ bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &
       // }
     }
     END(renew_lease);
+    abort_cnt[35]++;
     Rfree(local_buf);
     return true;
   }
@@ -708,9 +715,6 @@ NO_REPLY:
 
 
 void SUNDIAL::release_reads(yield_func_t &yield) {
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
-  gc_readset();
-#endif
   return; // no need release read, there is no read lock
 }
 
@@ -779,9 +783,6 @@ void SUNDIAL::release_writes(yield_func_t &yield, bool all) {
   }
 #endif
   END(release_write);
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
-  gc_writeset();
-#endif
 }
 
 void SUNDIAL::release_rpc_handler(int id,int cid,char *msg,void *arg) {
