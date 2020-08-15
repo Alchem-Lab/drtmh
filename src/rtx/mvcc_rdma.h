@@ -79,6 +79,7 @@ protected:
       return -1;
     }
 #else
+    START(read_lat);
     if(!try_read_rpc(index, yield)) {
       release_reads(yield);
       release_writes(yield);
@@ -87,6 +88,7 @@ protected:
     if(pid != node_id_){
       process_received_data(reply_buf_, read_set_.back());
     }
+    END(read_lat);
 #endif
     return index;
   }
@@ -119,6 +121,7 @@ protected:
       assert(false);
     }
 #elif ONE_SIDED_READ == 2
+    START(lock);
     if(!try_lock_read_rpc(index, yield)) {
       // abort
       release_reads(yield);
@@ -134,7 +137,9 @@ protected:
     if(pid != node_id_) {
       process_received_data_hybrid(reply_buf_, write_set_.back());
     }
+    END(lock);
 #else // ONE_SIDED_READ == 0
+    START(lock);
     if(!try_lock_read_rpc(index, yield)) {
       // abort
       release_reads(yield);
@@ -156,6 +161,7 @@ protected:
     if(pid != node_id_) {
       process_received_data(reply_buf_, write_set_.back(), true);
     }
+    END(lock);
 #endif
     ASSERT(write_set_[index].data_ptr != NULL) << index;
     return index;

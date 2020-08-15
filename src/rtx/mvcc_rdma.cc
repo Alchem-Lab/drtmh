@@ -106,7 +106,7 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
   std::vector<ReadSetItem> &set = read_set_;
   assert(index < set.size());
   auto it = set.begin() + index;
-  START(read_lat);
+
   if((*it).pid != node_id_) {
     rpc_op<RTXMVCCWriteRequestItem>(cor_id_, RTX_READ_RPC_ID, (*it).pid,
                                  rpc_op_send_buf_,reply_buf_,
@@ -114,7 +114,7 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
                                  (*it).pid, (*it).key, (*it).tableid,(*it).len, txn_start_time);
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
-    END(read_lat);
+
     uint8_t resp_status = *(uint8_t*)reply_buf_;
     if(resp_status == LOCK_SUCCESS_MAGIC)
       return true;
@@ -131,7 +131,6 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
     if((pos = check_read(header, txn_start_time)) < 0) {
       abort_cnt[13]++;
       abort_reason = 13;
-      END(read_lat);
       return false; // cannot read
     }
     while(true) {
@@ -159,18 +158,16 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
     if(new_pos != pos || header->wts[new_pos] != before_reading_wts) {
       abort_cnt[14]++;
       abort_reason = 14;
-      END(read_lat);
       return false;
     }
   }
-  END(read_lat);
+
   return true;
 }
 
 
 // rpc
 bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
-  START(lock);
   std::vector<ReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
   if((*it).pid != node_id_) {//
@@ -180,7 +177,6 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
                                (*it).pid, (*it).key, (*it).tableid,(*it).len,txn_start_time);
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
-    END(lock);
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
     if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
@@ -205,7 +201,6 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
       cnt_timer = ret >> 10;
       abort_cnt[15]++;
       abort_reason = 15;
-      END(lock);
       return false;
     }
     volatile uint64_t l = header->lock;
@@ -213,7 +208,6 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
       cnt_timer = l >> 10;
       abort_cnt[16]++;
       abort_reason = 16;
-      END(lock);
       return false;
     } 
     while (true) {
@@ -222,7 +216,6 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
 #ifdef MVCC_NOWAIT
         abort_cnt[13]++;
         abort_reason = 13;
-        END(lock);
         return false;
 #else
         worker_->yield_next(yield);
@@ -235,7 +228,6 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
           *lockptr = 0;
           // abort_cnt[18]++;
           // abort_reason = 18;
-          END(lock);
           return false;
         }
         uint64_t max_wts = 0, min_wts = 0xffffffffffffffff;
@@ -256,7 +248,6 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
           cnt_timer = max_wts >> 10;
           abort_cnt[19]++;
           abort_reason = 19;
-          END(lock);
           return false;
         }
         (*it).seq = (uint64_t)pos;
@@ -265,7 +256,6 @@ bool MVCC::try_lock_read_rpc(int index, yield_func_t &yield) {
           (*it).data_ptr = (char*)malloc((*it).len);
         char* raw_data = (char*)((*it).node->value) + sizeof(MVCCHeader);
         memcpy((*it).data_ptr, raw_data + maxpos * (*it).len, (*it).len);
-        END(lock);
         return true;
       }
     }
@@ -285,7 +275,7 @@ bool MVCC::try_update_rpc(yield_func_t &yield) {
       ASSERT(item.seq < MVCC_VERSION_NUM * MVCC_VERSION_NUM) << item.seq;
       item.seq = item.seq % MVCC_VERSION_NUM;
 #endif
-      
+
       assert(item.seq < MVCC_VERSION_NUM);
       add_batch_entry<RTXMVCCUpdateItem>(write_batch_helper_, item.pid,
         /* init RTXMVCCUpdateItem*/
