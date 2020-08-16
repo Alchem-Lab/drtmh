@@ -269,6 +269,61 @@ bool SUNDIAL::try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield) 
   return true;
 }
 
+bool SUNDIAL::try_renew_all_lease_rpc(uint32_t commit_id, yield_func_t &yield) {
+#ifdef SUNDIAL_DEBUG
+  LOG(3) << "starting to renew the lease.";
+#endif
+  start_batch_rpc_op(write_batch_helper_);
+  bool need_send = false;
+  for(auto& item : read_set_) {
+    if(item.pid != node_id_) {
+      need_send = true;
+      add_batch_entry<RTXRenewLeaseItem>(write_batch_helper_, item.pid,
+        /* init RTXRenewLeaseItem*/item.pid, item.tableid, item.key, item.wts, commit_id);
+
+      // rpc_op<RTXRenewLeaseItem>(cor_id_, RTX_RENEW_LEASE_RPC_ID, pid,
+      //                              rpc_op_send_buf_,reply_buf_,
+      //                              /*init RTXRenewLeaseItem*/
+      //                              pid, tableid, key, wts, commit_id);
+
+      // worker_->indirect_yield(yield);
+      // abort_cnt[18]++;
+
+      // uint8_t resp_status = *(uint8_t*)reply_buf_;
+      // if(resp_status == LOCK_SUCCESS_MAGIC)
+      //   return true;
+      // else
+      //   return false;      
+    }
+    else {
+      assert(false);
+    }
+  }
+
+  int replies = 0;
+  if(need_send) {
+    replies = send_batch_rpc_op(write_batch_helper_, cor_id_, RTX_RENEW_LEASE_RPC_ID);    
+    abort_cnt[18]++;
+    worker_->indirect_yield(yield);
+  }
+
+  bool all_renew_status = true;
+  char *ptr  = reply_buf_;
+  //process batched replies
+  for (uint i = 0; i < replies; ++i) {
+    ReplyHeader *header = (ReplyHeader*)ptr;
+    ptr += sizeof(ReplyHeader);
+    for (uint j = 0; j < header->num; ++j) {
+      uint8_t renew_status = *(uint8_t*)ptr;
+      ptr += sizeof(uint8_t);
+      if (renew_status != LOCK_SUCCESS_MAGIC) // renew failed.
+        all_renew_status = false;
+    }
+  }
+
+  return all_renew_status;
+}
+
 bool SUNDIAL::try_renew_lease_rdma(int index, uint32_t commit_id, yield_func_t &yield) {
   auto& item = read_set_[index];
   START(renew_lease);
@@ -378,12 +433,13 @@ bool SUNDIAL::try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, ui
 
 void SUNDIAL::renew_lease_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
+  char* reply = reply_msg + sizeof(ReplyHeader);
+  int num_returned(0);
+
   uint8_t res = LOCK_SUCCESS_MAGIC;
-  int request_item_parsed = 0;
+  int cnt = 0;
   RTX_ITER_ITEM(msg, sizeof(RTXRenewLeaseItem)) {
     auto item = (RTXRenewLeaseItem*)ttptr;
-    request_item_parsed++;
-    assert(request_item_parsed <= 1);
     if(item->pid != response_node_)
       continue;
     auto node = local_lookup_op(item->tableid, item->key);
@@ -392,16 +448,22 @@ void SUNDIAL::renew_lease_rpc_handler(int id,int cid,char *msg,void *arg) {
       res = LOCK_SUCCESS_MAGIC;
     else
       res = LOCK_FAIL_MAGIC;
+
+    *((uint8_t *)reply) = res; 
+    reply += sizeof(uint8_t);
+    num_returned += 1;
   }
-  *((uint8_t *)reply_msg) = res;
-  rpc_->send_reply(reply_msg,sizeof(uint8_t),id,cid);
+
+  ((ReplyHeader *)reply_msg)->num = num_returned;
+  assert(num_returned > 0);
+  rpc_->send_reply(reply_msg, reply-reply_msg,id,cid);
 }
 
 bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
   std::vector<SundialReadSetItem> &set = read_set_;
   assert(index < set.size());
   auto it = set.begin() + index;
-  START(read_lat);
+
   if((*it).pid != node_id_) {
     rpc_op<RTXSundialReadItem>(cor_id_, RTX_READ_RPC_ID, (*it).pid,
                                  rpc_op_send_buf_,reply_buf_,
@@ -412,11 +474,9 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
 
     uint8_t resp_status = *(uint8_t*)reply_buf_;
     if(resp_status == LOCK_SUCCESS_MAGIC){
-      END(read_lat);
       return true;
     }
     else if (resp_status == LOCK_FAIL_MAGIC){
-      // END(read_lat);
       return false;
     }
     assert(false);
@@ -426,9 +486,60 @@ bool SUNDIAL::try_read_rpc(int index, yield_func_t &yield) {
       (*it).len, db_);
     return true;
   }
-  END(read_lat);
 }
 
+bool SUNDIAL::try_read_rdma(int index, yield_func_t &yield) {
+    std::vector<SundialReadSetItem> &set = read_set_;
+    assert(index < set.size());
+    auto it = set.begin() + index;
+    auto pid = (*it).pid;
+    auto tableid = (*it).tableid;
+    auto key = (*it).key;
+    auto len = (*it).len;
+
+    uint64_t off = 0;
+    if(pid != node_id_) {
+      abort_cnt[37]++;
+      char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
+      // atomicly read?
+      off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
+      RdmaValHeader *header = (RdmaValHeader*)data_ptr;
+      data_ptr += sizeof(RdmaValHeader);
+      (*it).node = (MemNode*)off;
+      (*it).data_ptr = data_ptr;
+      (*it).wts = WTS(header->seq);
+      (*it).rts = RTS(header->seq);
+      Qp *qp = get_qp(pid);
+      char* local_buf = (char*)((*it).data_ptr) - sizeof(RdmaValHeader);
+      scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf, 
+          sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
+      abort_cnt[18]++;
+      worker_->indirect_yield(yield);
+      if(WTS(header->seq) != (*it).wts) {
+        abort_cnt[31]++;
+        return false;
+      }
+      assert(off != 0);
+    }
+    else {
+      auto node = local_lookup_op(tableid, key);
+      assert(node != NULL);
+      char* value = (char*)(node->value);
+      RdmaValHeader* h = (RdmaValHeader*)value;
+      // get wts and rts
+      (*it).wts = WTS(h->seq);
+      (*it).rts = RTS(h->seq);
+      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
+      
+      memcpy(data_ptr, value, sizeof(RdmaValHeader) + len);
+      // get real value
+      (*it).data_ptr = data_ptr + sizeof(RdmaValHeader);
+      (*it).value = value;
+    }
+
+    commit_id_ = std::max(commit_id_, (*it).wts);
+    return true;
+}
 
 void SUNDIAL::read_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
@@ -462,7 +573,7 @@ NO_REPLY:
 bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
   std::vector<SundialReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
-  START(lock);
+
   RDMALockReq req(cor_id_ /* whether to use passive ack*/);
   if((*it).pid != node_id_) {
   // if((*it).pid != response_node_) {
@@ -525,7 +636,6 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
         LOG(3) << "get remote tss " << (*it).wts << ' ' << (*it).rts;
 #endif
         commit_id_ = std::max(commit_id_, (*it).rts + 1);
-        END(lock);
         return true;
       }
     }
@@ -564,7 +674,7 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
 
 bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
   using namespace rwlock;
-  START(lock);
+
   std::vector<SundialReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
   // if((*it).pid != response_node_) {//
@@ -575,7 +685,7 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
                                (*it).pid, (*it).key, (*it).tableid,(*it).len,txn_start_time);
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
-    END(lock);
+
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
     if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
@@ -618,7 +728,6 @@ bool SUNDIAL::try_lock_read_rpc(int index, yield_func_t &yield) {
         if( unlikely(!__sync_bool_compare_and_swap(lockptr, 0, txn_start_time)))
           continue;
         else {
-          END(lock);
           // get local data
           global_lock_manager[0].prepare_buf(reply_buf_, (*it).tableid, (*it).key,
             (*it).len, db_);

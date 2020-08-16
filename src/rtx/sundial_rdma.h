@@ -33,13 +33,18 @@ class SUNDIAL : public TXOpBase {
 protected:
 // rpc functions
   bool try_lock_read_rpc(int index, yield_func_t &yield);
-  bool try_read_rpc(int index, yield_func_t &yield);
-  bool try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
-  bool try_update_rpc(yield_func_t &yield);
-
-  bool try_renew_lease_rdma(int index, uint32_t commit_id,yield_func_t &yield);
   bool try_lock_read_rdma(int index, yield_func_t &yield);
+
+  bool try_read_rpc(int index, yield_func_t &yield);
+  bool try_read_rdma(int index, yield_func_t &yield);
+
+  bool try_renew_lease_rpc(uint8_t pid, uint8_t tableid, uint64_t key, uint32_t wts, uint32_t commit_id, yield_func_t &yield);
+  bool try_renew_lease_rdma(int index, uint32_t commit_id,yield_func_t &yield);
+
+  bool try_renew_all_lease_rpc(uint32_t commit_id, yield_func_t &yield);
   bool try_renew_all_lease_rdma(uint32_t commit_id, yield_func_t &yield);
+
+  bool try_update_rpc(yield_func_t &yield);
   bool try_update_rdma(yield_func_t &yield);
 
   void release_reads(yield_func_t &yield);
@@ -75,49 +80,15 @@ protected:
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
     START(read_lat);
-    uint64_t off = 0;
-    if(pid != node_id_) {
-      abort_cnt[37]++;
-      char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
-      // atomicly read?
-      off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
-      RdmaValHeader *header = (RdmaValHeader*)data_ptr;
-      data_ptr += sizeof(RdmaValHeader);
-      read_set_.back().node = (MemNode*)off;
-      read_set_.back().data_ptr = data_ptr;
-      read_set_.back().wts = WTS(header->seq);
-      read_set_.back().rts = RTS(header->seq);
-      Qp *qp = get_qp(pid);
-      scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, data_ptr, 
-          sizeof(RdmaValHeader), off, IBV_SEND_SIGNALED);
-      abort_cnt[18]++;
-      worker_->indirect_yield(yield);
-      if(WTS(header->seq) != read_set_.back().wts) {
-        abort_cnt[33]++;
-        release_reads(yield);
-        release_writes(yield);
-        gc_readset();
-        gc_writeset();
-        return -1;
-      }
-      assert(off != 0);
+    if(!try_read_rdma(index, yield)) {
+      // abort
+      abort_cnt[33]++;
+      release_reads(yield);
+      release_writes(yield);
+      gc_readset();
+      gc_writeset();
+      return -1;
     }
-    else {
-      auto node = local_lookup_op(tableid, key);
-      assert(node != NULL);
-      char* value = (char*)(node->value);
-      RdmaValHeader* h = (RdmaValHeader*)value;
-      // get wts and rts
-      read_set_.back().wts = WTS(h->seq);
-      read_set_.back().rts = RTS(h->seq);
-      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
-      
-      memcpy(data_ptr, value, sizeof(RdmaValHeader) + len);
-      // get real value
-      read_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
-      read_set_.back().value = value;
-    }
-    commit_id_ = std::max(commit_id_, read_set_.back().wts);
     END(read_lat);
 #else
     START(read_lat);
@@ -151,6 +122,7 @@ protected:
     index = write_set_.size() - 1;
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
+    START(lock);
     // if(pid != response_node_) {
     if(pid != node_id_) {
       uint64_t off = 0;
@@ -184,7 +156,9 @@ protected:
       gc_writeset();
       return -1;
     }
+    END(lock);
 #else
+    START(lock);
     if(!try_lock_read_rpc(index, yield)) {
       // abort
       abort_cnt[10]++;
@@ -195,6 +169,7 @@ protected:
       return -1;
     }
     process_received_data(reply_buf_, write_set_.back(), true);
+    END(lock);
 #endif // ONE_SIDED_READ
     return index;
   }
@@ -315,22 +290,22 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     auto& item = read_set_[idx];
-    if(item.rts < commit_id_) {
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
-        if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
-          abort_cnt[8]++;
-        //if(false) {
-#else
-        if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
-          abort_cnt[12]++;
-#endif
-          release_reads(yield);
-          release_writes(yield);
-          gc_readset();
-          gc_writeset();
-          return NULL; // to abort
-        }
-    }
+//     if(item.rts < commit_id_) {
+// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
+//         if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
+//           abort_cnt[8]++;
+//         //if(false) {
+// #else
+//         if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
+//           abort_cnt[12]++;
+// #endif
+//           release_reads(yield);
+//           release_writes(yield);
+//           gc_readset();
+//           gc_writeset();
+//           return NULL; // to abort
+//         }
+//     }
     assert(item.data_ptr != NULL);
     return item.data_ptr;
   }
@@ -384,8 +359,14 @@ public:
     write_set_.clear();
     txn_start_time = (rwlock::get_now()<<11) + response_node_ * 200 + worker_id_*20 + cor_id_ + 1;;
   }
+
   bool prepare(yield_func_t &yield) {
+    START(renew_lease);
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
     if(!try_renew_all_lease_rdma(commit_id_, yield)) {
+#else
+    if(!try_renew_all_lease_rpc(commit_id_, yield)) {
+#endif
     //if(false) {
       abort_cnt[13]++;
       release_writes(yield);
@@ -394,9 +375,20 @@ public:
       gc_writeset();
       return false;
     }
+    END(renew_lease);
     return true;
   }
+
   virtual bool commit(yield_func_t &yield) {
+    if(!prepare(yield)) {
+      abort_cnt[17]++;
+      release_reads(yield);
+      release_writes(yield);
+      gc_readset();
+      gc_writeset();      
+      return false;
+    }
+
 #if TX_TWO_PHASE_COMMIT_STYLE > 0
     START(twopc)
     bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
