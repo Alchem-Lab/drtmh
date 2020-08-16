@@ -90,6 +90,25 @@ protected:
       return -1;
     }
     END(read_lat);
+#elif ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
+    START(read_lat);
+    if(!try_read_rpc(index, yield)) {
+      // abort
+      abort_cnt[11]++;
+      release_reads(yield);
+      release_writes(yield);
+      gc_readset();
+      gc_writeset();
+      return -1;
+    }
+
+    auto& item = read_set_.back();
+    char* local_buf = Rmempool[memptr++];
+    item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
+                 local_buf, yield, sizeof(RdmaValHeader), false);
+    
+    process_received_data(reply_buf_, read_set_.back(), false);
+    END(read_lat);
 #else
     START(read_lat);
     if(!try_read_rpc(index, yield)) {
@@ -123,30 +142,6 @@ protected:
     // sundial exec: lock the remote record and get the info
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
     START(lock);
-    // if(pid != response_node_) {
-    if(pid != node_id_) {
-      uint64_t off = 0;
-      abort_cnt[37]++;
-      char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
-      // LOG(3) << "before get off, key " << (int)key;
-      off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader), false);
-      // LOG(3) << "after get off";
-      RdmaValHeader *header = (RdmaValHeader*)data_ptr;
-      // auto seq = header->seq;
-      data_ptr += sizeof(RdmaValHeader);
-      write_set_.back().node = (MemNode*)off;
-      write_set_.back().data_ptr = data_ptr;
-      assert(off != 0);
-    }
-    else {
-      auto node = local_lookup_op(tableid, key);
-      assert(node != NULL);
-
-      char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + len);
-      write_set_.back().data_ptr = data_ptr + sizeof(RdmaValHeader);
-      write_set_.back().value = (char*)(node->value);
-    }
-
     if(!try_lock_read_rdma(index, yield)) {
       // abort
       abort_cnt[9]++;
@@ -156,6 +151,25 @@ protected:
       gc_writeset();
       return -1;
     }
+    END(lock);
+#elif ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+    START(lock);
+    if(!try_lock_read_rpc(index, yield)) {
+      // abort
+      abort_cnt[10]++;
+      release_reads(yield);
+      release_writes(yield, false);
+      gc_readset();
+      gc_writeset();
+      return -1;
+    }
+
+    auto& item = write_set_.back();
+    char* local_buf = Rmempool[memptr++];
+    item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
+                 local_buf, yield, sizeof(RdmaValHeader), false);
+
+    process_received_data(reply_buf_, write_set_.back(), true);
     END(lock);
 #else
     START(lock);
@@ -251,7 +265,11 @@ public:
         write_set_.clear();
         lock_req_ = new RDMACASLockReq(cid);
         unlock_req_ = new RDMAFAUnlockReq(cid, 0);
-
+        memset(abort_cnt, 0, sizeof(int) * 40);
+        for(int i = 0; i < 100; ++i) {
+          Rmempool[i] = (char*)Rmalloc(2048);
+          memptr = 0;
+        }
       }
 
   inline __attribute__((always_inline))
@@ -290,22 +308,6 @@ public:
   inline __attribute__((always_inline))
   virtual char* load_read(int idx, size_t len, yield_func_t &yield) {
     auto& item = read_set_[idx];
-//     if(item.rts < commit_id_) {
-// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
-//         if(!try_renew_lease_rdma(idx, commit_id_,yield)) {
-//           abort_cnt[8]++;
-//         //if(false) {
-// #else
-//         if(!try_renew_lease_rpc(item.pid, item.tableid, item.key, item.wts, commit_id_, yield)) {
-//           abort_cnt[12]++;
-// #endif
-//           release_reads(yield);
-//           release_writes(yield);
-//           gc_readset();
-//           gc_writeset();
-//           return NULL; // to abort
-//         }
-//     }
     assert(item.data_ptr != NULL);
     return item.data_ptr;
   }
@@ -355,6 +357,7 @@ public:
 
   // start a TX
   virtual void begin(yield_func_t &yield) {
+    memptr = 0;
     read_set_.clear();
     write_set_.clear();
     txn_start_time = (rwlock::get_now()<<11) + response_node_ * 200 + worker_id_*20 + cor_id_ + 1;;
@@ -476,6 +479,9 @@ protected:
 
   Logger *logger_       = NULL;
   TwoPhaseCommitter *two_phase_committer_ = NULL;
+
+  char* Rmempool[100];
+  int memptr = 0;
 
   char* rpc_op_send_buf_;
   char reply_buf_[MAX_MSG_SIZE];

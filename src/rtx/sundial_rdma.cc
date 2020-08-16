@@ -283,20 +283,6 @@ bool SUNDIAL::try_renew_all_lease_rpc(uint32_t commit_id, yield_func_t &yield) {
       need_send = true;
       add_batch_entry<RTXRenewLeaseItem>(write_batch_helper_, item.pid,
         /* init RTXRenewLeaseItem*/item.pid, item.tableid, item.key, item.wts, commit_id);
-
-      // rpc_op<RTXRenewLeaseItem>(cor_id_, RTX_RENEW_LEASE_RPC_ID, pid,
-      //                              rpc_op_send_buf_,reply_buf_,
-      //                              /*init RTXRenewLeaseItem*/
-      //                              pid, tableid, key, wts, commit_id);
-
-      // worker_->indirect_yield(yield);
-      // abort_cnt[18]++;
-
-      // uint8_t resp_status = *(uint8_t*)reply_buf_;
-      // if(resp_status == LOCK_SUCCESS_MAGIC)
-      //   return true;
-      // else
-      //   return false;      
     }
     else {
       assert(false);
@@ -503,7 +489,7 @@ bool SUNDIAL::try_read_rdma(int index, yield_func_t &yield) {
     uint64_t off = 0;
     if(pid != node_id_) {
       abort_cnt[37]++;
-      char* data_ptr = (char*)Rmalloc(sizeof(MemNode) + len);
+      char* data_ptr = Rmempool[memptr++];
       // atomicly read?
       off = rdma_read_val(pid, tableid, key, len, data_ptr, yield, sizeof(RdmaValHeader));
       RdmaValHeader *header = (RdmaValHeader*)data_ptr;
@@ -576,6 +562,30 @@ NO_REPLY:
 bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
   std::vector<SundialReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
+
+  // get index
+  if((*it).pid != node_id_) {
+    uint64_t off = 0;
+    abort_cnt[37]++;
+    char* data_ptr = (char*)Rmempool[memptr++];
+    // LOG(3) << "before get off, key " << (int)key;
+    off = rdma_read_val((*it).pid, (*it).tableid, (*it).key, (*it).len, data_ptr, yield, sizeof(RdmaValHeader), false);
+    // LOG(3) << "after get off";
+    RdmaValHeader *header = (RdmaValHeader*)data_ptr;
+    // auto seq = header->seq;
+    data_ptr += sizeof(RdmaValHeader);
+    (*it).off = off;
+    (*it).data_ptr = data_ptr;
+    assert(off != 0);
+  }
+  else {
+    auto node = local_lookup_op((*it).tableid, (*it).key);
+    assert(node != NULL);
+
+    char* data_ptr = (char*)malloc(sizeof(RdmaValHeader) + (*it).len);
+    (*it).data_ptr = data_ptr + sizeof(RdmaValHeader);
+    (*it).value = (char*)(node->value);
+  }
 
   RDMALockReq req(cor_id_ /* whether to use passive ack*/);
   if((*it).pid != node_id_) {

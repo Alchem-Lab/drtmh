@@ -62,10 +62,7 @@ txn_result_t BankWorker::ycsb_func(yield_func_t &yield) {
     }
     if(val == NULL) return txn_result_t(false, 73);
   }
-#if SUNDIAL_TX && ONE_SIDED_READ
-  if(!rtx_->prepare(yield))
-      return txn_result_t(false, 73);
-#endif
+
   // int dummy_ret = rtx_->dummy_work(10000, indexes[3]); 
   // LOG(3) << dummy_ret;
   usleep(sleep_time);
@@ -79,9 +76,9 @@ txn_result_t BankWorker::txn_sp_new_api(yield_func_t &yield) {
   assert(rtx_ != NULL);
   rtx_->begin(yield);
 
-  uint64_t id0,id1;
+  uint64_t id0 = 100,id1 = 101;
   GetTwoAccount(random_generator[cor_id_],&id0,&id1);
-  // uint64_t id0 = 100, id1 = 101;
+  
   float amount = 5.0;
 
   checking::value *c0, *c1;
@@ -151,7 +148,7 @@ txn_result_t BankWorker::txn_dc_new_api(yield_func_t &yield) {
 
   float amount = 1.3;
 retry:
-  uint64_t id;
+  uint64_t id = 100;
   GetAccount(random_generator[cor_id_],&id);
   int pid = AcctToPid(id);
 
