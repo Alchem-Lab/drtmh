@@ -276,6 +276,9 @@ bool SUNDIAL::try_renew_all_lease_rpc(uint32_t commit_id, yield_func_t &yield) {
   start_batch_rpc_op(write_batch_helper_);
   bool need_send = false;
   for(auto& item : read_set_) {
+    if (item.rts >= commit_id)
+              continue;
+
     if(item.pid != node_id_) {
       need_send = true;
       add_batch_entry<RTXRenewLeaseItem>(write_batch_helper_, item.pid,
