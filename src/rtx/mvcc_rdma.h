@@ -124,7 +124,7 @@ protected:
       assert(false);
     }
     END(lock);
-#elif ONE_SIDED_READ == 2
+#elif ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
     START(lock);
     if(!try_lock_read_rpc(index, yield)) {
       // abort
@@ -142,7 +142,7 @@ protected:
       process_received_data_hybrid(reply_buf_, write_set_.back());
     }
     END(lock);
-#else // ONE_SIDED_READ == 0
+#else // ONE_SIDED_READ == 0 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) == 0 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) == 0
     START(lock);
     if(!try_lock_read_rpc(index, yield)) {
       // abort

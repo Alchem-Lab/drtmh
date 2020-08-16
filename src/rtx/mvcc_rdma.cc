@@ -271,9 +271,11 @@ bool MVCC::try_update_rpc(yield_func_t &yield) {
     if(item.pid != node_id_) {
       need_send = true;
 
-#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) == 0
+#if ONE_SIDED_READ == 2 // && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) == 0
       ASSERT(item.seq < MVCC_VERSION_NUM * MVCC_VERSION_NUM) << item.seq;
+      // int maxpos = item.seq / MVCC_VERSION_NUM;
       item.seq = item.seq % MVCC_VERSION_NUM;
+      // item.data_ptr = item.data_ptr - sizeof(MVCCHeader) - maxpos * item.len;
 #endif
 
       assert(item.seq < MVCC_VERSION_NUM);
@@ -515,15 +517,16 @@ void MVCC::lock_read_rpc_handler(int id,int cid,char *msg,void *arg) {
         }
         assert(pos != -1);
         char* reply = (char*)reply_msg + 1;
-#if ONE_SIDED_READ == 0
+
+#if ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+        memcpy(reply, (char*)node->value, sizeof(MVCCHeader) + item->len * MVCC_VERSION_NUM);
+        nodelen = sizeof(MVCCHeader) + item->len * MVCC_VERSION_NUM;
+#else // ONE_SIDED_READ == 0 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) == 0 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) == 0
         *(uint64_t*)reply = (uint64_t)pos;
         assert((uint64_t)pos < MVCC_VERSION_NUM);
         char* raw_data = (char*)(node->value) + sizeof(MVCCHeader);
         memcpy(reply + sizeof(uint64_t), raw_data + maxpos * item->len, item->len);
         nodelen = sizeof(uint64_t) + item->len;
-#elif ONE_SIDED_READ == 2
-        memcpy(reply, (char*)node->value, sizeof(MVCCHeader) + item->len * MVCC_VERSION_NUM);
-        nodelen = sizeof(MVCCHeader) + item->len * MVCC_VERSION_NUM;
 #endif
         goto END;
       }
@@ -563,6 +566,10 @@ void MVCC::update_rpc_handler(int id, int cid, char* msg, void* arg) {
     auto node = local_lookup_op(item->tableid, item->key);
     assert(node != NULL);
     MVCCHeader* header = (MVCCHeader*)node->value;
+
+    // uint64_t off = (char*)header - (char*)cm_->conn_buf_;
+    // LOG(3) << off;
+
     ASSERT(header->lock == item->txn_starting_timestamp) << "release lock: "
       << header->lock << "!=" << item->txn_starting_timestamp;
     int pos = (int)item->pos;
