@@ -80,7 +80,7 @@ protected:
     return write_set_.size() - 1;
   }
 
-#if ONE_SIDED_READ
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0)
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     // START(read_lat);
@@ -106,6 +106,15 @@ protected:
                            len,pid);
     return read_set_.size() - 1;
   }
+
+#else
+  // return the last index in the read-set
+  int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    return add_batch_read(tableid,key,pid,len);
+  }
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
 
   // return the last index in the write-set
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
@@ -133,27 +142,23 @@ protected:
     return write_set_.size() - 1;
   }
 
-  int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    assert(false);
-    return add_batch_insert(tableid,key,pid,len);
-  }
-
 #else
-
-  // return the last index in the read-set
-  int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return add_batch_read(tableid,key,pid,len);
-  }
-
   // return the last index in the write-set
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
     return add_batch_write(tableid,key,pid,len);
   }
+#endif
 
+#if ONE_SIDED_READ
   int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    assert(false);
     return add_batch_insert(tableid,key,pid,len);
   }
-
+#else
+  int remote_insert(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    assert(false);
+    return add_batch_insert(tableid,key,pid,len);
+  }
 #endif
 
   /** helper functions to batch rpc operations below
@@ -268,11 +273,41 @@ protected:
 
   // overwrite GC functions, to use Rfree
   void gc_readset() {
-    gc_helper(read_set_);
+    auto& set = read_set_;
+    for(auto it = set.begin();it != set.end();++it) {
+      if(it->pid != node_id_) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0)
+#if INLINE_OVERWRITE
+        Rfree((*it).data_ptr - sizeof(MemNode));
+#else
+        Rfree((*it).data_ptr - sizeof(RdmaValHeader));
+#endif
+#else
+        free((*it).data_ptr);        
+#endif
+      }
+      else
+        free((*it).data_ptr);
+    }
   }
 
   void gc_writeset() {
-    gc_helper(write_set_);
+    auto& set = write_set_;
+    for(auto it = set.begin();it != set.end();++it) {
+      if(it->pid != node_id_) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+#if INLINE_OVERWRITE
+        Rfree((*it).data_ptr - sizeof(MemNode));
+#else
+        Rfree((*it).data_ptr - sizeof(RdmaValHeader));
+#endif
+#else
+        free((*it).data_ptr);        
+#endif
+      }
+      else
+        free((*it).data_ptr);
+    }
   }
 
   bool dummy_commit() {
@@ -348,7 +383,7 @@ public:
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0
       fprintf(stderr, "NOWAIT uses ONE_SIDED COMMIT.\n");
 #else
-      fprintf(stderr, "NOWAIT uses RPC COMMIT.");
+      fprintf(stderr, "NOWAIT uses RPC COMMIT.\n");
 #endif
 
     }
@@ -375,6 +410,8 @@ public:
       return idx;
     }
     int index;
+
+    START(lock);
     // step 1: find offset of the key in either local/remote memory
     if(pid == node_id_)
       index = local_read(tableid,key,len,yield);
@@ -397,6 +434,7 @@ public:
       return -1;
     }
 #endif
+    END(lock);
     return index;
   }
 
@@ -424,6 +462,8 @@ public:
   inline __attribute__((always_inline))
   virtual int write(int pid, int tableid, uint64_t key, size_t len, yield_func_t &yield) {
     int index;
+
+    START(lock);
     // step 1: find offset of the key in either local/remote memory
     if(pid == node_id_)
       index = local_write(tableid,key,len,yield);
@@ -451,6 +491,7 @@ public:
       return -1;
     }
 #endif
+    END(lock);
     return index;
   }
 
@@ -632,7 +673,6 @@ public:
     txn_end_time = txn_start_time + rwlock::LEASE_TIME;
   }
 
-#if ONE_SIDED_READ
   // commit a TX
   virtual bool commit(yield_func_t &yield) {
 
@@ -667,8 +707,8 @@ public:
     release_reads_w_FA_rdma(yield);
     write_back_w_FA_rdma(yield);
 #else
-    do_release_reads(yield);
     do_write_back(yield);
+    do_release_reads(yield);
 #endif
 #else
     /**
@@ -680,37 +720,6 @@ public:
     abort_cnt[26]++;
     return true;
   }
-
-#else
-  virtual bool commit(yield_func_t &yield) {
-
-    asm volatile("" ::: "memory");
-
-#if TX_TWO_PHASE_COMMIT_STYLE > 0
-    START(twopc)
-    bool vote_commit = prepare_commit(yield); // broadcasting prepare messages and collecting votes
-    // broadcast_decision(vote_commit, yield);
-    END(twopc);
-    if (!vote_commit) {
-      do_release_reads(yield);
-      do_release_writes(yield);
-      return false;
-    }
-#endif
-
-    prepare_write_contents();
-    log_remote(yield); // log remote using *logger_*
-
-    asm volatile("" ::: "memory");
-  
-    do_write_back(yield);
-    do_release_reads(yield);
-    abort_cnt[27]++;
-    return true;
-}
-
-
-#endif
 
   inline void do_release_reads(yield_func_t &yield, bool release_all = true) {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0

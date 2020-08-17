@@ -9,7 +9,6 @@ namespace rtx {
 bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = read_set_;
     auto it = set.begin() + index;
-    START(lock);
     RDMALockReq req(cor_id_ /* whether to use passive ack*/);
     //TODO: currently READ lock is implemented the same as WRITE lock.
     //      which is too strict, thus limiting concurrency. 
@@ -54,7 +53,6 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
           //scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
           //    (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
           //worker_->indirect_yield(yield);
-          END(lock);
           h->lock = 333; // success get the lock
           return true;
         }
@@ -65,20 +63,18 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      R_LEASE(txn_start_time)))){
         #if !NO_ABORT
-        // END(lock);
         return false;
         #endif
       } // check local lock
     }
 
-    END(lock);
     return true;
 }
 
 bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = write_set_;
     auto it = set.begin() + index;
-    START(lock);
+
     RDMALockReq req(cor_id_ /* whether to use passive ack*/);
     //TODO: currently READ lock is implemented the same as WRITE lock.
     //      which is too strict, thus limiting concurrency. 
@@ -111,7 +107,6 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
             continue;
           }
           else {
-            // END(lock);
             abort_cnt[2]++;
             return false;
           }
@@ -121,7 +116,6 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
          //     (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
          // worker_->indirect_yield(yield);
           h->lock = 333; // success get the lock
-          END(lock);
           return true;
         }
       }
@@ -131,13 +125,11 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      R_LEASE(txn_start_time) + 1))){
         #if !NO_ABORT
-        // END(lock);
         return false;
         #endif
       } // check local lock
     }
 
-    END(lock);
     return true;
 }
 
@@ -246,7 +238,6 @@ void NOWAIT::write_back_w_rdma(yield_func_t &yield) {
 bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
   using namespace rwlock_4_waitdie;
 
-  START(lock);
   std::vector<ReadSetItem> &set = read_set_;
   auto it = set.begin() + index;
   if((*it).pid != node_id_) {
@@ -260,7 +251,6 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
     );
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
-    END(lock);
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
@@ -290,7 +280,6 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
           continue;
         }
         else {
-          END(lock);
           abort_cnt[27]++;
           return false;
         }
@@ -302,7 +291,6 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
           continue;
         }
         else {
-          END(lock);
           // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " r locally locked.";
           return true;
         }
@@ -316,7 +304,6 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
 bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
   using namespace rwlock_4_waitdie;
 
-  START(lock);
   std::vector<ReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
 
@@ -330,7 +317,6 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
     );
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
-    END(lock);
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
@@ -359,7 +345,6 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
           continue;
         }
         else {
-          END(lock);
           abort_cnt[28]++;
           return false;
         }
@@ -371,7 +356,6 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
           continue;
         }
         else {
-          END(lock);
           // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " w locally locked.";
           return true;
         }
@@ -380,7 +364,6 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
   }
 
   // worker_->indirect_yield(yield);
-  END(lock);
 
   // get the response
 }
