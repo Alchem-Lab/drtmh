@@ -107,10 +107,27 @@ protected:
     return read_set_.size() - 1;
   }
 
-#else
+#elif ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return add_batch_read(tableid,key,pid,len);
+    int index = add_batch_read(tableid,key,pid,len);
+    auto it = read_set_.begin() + index;
+    assert((*it).data_ptr == NULL);
+    if((*it).data_ptr == NULL) {
+      (*it).data_ptr = (char*)Rmalloc(sizeof(RdmaValHeader) + (*it).len);
+    }
+    (*it).data_ptr += sizeof(RdmaValHeader);
+    return index;
+  }
+#else
+  int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    int index = add_batch_read(tableid,key,pid,len);
+    auto it = read_set_.begin() + index;
+    assert((*it).data_ptr == NULL);
+    if((*it).data_ptr == NULL) {
+      (*it).data_ptr = (char*)malloc((*it).len);
+    }
+    return index;
   }
 #endif
 
@@ -142,10 +159,31 @@ protected:
     return write_set_.size() - 1;
   }
 
-#else
+#elif ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+ 
   // return the last index in the write-set
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    return add_batch_write(tableid,key,pid,len);
+    int index = add_batch_write(tableid,key,pid,len);
+    auto it = write_set_.begin() + index;
+    assert((*it).data_ptr == NULL);
+    if((*it).data_ptr == NULL) {
+      (*it).data_ptr = (char*)Rmalloc(sizeof(RdmaValHeader) + (*it).len);
+    }
+    (*it).data_ptr += sizeof(RdmaValHeader);
+    return index;
+  }
+
+#else
+
+  // return the last index in the write-set
+  int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+    int index = add_batch_write(tableid,key,pid,len);
+    auto it = write_set_.begin() + index;
+    assert((*it).data_ptr == NULL);
+    if((*it).data_ptr == NULL) {
+      (*it).data_ptr = (char*)malloc((*it).len);
+    }
+    return index;
   }
 #endif
 
@@ -322,8 +360,8 @@ protected:
   bool try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield);
   bool try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield);
 
-  void release_reads_w_rdma(yield_func_t &yield);
-  void release_writes_w_rdma(yield_func_t &yield);
+  void release_reads_w_rdma(yield_func_t &yield, bool all = true);
+  void release_writes_w_rdma(yield_func_t &yield, bool all = true);
   void release_reads(yield_func_t &yield, bool all = true);
   void release_writes(yield_func_t &yield, bool all = true);
   
@@ -423,14 +461,18 @@ public:
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
     // step 2: get the read lock. If fail, return false
     if(!try_lock_read_w_rdma(index, yield)) {
-      do_release_reads(yield);
+      do_release_reads(yield,false);
       do_release_writes(yield);
+      gc_readset();
+      gc_writeset();
       return -1;
     }
 #else
     if (!try_lock_read_w_rwlock_rpc(index, yield)) {
       do_release_reads(yield,false);
       do_release_writes(yield);
+      gc_readset();
+      gc_writeset();
       return -1;
     }
 #endif
@@ -481,16 +523,21 @@ public:
     // }
     if(!try_lock_write_w_rdma(index, yield)) {
       do_release_reads(yield);
-      do_release_writes(yield);
+      do_release_writes(yield,false);
+      gc_readset();
+      gc_writeset();
       return -1;
     }
 #else
     if(!try_lock_write_w_rwlock_rpc(index, yield)) {
       do_release_reads(yield);
       do_release_writes(yield,false);
+      gc_readset();
+      gc_writeset();
       return -1;
     }
 #endif
+
     END(lock);
     return index;
   }
@@ -693,6 +740,8 @@ public:
     if (!vote_commit) {
       do_release_reads(yield);
       do_release_writes(yield);
+      gc_readset();
+      gc_writeset();
       return false;
     }
 #endif
@@ -718,12 +767,14 @@ public:
     write_back_oneshot(yield);
 #endif
     abort_cnt[26]++;
+    gc_readset();
+    gc_writeset();
     return true;
   }
 
   inline void do_release_reads(yield_func_t &yield, bool release_all = true) {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
-      release_reads_w_rdma(yield);
+      release_reads_w_rdma(yield, release_all);
 #else
       release_reads(yield, release_all);
 #endif
@@ -731,7 +782,7 @@ public:
 
   inline void do_release_writes(yield_func_t &yield, bool release_all = true) {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
-      release_writes_w_rdma(yield);
+      release_writes_w_rdma(yield, release_all);
 #else
       release_writes(yield, release_all);
 #endif

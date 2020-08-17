@@ -133,12 +133,17 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
     return true;
 }
 
-void NOWAIT::release_reads_w_rdma(yield_func_t &yield) {
+void NOWAIT::release_reads_w_rdma(yield_func_t &yield, bool release_all) {
   // can only work with lock_w_rdma
   START(release_write);
+  int num = read_set_.size();
+  if(!release_all) {
+    num -= 1;
+  }
+  abort_cnt[19]+=num;
   uint64_t lock_content = R_LEASE(txn_start_time);
-  abort_cnt[19]+=read_set_.size();
-  for(auto it = read_set_.begin();it != read_set_.end();++it) {
+  for(int i = 0; i < num; ++i) {
+    auto it = read_set_.begin() + i;
     if((*it).pid != node_id_) {
       RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
       if(header->lock == 333) { // successfull locked
@@ -163,11 +168,16 @@ void NOWAIT::release_reads_w_rdma(yield_func_t &yield) {
   return;
 }
 
-void NOWAIT::release_writes_w_rdma(yield_func_t &yield) {
+void NOWAIT::release_writes_w_rdma(yield_func_t &yield, bool release_all) {
   START(release_write);
+  int num = write_set_.size();
+  if(!release_all) {
+    num -= 1;
+  }
+  abort_cnt[19]+=num;
   uint64_t lock_content =  R_LEASE(txn_start_time) + 1;
-  abort_cnt[19]+=write_set_.size();
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
+  for(int i = 0; i < num; ++i) {
+    auto it = write_set_.begin() + i;
     if((*it).pid != node_id_) {
       RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
       if(header->lock == 333) { // successfull locked
@@ -255,9 +265,15 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
     if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
-      if((*it).data_ptr == NULL) {
-        (*it).data_ptr = (char*)malloc((*it).len);
-      }
+
+#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+    RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
+    // the following magic line of code is RPC lock's agreement with one-sided release
+    // to indicate that the tuple is actually locked.
+    // so that one-sided release can work with both PRC lock or one-sided lock.
+    header->lock = 333;
+#endif
+
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " r locked.";
       return true;
@@ -321,9 +337,15 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
     if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
-      if((*it).data_ptr == NULL) {
-        (*it).data_ptr = (char*)malloc((*it).len);
-      }
+
+#if ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+      RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
+      // the following magic line of code is RPC lock's agreement with one-sided release
+      // to indicate that the tuple is actually locked.
+      // so that one-sided release can work with both PRC lock or one-sided lock.
+      header->lock = 333;
+#endif
+
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " w locked.";
       return true;
