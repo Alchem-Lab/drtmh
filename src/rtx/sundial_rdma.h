@@ -195,7 +195,19 @@ protected:
     item.rts = header->rts;
     assert(item.data_ptr == NULL);
     if(item.data_ptr == NULL) {
-      item.data_ptr = (char*)malloc(item.len);
+        if (is_write) {
+#if ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+            item.data_ptr = Rmempool[memptr++];
+#else
+            item.data_ptr = (char*)malloc(item.len);
+#endif
+        } else {
+#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RENEW) != 0
+            item.data_ptr = Rmempool[memptr++];
+#else
+            item.data_ptr = (char*)malloc(item.len);
+#endif
+        }
     }
     memcpy(item.data_ptr, value, item.len);
     if(is_write)
