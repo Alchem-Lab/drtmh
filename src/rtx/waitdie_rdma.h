@@ -94,7 +94,8 @@ protected:
     auto seq = node->seq;
     data_ptr = data_ptr + sizeof(MemNode);
 #else
-    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader),false);
+    // off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader),false);
+    off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
     RdmaValHeader *header = (RdmaValHeader *)data_ptr;
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
@@ -107,18 +108,18 @@ protected:
     return read_set_.size() - 1;
   }
 
-#elif ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
-  // return the last index in the read-set
-  int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    int index = add_batch_read(tableid,key,pid,len);
-    auto it = read_set_.begin() + index;
-    assert((*it).data_ptr == NULL);
-    if((*it).data_ptr == NULL) {
-      (*it).data_ptr = (char*)Rmalloc(sizeof(RdmaValHeader) + (*it).len);
-    }
-    (*it).data_ptr += sizeof(RdmaValHeader);
-    return index;
-  }
+// #elif ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+//   // return the last index in the read-set
+//   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+//     int index = add_batch_read(tableid,key,pid,len);
+//     auto it = read_set_.begin() + index;
+//     assert((*it).data_ptr == NULL);
+//     if((*it).data_ptr == NULL) {
+//       (*it).data_ptr = (char*)Rmalloc(sizeof(RdmaValHeader) + (*it).len);
+//     }
+//     (*it).data_ptr += sizeof(RdmaValHeader);
+//     return index;
+//   }
 #else
   // return the last index in the read-set
   int remote_read(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
@@ -147,7 +148,8 @@ protected:
     auto seq = node->seq;
     data_ptr = data_ptr + sizeof(MemNode);
 #else
-    off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader), false);
+    // off = rdma_read_val(pid,tableid,key,len,data_ptr,yield,sizeof(RdmaValHeader), false);
+    off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
     RdmaValHeader *header = (RdmaValHeader *)data_ptr;
     auto seq = header->seq;
     data_ptr = data_ptr + sizeof(RdmaValHeader);
@@ -160,19 +162,19 @@ protected:
     return write_set_.size() - 1;
   }
 
-#elif ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+// #elif ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
 
-  // return the last index in the write-set
-  int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
-    int index = add_batch_write(tableid,key,pid,len);
-    auto it = write_set_.begin() + index;
-    assert((*it).data_ptr == NULL);
-    if((*it).data_ptr == NULL) {
-      (*it).data_ptr = (char*)Rmalloc(sizeof(RdmaValHeader) + (*it).len);
-    }
-    (*it).data_ptr += sizeof(RdmaValHeader);
-    return index;
-  }
+//   // return the last index in the write-set
+//   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
+//     int index = add_batch_write(tableid,key,pid,len);
+//     auto it = write_set_.begin() + index;
+//     assert((*it).data_ptr == NULL);
+//     if((*it).data_ptr == NULL) {
+//       (*it).data_ptr = (char*)Rmalloc(sizeof(RdmaValHeader) + (*it).len);
+//     }
+//     (*it).data_ptr += sizeof(RdmaValHeader);
+//     return index;
+//   }
 
 #else
 

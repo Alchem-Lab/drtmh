@@ -104,8 +104,9 @@ protected:
 
     auto& item = read_set_.back();
     char* local_buf = Rmempool[memptr++];
-    item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
-                 local_buf, yield, sizeof(RdmaValHeader), false);
+    item.off = rdma_lookup_op(item.pid, item.tableid, item.key, local_buf, yield);
+    // item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
+    //              local_buf, yield, sizeof(RdmaValHeader), false);
     
     process_received_data(reply_buf_, read_set_.back(), false);
     END(read_lat);
@@ -166,8 +167,9 @@ protected:
 
     auto& item = write_set_.back();
     char* local_buf = Rmempool[memptr++];
-    item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
-                 local_buf, yield, sizeof(RdmaValHeader), false);
+    item.off = rdma_lookup_op(item.pid, item.tableid, item.key, local_buf, yield);
+    // item.off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
+    //              local_buf, yield, sizeof(RdmaValHeader), false);
 
     process_received_data(reply_buf_, write_set_.back(), true);
     END(lock);

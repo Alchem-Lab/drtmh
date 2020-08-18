@@ -606,8 +606,9 @@ int MVCC::try_lock_read_rdma(int index, yield_func_t &yield) {
     // char* local_buf = (char*)Rmalloc(item.len * MVCC_VERSION_NUM + 
     //   sizeof(MVCCHeader));
     char* local_buf = Rmempool[memptr++];
-    off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
-     local_buf, yield, sizeof(MVCCHeader), false); // metalen?
+    off = rdma_lookup_op(item.pid, item.tableid, item.key, local_buf, yield);
+    // off = rdma_read_val(item.pid, item.tableid, item.key, item.len,
+    //  local_buf, yield, sizeof(MVCCHeader), false); // metalen?
     ASSERT(off != 0) << (int)item.tableid << ' ' << item.key;
     item.node = (MemNode*)off;
     item.data_ptr = local_buf;
@@ -808,8 +809,9 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
     uint64_t off = 0;
     // char* recv_ptr = (char*)Rmalloc(item.len * MVCC_VERSION_NUM + sizeof(MVCCHeader));
     char* recv_ptr = Rmempool[memptr++];
-    off = rdma_read_val(item.pid, item.tableid, item.key, item.len, 
-      recv_ptr, yield, sizeof(MVCCHeader), false);
+    off = rdma_lookup_op(item.pid, item.tableid, item.key, recv_ptr, yield);
+    // off = rdma_read_val(item.pid, item.tableid, item.key, item.len, 
+    //   recv_ptr, yield, sizeof(MVCCHeader), false);
 
     // step 1: read the meta and check if i can read
     Qp* qp = get_qp(item.pid);

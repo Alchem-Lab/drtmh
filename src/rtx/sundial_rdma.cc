@@ -569,7 +569,8 @@ bool SUNDIAL::try_lock_read_rdma(int index, yield_func_t &yield) {
     abort_cnt[37]++;
     char* data_ptr = (char*)Rmempool[memptr++];
     // LOG(3) << "before get off, key " << (int)key;
-    off = rdma_read_val((*it).pid, (*it).tableid, (*it).key, (*it).len, data_ptr, yield, sizeof(RdmaValHeader), false);
+    off = rdma_lookup_op((*it).pid, (*it).tableid, (*it).key, data_ptr, yield);
+    // off = rdma_read_val((*it).pid, (*it).tableid, (*it).key, (*it).len, data_ptr, yield, sizeof(RdmaValHeader), false);
     // LOG(3) << "after get off";
     RdmaValHeader *header = (RdmaValHeader*)data_ptr;
     // auto seq = header->seq;
