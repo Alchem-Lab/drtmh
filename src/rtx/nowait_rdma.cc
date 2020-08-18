@@ -7,6 +7,7 @@ namespace rtx {
 
 
 bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
+    CYCLE_START(lock);
     std::vector<ReadSetItem> &set = read_set_;
     auto it = set.begin() + index;
     RDMALockReq req(cor_id_ /* whether to use passive ack*/);
@@ -30,12 +31,16 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
         req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader), (*it).len);
         req.post_reqs(scheduler_,qp);
         abort_cnt[18]++;
+        CYCLE_PAUSE(lock);
         worker_->indirect_yield(yield);
-        
+        CYCLE_RESUME(lock);
+
         if (h->lock != 0) {
           if(false) { // nowait
           //if(lock_content < h->lock) {
+            CYCLE_PAUSE(lock);
             worker_->yield_next(yield);
+            CYCLE_RESUME(lock);
             // old_state = h->lock;
             continue;
           }
@@ -54,6 +59,7 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
           //    (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
           //worker_->indirect_yield(yield);
           h->lock = 333; // success get the lock
+          CYCLE_END(lock);
           return true;
         }
       }
@@ -68,10 +74,12 @@ bool NOWAIT::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       } // check local lock
     }
 
+    CYCLE_END(lock);
     return true;
 }
 
 bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
+    CYCLE_START(lock);
     std::vector<ReadSetItem> &set = write_set_;
     auto it = set.begin() + index;
 
@@ -97,12 +105,16 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
         req.set_read_meta(off+sizeof(RdmaValHeader), local_buf + sizeof(RdmaValHeader), (*it).len);
         req.post_reqs(scheduler_,qp);
         abort_cnt[18]++;
+        CYCLE_PAUSE(lock);
         worker_->indirect_yield(yield);
+        CYCLE_RESUME(lock);
 
         if(h->lock != 0) {
           //if(lock_content < h->lock) {
           if(false) { // nowait
+            CYCLE_PAUSE(lock);
             worker_->yield_next(yield);
+            CYCLE_RESUME(lock);
             // old_state = h->lock;
             continue;
           }
@@ -116,6 +128,7 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
          //     (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
          // worker_->indirect_yield(yield);
           h->lock = 333; // success get the lock
+          CYCLE_END(lock);
           return true;
         }
       }
@@ -130,12 +143,14 @@ bool NOWAIT::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       } // check local lock
     }
 
+    CYCLE_END(lock);
     return true;
 }
 
 void NOWAIT::release_reads_w_rdma(yield_func_t &yield, bool release_all) {
   // can only work with lock_w_rdma
   START(release_write);
+  CYCLE_START(release_write);
   int num = read_set_.size();
   if(!release_all) {
     num -= 1;
@@ -163,13 +178,17 @@ void NOWAIT::release_reads_w_rdma(yield_func_t &yield, bool release_all) {
     } // check pid
   }   // for
   abort_cnt[18]++;
+  CYCLE_PAUSE(release_write);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(release_write);
+  CYCLE_END(release_write);
   END(release_write);
   return;
 }
 
 void NOWAIT::release_writes_w_rdma(yield_func_t &yield, bool release_all) {
   START(release_write);
+  CYCLE_START(release_write);
   int num = write_set_.size();
   if(!release_all) {
     num -= 1;
@@ -197,7 +216,10 @@ void NOWAIT::release_writes_w_rdma(yield_func_t &yield, bool release_all) {
     } // check pid
   }   // for
   abort_cnt[18]++;
+  CYCLE_PAUSE(release_write);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(release_write);
+  CYCLE_END(release_write);
   END(release_write);
   return;
 }
@@ -211,6 +233,7 @@ void NOWAIT::write_back_w_rdma(yield_func_t &yield) {
    */
   RDMAWriteReq req(cor_id_,PA /* whether to use passive ack*/);
   START(commit);
+  CYCLE_START(commit);
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
 
     if((*it).pid != node_id_) {
@@ -232,7 +255,9 @@ void NOWAIT::write_back_w_rdma(yield_func_t &yield) {
       // avoid send queue from overflow
       if(unlikely(qp->rc_need_poll())) {
         abort_cnt[18]++;
+        CYCLE_PAUSE(commit);
         worker_->indirect_yield(yield);
+        CYCLE_RESUME(commit);
       }
 
     } else { // local write
@@ -241,13 +266,16 @@ void NOWAIT::write_back_w_rdma(yield_func_t &yield) {
   }   // for
   // gather results
   abort_cnt[18]++;
+  CYCLE_PAUSE(commit);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(commit);
+  CYCLE_END(commit);
   END(commit);
 }
 
 bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
   using namespace rwlock_4_waitdie;
-
+  CYCLE_START(lock);
   std::vector<ReadSetItem> &set = read_set_;
   auto it = set.begin() + index;
   if((*it).pid != node_id_) {
@@ -260,8 +288,9 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
                                txn_start_time
     );
     abort_cnt[18]++;
+    CYCLE_PAUSE(lock);
     worker_->indirect_yield(yield);
-
+    CYCLE_RESUME(lock);
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
     if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
@@ -276,6 +305,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
 
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " r locked.";
+      CYCLE_END(lock);
       return true;
     }
     else if (resp_lock_status == LOCK_FAIL_MAGIC){
@@ -308,6 +338,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
         }
         else {
           // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " r locally locked.";
+          CYCLE_END(lock);
           return true;
         }
       }
@@ -319,6 +350,7 @@ bool NOWAIT::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
 
 bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
   using namespace rwlock_4_waitdie;
+  CYCLE_START(lock);
 
   std::vector<ReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
@@ -332,7 +364,9 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
                                txn_start_time
     );
     abort_cnt[18]++;
+    CYCLE_PAUSE(lock);
     worker_->indirect_yield(yield);
+    CYCLE_RESUME(lock);
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
@@ -348,6 +382,7 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
 
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " w locked.";
+      CYCLE_END(lock);
       return true;
     }
     else if (resp_lock_status == LOCK_FAIL_MAGIC){
@@ -379,6 +414,7 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
         }
         else {
           // LOG(3) << (*it).pid << " " << (*it).tableid << " " << (*it).key << " w locally locked.";
+          CYCLE_END(lock);
           return true;
         }
       }
@@ -393,6 +429,7 @@ bool NOWAIT::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
 void NOWAIT::release_reads(yield_func_t &yield, bool release_all) {
   using namespace rwlock_4_waitdie;
   START(release_write);
+  CYCLE_START(release_write);
   int num = read_set_.size();
   if(!release_all) {
     num -= 1;
@@ -412,13 +449,17 @@ void NOWAIT::release_reads(yield_func_t &yield, bool release_all) {
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   abort_cnt[18]++;
+  CYCLE_PAUSE(release_write);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(release_write);
+  CYCLE_END(release_write);
   END(release_write);
 }
 
 void NOWAIT::release_writes(yield_func_t &yield, bool release_all) {
   using namespace rwlock_4_waitdie;
   START(release_write);
+  CYCLE_START(release_write);
   int num = write_set_.size();
   if(!release_all) {
     num -= 1;
@@ -438,7 +479,10 @@ void NOWAIT::release_writes(yield_func_t &yield, bool release_all) {
   }
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_RELEASE_RPC_ID);
   abort_cnt[18]++;
+  CYCLE_PAUSE(release_write);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(release_write);
+  CYCLE_END(release_write);
   END(release_write);
 }
 
@@ -484,9 +528,13 @@ void NOWAIT::log_remote(yield_func_t &yield) {
 #endif
 
     START(log);
+    CYCLE_START(log);
     logger_->log_remote(cblock,cor_id_);
     abort_cnt[18]++;
+    CYCLE_PAUSE(log);
     worker_->indirect_yield(yield);
+    CYCLE_RESUME(log);
+    CYCLE_END(log);
     END(log);
 #if 1
     cblock.req_buf_ = rpc_->get_fly_buf(cor_id_);
@@ -533,6 +581,7 @@ void NOWAIT::broadcast_decision(bool commit_or_abort, yield_func_t &yield) {
 
 void NOWAIT::write_back(yield_func_t &yield) {
   START(commit);
+  CYCLE_START(commit);
   start_batch_rpc_op(write_batch_helper_);
   
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
@@ -551,10 +600,13 @@ void NOWAIT::write_back(yield_func_t &yield) {
   }
 
   send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_COMMIT_RPC_ID, PA);
-  abort_cnt[18]++;
 #if PA == 0
+  abort_cnt[18]++;
+  CYCLE_PAUSE(commit);
   worker_->indirect_yield(yield);
+  CYCLE_RESUME(commit);
 #endif
+  CYCLE_END(commit);
   END(commit);
 }
 
