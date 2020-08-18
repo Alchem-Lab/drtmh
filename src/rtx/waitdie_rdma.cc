@@ -9,7 +9,6 @@ namespace rtx {
 bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = read_set_;
     auto it = set.begin() + index;
-    START(lock);
     RDMALockReq req(cor_id_ /* whether to use passive ack*/);
     //TODO: currently READ lock is implemented the same as WRITE lock.
     //      which is too strict, thus limiting concurrency. 
@@ -40,7 +39,6 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
             continue;
           }
           else {
-            // END(lock);
             // LOG(3) << lock_content << ' ' << h->lock << ' ' << old_state;
             // LOG(3) << index << ' ' << (*it).key;
             abort_cnt[1]++;
@@ -53,7 +51,6 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
           //scheduler_->post_send(qp, cor_id_, IBV_WR_RDMA_READ, local_buf + sizeof(RdmaValHeader),
           //    (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
           //worker_->indirect_yield(yield);
-          END(lock);
           h->lock = 333; // success get the lock
           return true;
         }
@@ -64,20 +61,17 @@ bool WAITDIE::try_lock_read_w_rdma(int index, yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      R_LEASE(txn_start_time)))){
         #if !NO_ABORT
-        // END(lock);
         return false;
         #endif
       } // check local lock
     }
 
-    END(lock);
     return true;
 }
 
 bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
     std::vector<ReadSetItem> &set = write_set_;
     auto it = set.begin() + index;
-    START(lock);
     RDMALockReq req(cor_id_ /* whether to use passive ack*/);
     //TODO: currently READ lock is implemented the same as WRITE lock.
     //      which is too strict, thus limiting concurrency. 
@@ -110,7 +104,6 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
             continue;
           }
           else {
-            // END(lock);
             abort_cnt[2]++;
             return false;
           }
@@ -120,7 +113,6 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
           //    (*it).len, off + sizeof(RdmaValHeader), IBV_SEND_SIGNALED);
           //worker_->indirect_yield(yield);
           h->lock = 333; // success get the lock
-          END(lock);
           return true;
         }
       }
@@ -130,22 +122,25 @@ bool WAITDIE::try_lock_write_w_rdma(int index, yield_func_t &yield) {
       if(unlikely(!local_try_lock_op(it->node,
                                      R_LEASE(txn_start_time) + 1))){
         #if !NO_ABORT
-        // END(lock);
         return false;
         #endif
       } // check local lock
     }
 
-    END(lock);
     return true;
 }
 
-void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
+void WAITDIE::release_reads_w_rdma(yield_func_t &yield, bool release_all) {
   // can only work with lock_w_rdma
   START(release_write);
+  int num = read_set_.size();
+  if(!release_all) {
+    num -= 1;
+  }
+  abort_cnt[19]+=num;
   uint64_t lock_content = R_LEASE(txn_start_time);
-  abort_cnt[19]+=read_set_.size();
-  for(auto it = read_set_.begin();it != read_set_.end();++it) {
+  for(int i = 0; i < num; ++i) {
+    auto it = read_set_.begin() + i;
     if((*it).pid != node_id_) {
       RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
       if(header->lock == 333) { // successfull locked
@@ -170,11 +165,16 @@ void WAITDIE::release_reads_w_rdma(yield_func_t &yield) {
   return;
 }
 
-void WAITDIE::release_writes_w_rdma(yield_func_t &yield) {
+void WAITDIE::release_writes_w_rdma(yield_func_t &yield, bool release_all) {
   START(release_write);
+  int num = write_set_.size();
+  if(!release_all) {
+    num -= 1;
+  }
+  abort_cnt[19]+=num;
   uint64_t lock_content =  R_LEASE(txn_start_time) + 1;
-  abort_cnt[19]+=write_set_.size();
-  for(auto it = write_set_.begin();it != write_set_.end();++it) {
+  for(int i = 0; i < num; ++i) {
+    auto it = write_set_.begin() + i;
     if((*it).pid != node_id_) {
       RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
       if(header->lock == 333) { // successfull locked
@@ -245,7 +245,6 @@ void WAITDIE::write_back_w_rdma(yield_func_t &yield) {
 bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
   using namespace rwlock_4_waitdie;
 
-  START(lock);
   std::vector<ReadSetItem> &set = read_set_;
   auto it = set.begin() + index;
   if((*it).pid != node_id_) {
@@ -259,14 +258,19 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
     );
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
-    END(lock);
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
     if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
-      if((*it).data_ptr == NULL) {
-        (*it).data_ptr = (char*)malloc((*it).len);
-      }
+
+#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+    RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
+    // the following magic line of code is RPC lock's agreement with one-sided release
+    // to indicate that the tuple is actually locked.
+    // so that one-sided release can work with both PRC lock or one-sided lock.
+    header->lock = 333;
+#endif
+
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       return true;
     }
@@ -288,7 +292,6 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
           continue;
         }
         else {
-          END(lock);
           abort_cnt[27]++;
           return false;
         }
@@ -300,7 +303,6 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
           continue;
         }
         else {
-          END(lock);
           return true;
         }
       }
@@ -313,7 +315,6 @@ bool WAITDIE::try_lock_read_w_rwlock_rpc(int index, yield_func_t &yield) {
 bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
   using namespace rwlock_4_waitdie;
 
-  START(lock);
   std::vector<ReadSetItem> &set = write_set_;
   auto it = set.begin() + index;
 
@@ -327,14 +328,19 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
     );
     abort_cnt[18]++;
     worker_->indirect_yield(yield);
-    END(lock);
 
     // got the response
     uint8_t resp_lock_status = *(uint8_t*)reply_buf_;
     if(resp_lock_status == LOCK_SUCCESS_MAGIC) {
-      if((*it).data_ptr == NULL) {
-        (*it).data_ptr = (char*)malloc((*it).len);
-      }
+
+#if ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+      RdmaValHeader *header = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
+      // the following magic line of code is RPC lock's agreement with one-sided release
+      // to indicate that the tuple is actually locked.
+      // so that one-sided release can work with both PRC lock or one-sided lock.
+      header->lock = 333;
+#endif
+
       memcpy((*it).data_ptr, (char*)reply_buf_ + sizeof(uint8_t), (*it).len);
       return true;
     }
@@ -355,7 +361,6 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
           continue;
         }
         else {
-          END(lock);
           abort_cnt[28]++;
           return false;
         }
@@ -367,7 +372,6 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
           continue;
         }
         else {
-          END(lock);
           return true;
         }
       }
@@ -375,7 +379,6 @@ bool WAITDIE::try_lock_write_w_rwlock_rpc(int index, yield_func_t &yield) {
   }
 
   // worker_->indirect_yield(yield);
-  END(lock);
 
   // get the response
 }
@@ -550,6 +553,8 @@ void WAITDIE::write_back(yield_func_t &yield) {
 /* RPC handlers */
 void WAITDIE::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
   char* reply_msg = rpc_->get_reply_buf();
+  assert(false);
+
   char *reply = reply_msg + sizeof(ReplyHeader);
   int num_returned(0);
 
@@ -631,7 +636,7 @@ void WAITDIE::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
           volatile uint64_t l = header->lock;
           // if(l & 0x1 == W_LOCKED) {
           if(l != 0) {
-            //if (false) { // nowait
+            // if (false) { // nowait
             if (R_LEASE(item->txn_starting_timestamp) < l) {
               // wait for the lock
               lock_waiter_t waiter = {
@@ -682,8 +687,10 @@ NEXT_ITEM:
   }
 
 END:
+  assert(res == LOCK_WAIT_MAGIC || res == LOCK_SUCCESS_MAGIC || res == LOCK_FAIL_MAGIC);
   if (res != LOCK_WAIT_MAGIC) {
     *((uint8_t *)reply_msg) = res;
+    assert(cid != 0);
     rpc_->send_reply(reply_msg,sizeof(uint8_t) + nodelen,id,cid);
   }
 }

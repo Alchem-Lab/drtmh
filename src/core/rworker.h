@@ -129,10 +129,10 @@ class RWorker : public ndb_thread {
       msg_handler_->prepare_pending();
     }
 
-#if defined(WAITDIE_TX) && ONE_SIDED_READ == 0
+#if defined(WAITDIE_TX) && (ONE_SIDED_READ == 0 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) == 0)
     // handling locking events deligated by corountines
     nocc::rtx::global_lock_manager[worker_id_].check_to_notify(worker_id_, rpc_);
-#elif defined(SUNDIAL_TX) && ONE_SIDED_READ != 1
+#elif defined(SUNDIAL_TX) && ONE_SIDED_READ != 1 // [chao] FIXME !!! This macro condition is too general for hybrid; it does not specify the actual stage for hybrid sundial can work correctly. so it is buggy here.
     nocc::rtx::global_lock_manager[worker_id_].check_to_notify(worker_id_, rpc_);
 #endif
 
