@@ -155,6 +155,16 @@ class OCCR : public OCC {
     CYCLE_END(read);
     END(read_lat);
     return read_set_.size() - 1;
+
+#elif ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_VALIDATE) != 0
+
+    char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
+    ASSERT(data_ptr != NULL);
+    uint64_t off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
+    int index = OCC::remote_read(pid,tableid,key,len,yield);
+    auto it = read_set_.begin() + index;
+    it->off = off;
+    return index;
 #else
     return OCC::remote_read(pid,tableid,key,len,yield);
 #endif
@@ -178,6 +188,7 @@ class OCCR : public OCC {
 
   int remote_write(int pid,int tableid,uint64_t key,int len,yield_func_t &yield) {
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
+
     START(read_lat);
     CYCLE_START(read);
     char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
@@ -208,7 +219,18 @@ class OCCR : public OCC {
     CYCLE_END(read);
     END(read_lat);
     return write_set_.size() - 1;
+
+#elif ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+    
+    char *data_ptr = (char *)Rmalloc(sizeof(MemNode) + len);
+    ASSERT(data_ptr != NULL);    
+    uint64_t off = rdma_lookup_op(pid,tableid,key,data_ptr,yield);
+    int index = OCC::remote_write(pid,tableid,key,len,yield);
+    auto it = write_set_.begin() + index;
+    it->off = off;
+    return index;
 #else
+
     return OCC::remote_write(pid,tableid,key,len,yield);
 #endif
   }
@@ -221,7 +243,7 @@ class OCCR : public OCC {
 
 #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0
 #if USE_DSLR
-    if(!lock_writes_w_FA_rdma(yield)) {    
+    if(!lock_writes_w_FA_rdma(yield)) {
 #else
     if(!lock_writes_w_rdma(yield)) {
 #endif
@@ -231,7 +253,7 @@ class OCCR : public OCC {
       gc_readset();
       gc_writeset();
       write_batch_helper_.clear();
-      abort_cnt[14]++;
+      abort_cnt[25]++;
       return false;
 #endif
     }
@@ -364,9 +386,15 @@ ABORT:
    * Since some pointers are allocated from the RDMA heap, not from local heap.
    */
   void gc_helper(std::vector<ReadSetItem> &set) {
+    assert(false);
+  }
+
+  // overwrite GC functions, to use Rfree
+  void gc_readset() {
+    auto& set = read_set_;
     for(auto it = set.begin();it != set.end();++it) {
       if(it->pid != node_id_) {
-#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_VALIDATE) != 0)
 #if INLINE_OVERWRITE
         Rfree((*it).data_ptr - sizeof(MemNode));
 #else
@@ -378,25 +406,26 @@ ABORT:
       }
       else
         free((*it).data_ptr);
-
     }
   }
 
-  // overwrite GC functions, to use Rfree
-  void gc_readset() {
-    #if ONE_SIDED_READ
-      gc_helper(read_set_);
-    #else
-      OCC::gc_readset();
-    #endif
-  }
-
   void gc_writeset() {
-    #if ONE_SIDED_READ
-      gc_helper(write_set_);
-    #else
-      OCC::gc_writeset();
-    #endif
+    auto& set = write_set_;
+    for(auto it = set.begin();it != set.end();++it) {
+      if(it->pid != node_id_) {
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_READ) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+#if INLINE_OVERWRITE
+        Rfree((*it).data_ptr - sizeof(MemNode));
+#else
+        Rfree((*it).data_ptr - sizeof(RdmaValHeader));
+#endif
+#else
+        free((*it).data_ptr);
+#endif
+      }
+      else
+        free((*it).data_ptr);
+    }
   }
 
   bool dummy_commit() {

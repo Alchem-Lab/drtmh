@@ -220,7 +220,15 @@ bool OCC::parse_batch_result(int num) {
       if ((item->idx & 1) == 0) { // an idx in read-set
         // fprintf(stdout, "rpc response: read_set idx = %d, payload = %d\n", item->idx, item->payload);
         item->idx >>= 1;
+
+#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_VALIDATE) != 0
+        char* data_ptr = (char *)Rmalloc(sizeof(RdmaValHeader) + read_set_[item->idx].len);
+        RdmaValHeader *header = (RdmaValHeader *)data_ptr;        
+        read_set_[item->idx].data_ptr = data_ptr + sizeof(RdmaValHeader);
+        header->seq = item->seq;
+#else
         read_set_[item->idx].data_ptr = (char *)malloc(read_set_[item->idx].len);
+#endif
         memcpy(read_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),read_set_[item->idx].len);
         read_set_[item->idx].seq      = item->seq;
         if(item->seq == CONFLICT_WRITE_FLAG) {
@@ -230,7 +238,15 @@ bool OCC::parse_batch_result(int num) {
       } else {
         // fprintf(stdout, "rpc response: write_set idx = %d, payload = %d\n", item->idx, item->payload);
         item->idx >>= 1;
+
+#if ONE_SIDED_READ == 2 && ((HYBRID_CODE & RCC_USE_ONE_SIDED_LOCK) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0 || (HYBRID_CODE & RCC_USE_ONE_SIDED_COMMIT) != 0)
+        char* data_ptr = (char *)Rmalloc(sizeof(RdmaValHeader) + write_set_[item->idx].len);
+        RdmaValHeader *header = (RdmaValHeader *)data_ptr;
+        write_set_[item->idx].data_ptr = data_ptr + sizeof(RdmaValHeader);
+        header->seq = item->seq;
+#else
         write_set_[item->idx].data_ptr = (char *)malloc(write_set_[item->idx].len);
+#endif
         memcpy(write_set_[item->idx].data_ptr, ptr + sizeof(OCCResponse),write_set_[item->idx].len);
         write_set_[item->idx].seq      = item->seq;
         if(item->seq == CONFLICT_WRITE_FLAG) {
@@ -491,7 +507,7 @@ bool OCC::lock_writes(yield_func_t &yield) {
   for(uint i = 0;i < write_batch_helper_.mac_set_.size();++i) {
     if(*(get_batch_res<uint8_t>(write_batch_helper_,i)) == LOCK_FAIL_MAGIC) { // lock failed
 #if !NO_ABORT
-      abort_cnt[19]++;
+      abort_cnt[25]++;
       return false;
 #endif
     }
@@ -574,10 +590,15 @@ void OCC::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
     if(unlikely((node = local_try_lock_op(item->tableid,item->key,
                                           ENCODE_LOCK_CONTENT(id,worker_id_,cid + 1))) == NULL)) {
       res = LOCK_FAIL_MAGIC;
+      abort_cnt[5]++;
       break;
     }
-    if(unlikely(node->seq != item->seq)){
+
+    assert(node != NULL && node->value != NULL);
+    RdmaValHeader *header = (RdmaValHeader *)node->value;
+    if(unlikely(header->seq != item->seq)){
       res = LOCK_FAIL_MAGIC;
+      abort_cnt[6]++;
       break;
     }
   }

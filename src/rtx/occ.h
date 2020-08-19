@@ -173,13 +173,19 @@ class OCC : public TXOpBase {
     if(set[idx].data_ptr == NULL
        && set[idx].pid != node_id_) {
       START(read_lat);
+      CYCLE_START(read);
       // do actual reads here
       auto replies = send_batch_read();
       assert(replies > 0);
       abort_cnt[18]++;
+      CYCLE_PAUSE(read);
       worker_->indirect_yield(yield);
+      CYCLE_RESUME(read);
+      if(!parse_batch_result(replies)) {
+        return NULL;
+      }
+      CYCLE_END(read);
       END(read_lat);
-      if(!parse_batch_result(replies)) return NULL;
       assert(set[idx].data_ptr != NULL);
       start_batch_rpc_op(read_batch_helper_);
     }
@@ -191,28 +197,7 @@ class OCC : public TXOpBase {
   template <typename V>
   V *get_readset(int idx,yield_func_t &yield) {
     assert(idx < read_set_.size());
-    ASSERT(sizeof(V) == read_set_[idx].len) <<
-        "excepted size " << (int)(read_set_[idx].len)  << " for table " << (int)(read_set_[idx].tableid) << "; idx " << idx;
-    if(read_set_[idx].tableid == 7) return (V*)malloc(read_set_[idx].len);
-
-    if(read_set_[idx].data_ptr == NULL
-       && read_set_[idx].pid != node_id_) {
-      START(read_lat);
-      CYCLE_START(read);
-      // do actual reads here
-      auto replies = send_batch_read();
-      assert(replies > 0);
-      abort_cnt[18]++;
-      CYCLE_PAUSE(read);
-      worker_->indirect_yield(yield);
-      CYCLE_RESUME(read);
-      if(!parse_batch_result(replies)) return NULL;
-      CYCLE_END(read);
-      END(read_lat);
-      assert(read_set_[idx].data_ptr != NULL);
-      start_batch_rpc_op(read_batch_helper_);      
-    }
-    return (V *)(read_set_[idx].data_ptr);
+    return (V*)load_read(idx, sizeof(V), yield);
   }
 
   template <typename V>

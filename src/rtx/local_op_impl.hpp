@@ -18,9 +18,11 @@ MemNode *TXOpBase::local_lookup_op(int tableid,uint64_t key) {
 
 inline __attribute__((always_inline))
 MemNode *TXOpBase::local_get_op(MemNode *node,char *val,uint64_t &seq,int len,int meta) {
+  assert(sizeof(RdmaValHeader) <= meta);
+  RdmaValHeader* header = (RdmaValHeader*)node->value;
 retry: // retry if there is a concurrent writer
   char *cur_val = (char *)(node->value);
-  seq = node->seq;
+  seq = header->seq;
   asm volatile("" ::: "memory");
 #if INLINE_OVERWRITE
   memcpy(val,node->padding + meta,len);
@@ -28,7 +30,7 @@ retry: // retry if there is a concurrent writer
   memcpy(val,cur_val + meta,len);
 #endif
   asm volatile("" ::: "memory");
-  if( unlikely(node->seq != seq || seq == CONFLICT_WRITE_FLAG) ) {
+  if( unlikely(header->seq != seq || seq == CONFLICT_WRITE_FLAG) ) {
     goto retry;
   }
   return node;
@@ -44,6 +46,7 @@ MemNode * TXOpBase::local_get_op(int tableid,uint64_t key,char *val,int len,uint
 
 inline __attribute__((always_inline))
 MemNode *TXOpBase::local_insert_op(int tableid,uint64_t key,uint64_t &seq) {
+  assert(false);
   MemNode *node = db_->stores_[tableid]->GetWithInsert(key);
   assert(node != NULL);
   seq = node->seq;
@@ -53,7 +56,8 @@ MemNode *TXOpBase::local_insert_op(int tableid,uint64_t key,uint64_t &seq) {
 inline __attribute__((always_inline))
 bool TXOpBase::local_try_lock_op(MemNode *node,uint64_t lock_content) {
   assert(lock_content != 0); // 0: not locked
-  volatile uint64_t *lockptr = &(node->lock);
+  RdmaValHeader* header = (RdmaValHeader*)node->value;
+  volatile uint64_t *lockptr = &(header->lock);
   if( unlikely( (*lockptr != 0) ||
                 !__sync_bool_compare_and_swap(lockptr,0,lock_content)))
     return false;
@@ -62,7 +66,6 @@ bool TXOpBase::local_try_lock_op(MemNode *node,uint64_t lock_content) {
 
 inline __attribute__((always_inline))
 MemNode *TXOpBase::local_try_lock_op(int tableid,uint64_t key,uint64_t lock_content) {
-
   MemNode *node = db_->stores_[tableid]->Get(key);
   assert(node != NULL && node->value != NULL);
   if(local_try_lock_op(node,lock_content))
@@ -72,51 +75,56 @@ MemNode *TXOpBase::local_try_lock_op(int tableid,uint64_t key,uint64_t lock_cont
 
 inline __attribute__((always_inline))
 bool TXOpBase::local_try_release_op(MemNode *node,uint64_t lock_content) {
-  volatile uint64_t *lockptr = &(node->lock);
+  RdmaValHeader* header = (RdmaValHeader*)node->value;
+  volatile uint64_t *lockptr = &(header->lock);
   return __sync_bool_compare_and_swap(lockptr,lock_content,0);
 }
 
 inline __attribute__((always_inline))
 bool TXOpBase::local_try_release_op(int tableid,uint64_t key,uint64_t lock_content) {
   MemNode *node = db_->stores_[tableid]->GetWithInsert(key);
+  assert(node != NULL && node->value != NULL);
   return local_try_release_op(node,lock_content);
 }
 
 inline __attribute__((always_inline))
 bool TXOpBase::local_validate_op(MemNode *node,uint64_t seq) {
-  return (seq == node->seq) && (node->lock == 0);
+  RdmaValHeader* header = (RdmaValHeader*)node->value;
+  return (seq == header->seq) && (header->lock == 0);
 }
 
 inline __attribute__((always_inline))
 bool TXOpBase::local_validate_op(int tableid,uint64_t key,uint64_t seq) {
   MemNode *node = db_->stores_[tableid]->Get(key);
+  assert(node != NULL && node->value != NULL);
   return local_validate_op(node,seq);
 }
 
 inline __attribute__((always_inline))
 MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta, uint32_t commit_id) {
+  assert(sizeof(RdmaValHeader) <= meta);
+  // if(node->value == NULL) {
+  //   node->value = (uint64_t *)malloc(len + meta);
+  // }
+  assert(node->value != NULL);
+  RdmaValHeader* header = (RdmaValHeader*)node->value;
+  auto old_seq = header->seq;
+  assert(header->seq != 1);
+  header->seq = CONFLICT_WRITE_FLAG;
 
-  auto old_seq = node->seq;assert(node->seq != 1);
-  node->seq = CONFLICT_WRITE_FLAG;
   asm volatile("" ::: "memory");
 #if INLINE_OVERWRITE
   memcpy(node->padding,val,len);
 #else
-  if(node->value == NULL) {
-    node->value = (uint64_t *)malloc(len + meta);
-  }
   memcpy((char *)(node->value) + meta,val,len);
 #endif
-  // release the locks
   asm volatile("" ::: "memory");
-  node->seq = old_seq + 2;
+  header->seq = old_seq + 2;
+
+  // release the locks
   if(commit_id == -1) {
     asm volatile("" ::: "memory");
-    #if OCC_TX
-    node->lock = 0;
-    #else 
-    *(uint64_t*)(node->value) = 0;
-    #endif
+    header->lock = 0;
   }
   return node;
 }
