@@ -478,8 +478,13 @@ bool OCC::lock_writes(yield_func_t &yield) {
   start_batch_rpc_op(write_batch_helper_);
   for(auto it = write_set_.begin();it != write_set_.end();++it) {
     if((*it).pid != node_id_) { // remote case
+#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
       add_batch_entry<RtxLockItem>(write_batch_helper_, (*it).pid,
-                                   /*init RTXLockItem */ (*it).pid,(*it).tableid,(*it).key,(*it).seq);
+                                   /*init RTXLockItem */ (*it).pid,(*it).tableid,(*it).key,(*it).seq, it-write_set_.begin());
+#else
+      add_batch_entry<RtxLockItem>(write_batch_helper_, (*it).pid,
+                                   /*init RTXLockItem */ (*it).pid,(*it).tableid,(*it).key,(*it).seq);        
+#endif
     }
     else {
       if(unlikely(!local_try_lock_op(it->node,
@@ -497,21 +502,47 @@ bool OCC::lock_writes(yield_func_t &yield) {
       }
     }
   }
-  send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_LOCK_RPC_ID);
+  int replies = send_batch_rpc_op(write_batch_helper_,cor_id_,RTX_LOCK_RPC_ID);
   abort_cnt[18]++;
   CYCLE_PAUSE(lock);
   worker_->indirect_yield(yield);
   CYCLE_RESUME(lock);
 
+#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
   // parse the results
+  char *ptr  = reply_buf_;
+  uint8_t lock_status = LOCK_SUCCESS_MAGIC;
+  for(uint i = 0;i < replies; ++i) {
+    // parse a reply header
+    OCCLockReplyHeader *header = (OCCLockReplyHeader*)ptr;
+    ptr += sizeof(OCCLockReplyHeader);
+    for (uint j = 0; j < header->num; ++j) {
+      OCCLockResponse *item = (OCCLockResponse*)ptr;
+      if (item->status == LOCK_SUCCESS_MAGIC) {
+        auto it = write_set_.begin() + item->idx;
+        RdmaValHeader *node = (RdmaValHeader *)((*it).data_ptr - sizeof(RdmaValHeader));
+        node->lock = 0;
+      }
+      ptr += sizeof(OCCLockResponse);
+    }
+    if (header->lock_status == LOCK_FAIL_MAGIC)
+      lock_status = LOCK_FAIL_MAGIC;
+  }
+
+  if (lock_status == LOCK_FAIL_MAGIC)
+    return false;
+#else
+
   for(uint i = 0;i < write_batch_helper_.mac_set_.size();++i) {
     if(*(get_batch_res<uint8_t>(write_batch_helper_,i)) == LOCK_FAIL_MAGIC) { // lock failed
 #if !NO_ABORT
-      abort_cnt[25]++;
       return false;
 #endif
     }
   }
+
+#endif
+
   abort_cnt[24]+=write_set_.size();
   CYCLE_END(lock);
   END(lock);
@@ -571,6 +602,73 @@ void OCC::read_write_rpc_handler(int id,int cid,char *msg,void *arg) {
   // send reply
 }
 
+#if ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_RELEASE) != 0
+
+void OCC::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
+
+  char* reply_msg = rpc_->get_reply_buf();
+  char* reply = reply_msg + sizeof(OCCLockReplyHeader);
+
+  int count = 0;
+  uint8_t res = LOCK_SUCCESS_MAGIC; // success
+  RTX_ITER_ITEM(msg,sizeof(RtxLockItem)) {
+
+    //ASSERT(num < 25) << "[Lock RPC handler] lock " << num << " items.";
+
+    auto item = (RtxLockItem *)ttptr;
+
+    if(item->pid != response_node_)
+      continue;
+
+    OCCLockResponse* resp = (OCCLockResponse*)reply;
+    if (res == LOCK_FAIL_MAGIC) {
+      resp->idx = item->index;
+      resp->status = LOCK_FAIL_MAGIC;
+      reply += sizeof(OCCLockResponse);
+      count += 1;
+      continue;
+    }
+
+    MemNode *node = NULL;
+    if(unlikely((node = local_try_lock_op(item->tableid,item->key,
+                                          ENCODE_LOCK_CONTENT(id,worker_id_,cid + 1))) == NULL)) {
+      res = LOCK_FAIL_MAGIC;
+      resp->idx = item->index;
+      resp->status = LOCK_FAIL_MAGIC;
+      reply += sizeof(OCCLockResponse);
+      count += 1;
+      abort_cnt[5]++;
+      continue;
+    }
+
+    assert(node != NULL && node->value != NULL);
+    RdmaValHeader *header = (RdmaValHeader *)node->value;
+    if(unlikely(header->seq != item->seq)){
+      res = LOCK_FAIL_MAGIC;
+      resp->idx = item->index;
+      resp->status = LOCK_SUCCESS_MAGIC;
+      reply += sizeof(OCCLockResponse);
+      count += 1;    
+      abort_cnt[6]++;
+      continue;
+    }
+
+    resp->idx = item->index;
+    resp->status = LOCK_SUCCESS_MAGIC;
+    reply += sizeof(OCCLockResponse);
+    count += 1;
+  }
+
+  //char *log_buf = next_log_entry(&local_log,32);
+  //assert(log_buf != NULL);
+  //sprintf(log_buf,"reply to  %d c:%d, \n",id,cid);
+  ((OCCLockReplyHeader*)reply_msg)->num = count;
+  ((OCCLockReplyHeader*)reply_msg)->lock_status = res;
+  rpc_->send_reply(reply_msg,reply-reply_msg,id,cid);
+}
+
+#else
+
 void OCC::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
 
   char* reply_msg = rpc_->get_reply_buf();
@@ -609,6 +707,8 @@ void OCC::lock_rpc_handler(int id,int cid,char *msg,void *arg) {
   *((uint8_t *)reply_msg) = res;
   rpc_->send_reply(reply_msg,sizeof(uint8_t),id,cid);
 }
+
+#endif
 
 void OCC::release_rpc_handler(int id,int cid,char *msg,void *arg) {
 

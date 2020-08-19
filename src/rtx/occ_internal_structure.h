@@ -57,9 +57,14 @@ struct RtxLockItem {
   uint8_t tableid;
   uint64_t key;
   uint64_t seq;
-
-  RtxLockItem(uint8_t pid,uint8_t tableid,uint64_t key,uint64_t seq)
-      :pid(pid),tableid(tableid),key(key),seq(seq)
+  uint64_t index; // the index of the lock item in the write set so that
+                  // the lock handler can correctly reply with the this index
+                  // so that the lock requester can safely mark each item
+                  // as 'locked' in the write set
+                  // so that following potential one-sided release of lock
+                  // can pinpoint that right item in the write set to release.
+  RtxLockItem(uint8_t pid,uint8_t tableid,uint64_t key,uint64_t seq,uint64_t idx = -1)
+      :pid(pid),tableid(tableid),key(key),seq(seq), index(idx)
   {
   }
 } __attribute__ ((aligned (8)));
@@ -79,6 +84,16 @@ struct ReadItem {
 
 struct ReplyHeader {
   uint16_t num;
+};
+
+struct OCCLockReplyHeader {
+  uint16_t num;
+  uint8_t lock_status; // this status is the success/failure of the locking operation.
+};
+
+struct OCCLockResponse {
+  uint16_t idx;
+  uint8_t status; // this status is the locking status of the tuple. Being locked means a release is required.
 };
 
 struct OCCResponse {
