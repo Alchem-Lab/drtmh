@@ -108,15 +108,14 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
   LOG(3) << worker_id_ << ": Running Sequencer on routine " << cor_id_;
 
-#if ONE_SIDED_READ == 0
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
+  char * const req_buf = scheduler->req_buffers[cor_id_][cm_->get_nodeid()];
+#else
   //TODO use req_buffers instead of allocating new buffer here
   int req_buf_size = sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request);
   // fprintf(stderr, "Rmalloc %d bytes.\n", req_buf_size);
   // char * const req_buf = rpc_->get_static_buf(req_buf_size);
   char * const req_buf = (char*)malloc(req_buf_size*sizeof(char));
-#elif ONE_SIDED_READ == 1
-  char * const req_buf = scheduler->req_buffers[cor_id_][cm_->get_nodeid()];
-#else
 #endif
 
   uint32_t iteration = 0;
@@ -139,14 +138,14 @@ void Sequencer::worker_routine(yield_func_t &yield) {
   {
     if (cor_id_ == 1) {
       scheduler->epoch_done = false; // start next sequencing iteration.
-      #if ONE_SIDED_READ == 0
-          for (int i = 0; i < cm_->get_num_nodes(); i++)
-            epoch_status_[i] = CALVIN_EPOCH_READY;
-      #elif ONE_SIDED_READ == 1
+      #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_EPOCH_SYNC) != 0
           for (int i = 0; i < cm_->get_num_nodes(); i++) {
             calvin_header* h = (calvin_header*)scheduler->req_buffers[1][i];
             h->epoch_status = CALVIN_EPOCH_READY;
           }
+      #else
+          for (int i = 0; i < cm_->get_num_nodes(); i++)
+            epoch_status_[i] = CALVIN_EPOCH_READY;
       #endif
     }
 
@@ -158,24 +157,21 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     char* req_buf_end = generate_requests(req_buf, yield);
     // LOG(3) << "sequencer generated a batch of request at epoch " << ((calvin_header*)req_buf)->epoch_id;
 
-    // logging batch to other replica's sequencer in async-replication mode
-    START(log)
-#if ONE_SIDED_READ == 0
-    logging(req_buf, req_buf_end, yield);
-#elif ONE_SIDED_READ == 1
+    // replicating batch to other replica's sequencer in async-replication mode
+
+#if 0
+// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_ASYNC_REPLICATING) != 0
     // logging_rdma(req_buf, req_buf_end, yield);
+    ASSERT(false) << "NOT IMPLEMENTED IN RCC AT THIS TIME OF POINT.";
 #else
-    assert(false);
+    logging(req_buf, req_buf_end, yield);
 #endif
-    END(log)
 
     // broadcasting to other participants
-#if ONE_SIDED_READ == 0
-    broadcast(req_buf, req_buf_end, yield);
-#elif ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
     broadcast_rdma(req_buf, req_buf_end, yield);
 #else
-    assert(false);
+    broadcast(req_buf, req_buf_end, yield);
 #endif
 
 #if DEBUG_LEVEL==1
@@ -202,10 +198,10 @@ void Sequencer::worker_routine(yield_func_t &yield) {
 
     // fprintf(stderr, "cor %d noticed epoch_done from scheduler for iteration %d.\n", cor_id_, iteration);
 
-#if ONE_SIDED_READ == 0
-    epoch_sync(yield);
-#elif ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_EPOCH_SYNC) != 0
     epoch_sync_rdma(yield);
+#else
+    epoch_sync(yield);    
 #endif
 
 #if DEBUG_LEVEL==1
@@ -218,7 +214,8 @@ void Sequencer::worker_routine(yield_func_t &yield) {
     yield_next(yield);
   }
 
-#if ONE_SIDED_READ == 0
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
+#else
   // rpc_->free_static_buf(req_buf);
   free(req_buf);
 #endif
@@ -696,15 +693,11 @@ void Sequencer::thread_local_init() {
         backup_buffers[i].push_back(new std::queue<char*>());
   }
 
-#if ONE_SIDED_READ == 0
-  epoch_status_ = new uint8_t[cm_->get_num_nodes()];
-  for (int i = 0; i < cm_->get_num_nodes(); i++)
-    epoch_status_[i] = CALVIN_EPOCH_READY;
-#elif ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_EPOCH_SYNC) != 0
 
   cor_epoch_done = new bool[coroutine_num+1];
   for (int i = 0; i < coroutine_num+1; i++)
-    cor_epoch_done[i] = false;
+    cor_epoch_done[i] = false;  
 
   // for (int i = 0; i < cm_->get_num_nodes(); i++) {
   //   for (int j = 0; j < coroutine_num+1; j++) {
@@ -712,6 +705,11 @@ void Sequencer::thread_local_init() {
   //     h->epoch_status = CALVIN_EPOCH_DONE;
   //   }
   // }
+#else
+  epoch_status_ = new uint8_t[cm_->get_num_nodes()];
+  for (int i = 0; i < cm_->get_num_nodes(); i++)
+    epoch_status_[i] = CALVIN_EPOCH_READY;
+  // LOG(3) << "thtread " << thread_id << "inited.";
 #endif
 }
 

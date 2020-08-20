@@ -282,13 +282,12 @@ class BenchWorker : public RWorker {
   rtx::CALVIN *rtx_hook_ = NULL;
   
   //forwarded related structures are used by the CALVIN CLASS
-#if ONE_SIDED_READ == 0
-  std::map<uint64_t, read_val_t>* forwarded_values;
-#elif ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_VALUE_FORWARDING) != 0
   std::map<uint64_t, read_val_t>* forwarded_values; // unused. only to make compiler happy.
   uint64_t* forward_offsets_;
   char** forward_addresses;
 #else
+  std::map<uint64_t, read_val_t>* forwarded_values;  
 #endif
 
 #endif

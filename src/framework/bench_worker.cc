@@ -171,7 +171,7 @@ void BenchWorker::init_calvin() {
   // memset(epoch_done_schedule, 0, sizeof(bool)*(1 + server_routine));
   // mach_received = new std::set<int>[1 + server_routine];
 
-#if ONE_SIDED_READ == 0
+
 
   // epoch_status_ = new uint8_t*[1 + server_routine];
   // for (int i = 0; i < server_routine+1; i++) {
@@ -191,9 +191,9 @@ void BenchWorker::init_calvin() {
   // for (int i = 0; i < server_routine+1; i++)
   //   send_buffers[i] = rpc_->get_static_buf(MAX_MSG_SIZE);
 
-  forwarded_values = new std::map<uint64_t, read_val_t>[1 + server_routine];
+  
 
-#elif ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_VALUE_FORWARDING) != 0
 
   const char *start_ptr = (char *)(cm_->conn_buf_);
   LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
@@ -215,7 +215,7 @@ void BenchWorker::init_calvin() {
     LOG(3) << "forward_offset " << forward_offsets_[i];
   }
 
-#elif ONE_SIDED_READ == 2 // hybrid (onesided broadcast + rpc forward)
+#else
 
   // const char *start_ptr = (char *)(cm_->conn_buf_);
   // LOG(3) << "start_ptr = " << (void*)start_ptr;

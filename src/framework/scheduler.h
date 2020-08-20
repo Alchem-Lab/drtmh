@@ -71,15 +71,15 @@ namespace nocc {
 				BUFFER_RECVED = 1,
 				BUFFER_READY = 2
 			} BufferState;
-#if ONE_SIDED_READ == 0
-			char*** req_buffers;
-			volatile int** req_buffer_state;
-			uint64_t** offsets_;			   //unused for rpc version.
-#elif ONE_SIDED_READ == 1
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
 			volatile int** req_buffer_state;   //unused. only declared to make compiler happy.
 			char*** req_buffers;
 			uint64_t** offsets_;
 #else
+			volatile int** req_buffer_state;
+			char*** req_buffers;
+			uint64_t** offsets_;			   //unused for rpc version.
 #endif
 			std::vector<det_request> deterministic_plan;
 			volatile int req_fullfilled = 0;

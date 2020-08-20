@@ -156,6 +156,8 @@ protected:
   bool prepare_commit(yield_func_t &yield);
   void broadcast_decision(bool commit_or_abort, yield_func_t &yield);
 
+  void prepare_write_contents();
+  void log_remote(yield_func_t &yield);
   void release_reads(yield_func_t &yield);
   void release_writes(yield_func_t &yield);
   void write_back(yield_func_t &yield);
@@ -178,6 +180,30 @@ public:
         dslr_lock_manager = new DSLR(worker, db, rpc_handler, 
                                  nid, tid, cid, response_node, 
                                  cm, sched, ms);
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
+          fprintf(stderr, "CALVIN uses ONE_SIDED TXN_BROADCAST_INPUT.\n");
+#else
+          fprintf(stderr, "CALVIN uses RPC TXN_BROADCAST_INPUT.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_VALUE_FORWARDING) != 0
+          fprintf(stderr, "CALVIN uses ONE_SIDED VALUE_FORWARDING.\n");
+#else
+          fprintf(stderr, "CALVIN uses RPC VALUE_FORWARDING.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_EPOCH_SYNC) != 0
+          fprintf(stderr, "CALVIN uses ONE_SIDED EPOCH_SYNC.\n");
+#else
+          fprintf(stderr, "CALVIN uses RPC EPOCH_SYNC.\n");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_ASYNC_REPLICATING) != 0
+          fprintf(stderr, "CALVIN uses ONE_SIDED ASYNC_REPLICATING.\n");
+#else
+          fprintf(stderr, "CALVIN uses RPC ASYNC_REPLICATING.\n");
 #endif
     register_default_rpc_handlers();
     memset(reply_buf_,0,MAX_MSG_SIZE);
@@ -492,8 +518,8 @@ public:
 
     asm volatile("" ::: "memory");
 
-    // prepare_write_contents();
-    // log_remote(yield); // log remote using *logger_*
+    prepare_write_contents();
+    log_remote(yield); // log remote using *logger_*
 
     // write the modifications of records back
     write_back(yield);

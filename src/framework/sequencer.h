@@ -37,13 +37,12 @@ namespace nocc {
 			std::vector<std::vector<std::queue<char*> *> > backup_buffers; // the backup batch for current epoch
 			get_workload_func_t get_workload_func;
 			BreakdownTimer timer_;
-			#if ONE_SIDED_READ == 0
-			  uint8_t* epoch_status_;
-			  bool* cor_epoch_done;		//unused for the rpc version.
-			#elif ONE_SIDED_READ == 1
+			#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
 			  uint8_t* epoch_status_;   //unused. declared here to make compiler happy.
 			  bool* cor_epoch_done;
 			#else
+			  uint8_t* epoch_status_;
+			  bool* cor_epoch_done;		//unused for the rpc version.
 			#endif // ONE_SIDED_READ
 			void thread_local_init();
 			char* generate_requests(char* const &req_buf, yield_func_t &yield);

@@ -114,13 +114,13 @@ void Scheduler::worker_routine(yield_func_t &yield) {
 // #if MOCK_SEQUENCER == 1
 //     for (int i = 0; i < cm_->get_num_nodes(); i++) {
 //       for (int j = 1; j < coroutine_num+1; j++) {
-// #if ONE_SIDED_READ == 0
-//           chars* req_buf = req_buffers[i][j];
-//           req_buffer_state[i][j] == Scheduler::BUFFER_RECVED;
-// #elif ONE_SIDED_READ == 1
+// #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
 //           char* req_buf = req_buffers[j][i];
 //           calvin_header* h = (calvin_header*)req_buf;
 //           h->received_size = sizeof(det_request)*MAX_REQUESTS_NUM;
+// #else
+//           chars* req_buf = req_buffers[i][j];
+//           req_buffer_state[i][j] == Scheduler::BUFFER_RECVED;
 // #endif
 //           ((calvin_header*)req_buf)->node_id = i;
 //           ((calvin_header*)req_buf)->epoch_id = iteration;
@@ -137,13 +137,14 @@ void Scheduler::worker_routine(yield_func_t &yield) {
 #if MOCK_SEQUENCER == 1
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       for (int j = 1; j < coroutine_num+1; j++) {
-#if ONE_SIDED_READ == 0
-          chars* req_buf = req_buffers[i][j];
-          req_buffer_state[i][j] == Scheduler::BUFFER_RECVED;
-#elif ONE_SIDED_READ == 1
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
           char* req_buf = req_buffers[j][i];
           calvin_header* h = (calvin_header*)req_buf;
           h->received_size = sizeof(det_request)*MAX_REQUESTS_NUM;
+#else
+          chars* req_buf = req_buffers[i][j];
+          req_buffer_state[i][j] == Scheduler::BUFFER_RECVED;          
 #endif
           ((calvin_header*)req_buf)->node_id = i;
           ((calvin_header*)req_buf)->epoch_id = iteration;
@@ -157,15 +158,14 @@ void Scheduler::worker_routine(yield_func_t &yield) {
       int n_ready = 0;
       for (int i = 0; i < cm_->get_num_nodes(); i++) {
         for (int j = 1; j < coroutine_num+1; j++) {
-#if ONE_SIDED_READ == 0
-          if (req_buffer_state[i][j] == Scheduler::BUFFER_RECVED)
-            n_ready += 1;
-#elif ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
           calvin_header* h = (calvin_header*)req_buffers[j][i];
           if (h->received_size == sizeof(det_request)*MAX_REQUESTS_NUM) {
             n_ready += 1;
           }
 #else
+          if (req_buffer_state[i][j] == Scheduler::BUFFER_RECVED)
+            n_ready += 1;          
 #endif
         }
       }
@@ -180,13 +180,11 @@ void Scheduler::worker_routine(yield_func_t &yield) {
     for (int i = 0; i < cm_->get_num_nodes(); i++) {
       for (int j = 1; j < coroutine_num+1; j++) {
         if (true) {
-#if ONE_SIDED_READ == 0
-          char* buf_end = req_buffers[i][j];
-#elif ONE_SIDED_READ == 1
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
           char* buf_end = req_buffers[j][i];
 #else
-          char* buf_end = NULL;
-          assert(false);
+          char* buf_end = req_buffers[i][j];
 #endif
           calvin_header* h = (calvin_header*)buf_end;
           buf_end += sizeof(calvin_header);
@@ -200,11 +198,10 @@ void Scheduler::worker_routine(yield_func_t &yield) {
           fprintf(stderr, "%d: deterministic_plan installs requests from %d:%d for epoch %d\n", worker_id_, i, j, h->epoch_id);
   #endif
 
-  #if ONE_SIDED_READ == 0
-          req_buffer_state[i][j] = Scheduler::BUFFER_INIT;
-  #elif ONE_SIDED_READ == 1
+  #if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
           h->received_size = 0;
   #else
+          req_buffer_state[i][j] = Scheduler::BUFFER_INIT;
   #endif
         } else {
           assert(false);
@@ -296,23 +293,8 @@ void Scheduler::exit_handler() {
 }
 
 void Scheduler::thread_local_init() {
-#if ONE_SIDED_READ == 0
-  req_buffers = (char***)malloc(sizeof(char**)*cm_->get_num_nodes());
-  for (int i = 0; i < cm_->get_num_nodes(); i++)
-    req_buffers[i] = (char**)malloc(sizeof(char*)*(coroutine_num+1));
 
-  req_buffer_state = (volatile int**)malloc(sizeof(volatile int*)*cm_->get_num_nodes());
-  for (int i = 0; i < cm_->get_num_nodes(); i++)
-    req_buffer_state[i] = (volatile int*)malloc(sizeof(volatile int)*(coroutine_num+1));
-
-  for (int i = 0; i < cm_->get_num_nodes(); i++) {
-    for (int j = 0; j < coroutine_num+1; j++) {    
-      req_buffers[i][j] = (char*)malloc(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
-      req_buffer_state[i][j] = BUFFER_INIT;
-    }
-  }
-
-#elif ONE_SIDED_READ == 1
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT) != 0
 
   const char *start_ptr = (char *)(cm_->conn_buf_);
   LOG(3) << "start_ptr = " << (void*)start_ptr << " addrs:";
@@ -346,7 +328,20 @@ void Scheduler::thread_local_init() {
   }
 
 #else
-  assert(false);
+  req_buffers = (char***)malloc(sizeof(char**)*cm_->get_num_nodes());
+  for (int i = 0; i < cm_->get_num_nodes(); i++)
+    req_buffers[i] = (char**)malloc(sizeof(char*)*(coroutine_num+1));
+
+  req_buffer_state = (volatile int**)malloc(sizeof(volatile int*)*cm_->get_num_nodes());
+  for (int i = 0; i < cm_->get_num_nodes(); i++)
+    req_buffer_state[i] = (volatile int*)malloc(sizeof(volatile int)*(coroutine_num+1));
+
+  for (int i = 0; i < cm_->get_num_nodes(); i++) {
+    for (int j = 0; j < coroutine_num+1; j++) {    
+      req_buffers[i][j] = (char*)malloc(sizeof(calvin_header) + MAX_REQUESTS_NUM*sizeof(det_request));
+      req_buffer_state[i][j] = BUFFER_INIT;
+    }
+  }
 #endif
 
 }

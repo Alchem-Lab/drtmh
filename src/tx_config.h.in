@@ -47,6 +47,49 @@
 // whether offload read to one-sided operation
 #cmakedefine ONE_SIDED_READ @ONE_SIDED_READ@
 
+// Data store releated configurations
+// whether offload read to one-sided operation
+// 0: RPC_VERSION
+// 1: ONE_SIDED_VERSION
+// 2: HYBRID_VERSION
+#cmakedefine ONE_SIDED_READ @ONE_SIDED_READ@
+
+#define RCC_USE_ONE_SIDED_LOCK		1
+#define RCC_USE_ONE_SIDED_READ		2
+#define RCC_USE_ONE_SIDED_LOG		4
+#define RCC_USE_ONE_SIDED_RELEASE	8
+#define RCC_USE_ONE_SIDED_COMMIT	16
+#define RCC_USE_ONE_SIDED_VALIDATE	32
+#define RCC_USE_ONE_SIDED_RENEW		64  // for sundial only
+#define RCC_USE_ONE_SIDED_TXN_BROADCAST_INPUT	128	// for calvin only
+#define RCC_USE_ONE_SIDED_VALUE_FORWARDING		256	// for calvin only
+#define RCC_USE_ONE_SIDED_EPOCH_SYNC			512	// for calvin only
+#define RCC_USE_ONE_SIDED_ASYNC_REPLICATING		1024 // for calvin only
+
+// hybrid code defines which stage use which communication type
+// hybrid code is only used when ONE_SIDED_READ == 2
+#cmakedefine HYBRID_CODE @HYBRID_CODE@
+
+#if ONE_SIDED_READ == 2 && !defined(HYBRID_CODE)
+static_assert(0, "The system needs to setup the hybrid code for running in hybrid mode.");
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_LOG) != 0
+#undef TX_LOG_STYLE
+#define TX_LOG_STYLE 2
+#else
+#undef TX_LOG_STYLE
+#define TX_LOG_STYLE 1
+#endif
+
+#if ONE_SIDED_READ == 1 || ONE_SIDED_READ == 2 && (HYBRID_CODE & RCC_USE_ONE_SIDED_2PC) != 0
+#undef TX_TWO_PHASE_COMMIT_STYLE
+#define TX_TWO_PHASE_COMMIT_STYLE 0
+#else
+#undef TX_TWO_PHASE_COMMIT_STYLE
+#define TX_TWO_PHASE_COMMIT_STYLE 0
+#endif
+
 // whether to use cache for one-sided operations
 #cmakedefine RDMA_CACHE @RDMA_CACHE@
 #ifndef RDMA_CACHE
