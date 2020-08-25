@@ -1,0 +1,26 @@
+NOCC started with program [/noccwaitdie-tcp]. at 19-08-2020 09:00:43
+[bench_runner.cc:341] Use TCP port 8849
+[0m[bench_runner.cc:363] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
+[0m[bank_main.cc:143] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16, 0
+[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0mnoccwaitdie-tcp: /home/huangkz/usc/new/drtmh/./src/core/tcp_adapter.hpp:60: void nocc::AdapterPoller::create_recv_socket(zmq::context_t&): Assertion `false' failed.
+[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+poller bind address tcp://*:8849
+stack trace:
+  ../noccwaitdie-tcp() [0x4855c5]
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
+  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
+  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dbd7
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dc82
+  ../noccwaitdie-tcp : nocc::oltp::BenchRunner::run()+0x1b02
+  ../noccwaitdie-tcp : nocc::oltp::bank::BankTest(int, char**)+0x31
+  ../noccwaitdie-tcp : main()+0x622
+  /lib/x86_64-linux-gnu/libc.so.6 : __libc_start_main()+0xf0
+  ../noccwaitdie-tcp : _start()+0x29

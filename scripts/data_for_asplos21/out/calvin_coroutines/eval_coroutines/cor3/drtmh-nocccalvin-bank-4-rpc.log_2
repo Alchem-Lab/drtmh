@@ -1,0 +1,947 @@
+NOCC started with program [/nocccalvin-rpc]. at 31-07-2020 05:58:23
+[bench_runner.cc:388] Use TCP port 8876
+[0m[bench_runner.cc:410] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:153] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
+[0m[bank_main.cc:162] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16, 0
+[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:183] Total logger area 0.00390625G.
+[0m[bench_runner.cc:193] Total two-phase committer area 0.00195312G.
+[0m[bench_runner.cc:202] add RDMA store size 7.8125G.
+[0m[bench_runner.cc:232] [Mem] RDMA heap size 5.10937G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[Bank], total 12000000 accounts loaded
+[Runner] local db size: 276.25 MB
+[Runner] Started server for receiving QP connection requests.
+[Runner] Cache size: 0 MB
+[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[Bank], total 12000000 accounts loaded
+[bank_main.cc:392] check cv balance 46280
+[0m[bench_runner.cc:316] [Runner] Backup DB[0] for 0 size: 645.82 MB
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:316] [Runner] Backup DB[1] for 1 size: 644.906 MB
+[0mcreate_logger: local_log=0x7f97fb9d2620
+create_logger: local_log=0x7f97fc1d3620
+14: next_log_entry: local_log=0x7f97fb9d2620
+create_logger: local_log=0x7f98001db620
+create_logger: local_log=0x7f97fd9d6620
+next_log_entry: local_log=0x7f97fc1d3620
+create_logger: local_log=0x7f9903bff620
+create_logger: local_log=0x7f98011dd620
+create_logger: local_log=0x7f97fe9d8620
+create_logger: local_log=0x7f98009dc620
+create_logger: local_log=0x7f97ff9da620
+create_logger: local_log=0x7f97ff1d9620
+create_logger: local_log=0x7f97fe1d7620
+register_connect_mr 13883146240 via ibv_reg_mr.
+worker: 0 binding 0
+worker: 2 binding 4
+worker: 1 binding 2
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[Global epoch manager running] !
+worker: 13 binding 7
+worker: 14 binding 9
+14: scheduler in init rdma.
+sequencer in init rdma; id = 13
+[rworker.cc:126] using RDMA device: 0 to create qps @11
+[0mcreate_logger: local_log=0x7f97fd1d5620
+register_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @8
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @3
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+QP of tid=11 nid=0 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @14
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+QP of tid=11 nid=1 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @0
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @1
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @2
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @13
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @4
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @5
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @6
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @7
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=14 nid=0 ready2init
+QP of tid=11 nid=0 init2rtr
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=14 nid=0 init2rtr
+QP of tid=2 nid=0 ready2init
+QP of tid=2 nid=1 ready2init
+QP of tid=2 nid=2 ready2init
+QP of tid=2 nid=3 ready2init
+QP of tid=2 nid=0 init2rtr
+QP of tid=6 nid=0 ready2init
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=6 nid=0 init2rtr
+QP of tid=3 nid=0 ready2init
+QP of tid=3 nid=1 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @9
+[0mQP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=3 nid=0 init2rtr
+QP of tid=13 nid=0 ready2init
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=13 nid=0 init2rtr
+QP of tid=7 nid=0 ready2init
+QP of tid=7 nid=1 ready2init
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=7 nid=0 init2rtr
+QP of tid=0 nid=0 ready2init
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=0 nid=0 init2rtr
+QP of tid=4 nid=0 ready2init
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=4 nid=0 init2rtr
+QP of tid=8 nid=0 ready2init
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=8 nid=0 init2rtr
+QP of tid=1 nid=0 ready2init
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=1 nid=0 init2rtr
+QP of tid=5 nid=0 ready2init
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=5 nid=0 init2rtr
+QP of tid=9 nid=0 ready2init
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=9 nid=0 init2rtr
+QP of tid=3 nid=1 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=11 nid=1 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=14 nid=1 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=7 nid=2 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=2 nid=2 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=1 nid=1 init2rtr
+QP of tid=14 nid=2 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=9 nid=1 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=9 nid=2 init2rtr
+[bench_listener2.cc:86] New monitor running!
+[0mthreadid=3: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=14: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=13: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=9: all 4 qps connected
+register_connect_mr 13883146240 via ibv_reg_mr.
+QP of tid=3 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+QP of tid=6 nid=3 init2rtr
+QP of tid=7 nid=3 init2rtr
+QP of tid=11 nid=3 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=5 nid=3 init2rtr
+QP of tid=14 nid=3 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=1 nid=3 init2rtr
+QP of tid=13 nid=3 init2rtr
+QP of tid=4 nid=3 init2rtr
+QP of tid=9 nid=3 init2rtr
+QP of tid=3 nid=0 ready2init
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=7 nid=0 ready2init
+QP of tid=3 nid=0 init2rtr
+QP of tid=7 nid=1 ready2init
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=14 nid=0 ready2init
+QP of tid=7 nid=0 init2rtr
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=4 nid=0 ready2init
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=6 nid=0 ready2init
+QP of tid=4 nid=0 init2rtr
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=5 nid=0 ready2init
+QP of tid=6 nid=0 init2rtr
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=13 nid=0 ready2init
+QP of tid=5 nid=0 init2rtr
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @12
+[0mthreadid=4: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=13: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=13: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=9: all 4 qps connected
+12: 2 out of 4 qps connected. Retry connecting qps...
+14: 3 out of 4 qps connected. Retry connecting qps...
+threadid=14: all 4 qps connected
+threadid=12: all 4 qps connected
+threadid=13: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=14: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=8: all 4 qps connected
+12: 1 out of 4 qps connected. Retry connecting qps...
+13: 1 out of 4 qps connected. Retry connecting qps...
+2: 2 out of 4 qps connected. Retry connecting qps...
+6: 3 out of 4 qps connected. Retry connecting qps...
+4: 3 out of 4 qps connected. Retry connecting qps...
+7: 2 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
+5: 3 out of 4 qps connected. Retry connecting qps...
+14: 1 out of 4 qps connected. Retry connecting qps...
+threadid=3: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=7: all 4 qps connected
+QP of tid=8 nid=0 ready2init
+QP of tid=13 nid=0 init2rtr
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=2 nid=0 ready2init
+QP of tid=8 nid=0 init2rtr
+QP of tid=2 nid=1 ready2init
+QP of tid=2 nid=2 ready2init
+QP of tid=2 nid=3 ready2init
+QP of tid=1 nid=0 ready2init
+QP of tid=2 nid=0 init2rtr
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=1 nid=0 init2rtr
+QP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+QP of tid=11 nid=0 ready2init
+QP of tid=11 nid=1 ready2init
+QP of tid=12 nid=0 init2rtr
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=11 nid=0 init2rtr
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=9 nid=0 ready2init
+QP of tid=0 nid=0 init2rtr
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=9 nid=0 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=11 nid=1 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=3 nid=1 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=14 nid=1 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=1 nid=1 init2rtr
+QP of tid=9 nid=1 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=2 nid=2 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=12 nid=2 init2rtr
+QP of tid=7 nid=2 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=14 nid=2 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=9 nid=2 init2rtr
+QP of tid=4 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+QP of tid=6 nid=3 init2rtr
+QP of tid=11 nid=3 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=3 nid=3 init2rtr
+QP of tid=4 nid=0 ready2init
+QP of tid=7 nid=3 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=5 nid=3 init2rtr
+QP of tid=14 nid=3 init2rtr
+QP of tid=13 nid=3 init2rtr
+QP of tid=9 nid=3 init2rtr
+QP of tid=1 nid=3 init2rtr
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=2 nid=0 ready2init
+QP of tid=2 nid=1 ready2init
+QP of tid=4 nid=0 init2rtr
+QP of tid=2 nid=2 ready2init
+QP of tid=2 nid=3 ready2init
+QP of tid=5 nid=0 ready2init
+QP of tid=2 nid=0 init2rtr
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=1 nid=0 ready2init
+QP of tid=5 nid=0 init2rtr
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=7 nid=0 ready2init
+QP of tid=1 nid=0 init2rtr
+QP of tid=7 nid=1 ready2init
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=13 nid=0 ready2init
+QP of tid=7 nid=0 init2rtr
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=11 nid=0 ready2init
+QP of tid=13 nid=0 init2rtr
+QP of tid=11 nid=1 ready2init
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=8 nid=0 ready2init
+QP of tid=11 nid=0 init2rtr
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=6 nid=0 ready2init
+QP of tid=8 nid=0 init2rtr
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=6 nid=0 init2rtr
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=3 nid=0 ready2init
+QP of tid=0 nid=0 init2rtr
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=9 nid=0 ready2init
+QP of tid=3 nid=0 init2rtr
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=9 nid=0 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=2 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=11 nid=1 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=7 nid=2 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=1 nid=1 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=3 nid=1 init2rtr
+QP of tid=9 nid=1 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=9 nid=2 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+QP of tid=4 nid=3 init2rtr
+QP of tid=5 nid=3 init2rtr
+QP of tid=13 nid=3 init2rtr
+QP of tid=7 nid=3 init2rtr
+QP of tid=2 nid=0 ready2init
+QP of tid=11 nid=3 init2rtr
+QP of tid=6 nid=3 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=1 nid=3 init2rtr
+QP of tid=3 nid=3 init2rtr
+QP of tid=9 nid=3 init2rtr
+QP of tid=2 nid=1 ready2init
+QP of tid=2 nid=2 ready2init
+QP of tid=2 nid=3 ready2init
+QP of tid=13 nid=0 ready2init
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=9 nid=0 ready2init
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=11 nid=0 ready2init
+QP of tid=11 nid=1 ready2init
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=3 nid=0 ready2init
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=6 nid=0 ready2init
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=8 nid=0 ready2init
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=1 nid=0 ready2init
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=2 nid=0 init2rtr
+QP of tid=7 nid=0 ready2init
+QP of tid=13 nid=0 init2rtr
+QP of tid=0 nid=0 init2rtr
+QP of tid=7 nid=1 ready2init
+QP of tid=9 nid=0 init2rtr
+QP of tid=11 nid=0 init2rtr
+QP of tid=7 nid=2 ready2init
+QP of tid=3 nid=0 init2rtr
+QP of tid=12 nid=1 init2rtr
+QP of tid=7 nid=3 ready2init
+QP of tid=6 nid=0 init2rtr
+QP of tid=8 nid=0 init2rtr
+QP of tid=4 nid=0 ready2init
+QP of tid=1 nid=0 init2rtr
+QP of tid=7 nid=0 init2rtr
+QP of tid=14 nid=0 init2rtr
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=4 nid=0 init2rtr
+QP of tid=5 nid=0 ready2init
+QP of tid=12 nid=3 init2rtr
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=5 nid=0 init2rtr
+QP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+QP of tid=14 nid=0 ready2init
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=14 nid=0 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=2 nid=2 init2rtr
+QP of tid=9 nid=1 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=9 nid=2 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=1 nid=1 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=11 nid=1 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=7 nid=2 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=3 nid=1 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=14 nid=1 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=13 nid=3 init2rtr
+QP of tid=12 nid=2 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=9 nid=3 init2rtr
+QP of tid=6 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+QP of tid=13 nid=0 ready2init
+QP of tid=1 nid=3 init2rtr
+QP of tid=11 nid=3 init2rtr
+QP of tid=7 nid=3 init2rtr
+QP of tid=4 nid=3 init2rtr
+QP of tid=3 nid=3 init2rtr
+QP of tid=13 nid=1 ready2init
+QP of tid=5 nid=3 init2rtr
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=1 nid=0 ready2init
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=4 nid=0 ready2init
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=2 nid=0 ready2init
+QP of tid=2 nid=1 ready2init
+QP of tid=2 nid=2 ready2init
+QP of tid=2 nid=3 ready2init
+QP of tid=0 nid=0 init2rtr
+QP of tid=1 nid=0 init2rtr
+QP of tid=11 nid=0 ready2init
+QP of tid=11 nid=1 ready2init
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=3 nid=0 ready2init
+QP of tid=11 nid=0 init2rtr
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=6 nid=0 ready2init
+QP of tid=3 nid=0 init2rtr
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=7 nid=0 ready2init
+QP of tid=7 nid=1 ready2init
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=9 nid=0 ready2init
+QP of tid=4 nid=1 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=5 nid=0 ready2init
+QP of tid=9 nid=0 init2rtr
+QP of tid=11 nid=1 init2rtr
+QP of tid=1 nid=1 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=8 nid=0 ready2init
+QP of tid=5 nid=0 init2rtr
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=14 nid=2 init2rtr
+QP of tid=8 nid=0 init2rtr
+QP of tid=9 nid=1 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=14 nid=3 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=14 nid=0 ready2init
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=13 nid=2 init2rtr
+QP of tid=2 nid=2 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=9 nid=2 init2rtr
+QP of tid=7 nid=2 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=14 nid=2 init2rtr
+QP of tid=1 nid=3 init2rtr
+register_dgram_mr: 0x60006c174da0 0x7f9a3fc00000 13883146240 15
+QP of tid=6 nid=3 init2rtr
+QP of tid=4 nid=3 init2rtr
+QP of tid=9 nid=3 init2rtr
+QP of tid=11 nid=3 init2rtr
+QP of tid=3 nid=3 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+register_dgram_mr: 0x6000759bc8a0 0x7f9a3fc00000 13883146240 15
+register_dgram_mr: 0x60007372a1a0 0x7f9a3fc00000 13883146240 15
+register_dgram_mr: 0x6000703a6ca0 0x7f9a3fc00000 13883146240 15
+register_dgram_mr: 0x60007580ada0 0x7f9a3fc00000 13883146240 15
+QP of tid=3 nid=1 init2rtr
+register_dgram_mr: 0x60006e4b7fa0 0x7f9a3fc00000 13883146240 15
+QP of tid=4 nid=0 init2rtr
+QP of tid=14 nid=0 init2rtr
+QP of tid=6 nid=0 init2rtr
+QP of tid=13 nid=0 init2rtr
+QP of tid=2 nid=0 init2rtr
+QP of tid=7 nid=0 init2rtr
+QP of tid=12 nid=0 init2rtr
+register_dgram_mr: 0x600076da05a0 0x7f9a3fc00000 13883146240 15
+QP of tid=14 nid=1 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=12 nid=1 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=7 nid=3 init2rtr
+[bench_worker.h:194] Use RPC for logging.
+[0m[bench_worker.h:230] Use two-sided RPC for two-phase-commit.
+[0mthreadid=14: all 4 qps connected
+threadid=13: all 4 qps connected
+threadid=12: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=12: all 4 qps connected
+QP of tid=14 nid=3 init2rtr
+QP of tid=13 nid=3 init2rtr
+register_dgram_mr: 0x60007493c1a0 0x7f9a3fc00000 13883146240 15
+QP of tid=12 nid=3 init2rtr
+register_dgram_mr: 0x600071c2f3a0 0x7f9a3fc00000 13883146240 15
+register_dgram_mr: 0x600075cbf8a0 0x7f9a3fc00000 13883146240 15
+QP of tid=14 nid=0 ready2init
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+QP of tid=12 nid=0 ready2init
+QP of tid=5 nid=3 init2rtr
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+register RPCID 19.
+QP of tid=14 nid=0 init2rtr
+QP of tid=12 nid=0 init2rtr
+register_dgram_mr: 0x6000793b64a0 0x7f9a3fc00000 13883146240 15
+register RPCID 19.
+register_dgram_mr: 0x6000723464a0 0x7f9a3fc00000 13883146240 15
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+QP of tid=12 nid=1 init2rtr
+QP of tid=14 nid=1 init2rtr
+QP of tid=12 nid=2 init2rtr
+QP of tid=14 nid=2 init2rtr
+QP of tid=12 nid=3 init2rtr
+[rworker.cc:47] Worker 11 on cpu 20with cor id 0
+[0m14: 3 out of 4 qps connected. Retry connecting qps...
+threadid=12: all 4 qps connected
+threadid=14: all 4 qps connected
+threadid=12: all 4 qps connected
+QP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+QP of tid=12 nid=0 init2rtr
+QP of tid=12 nid=1 init2rtr
+QP of tid=12 nid=2 init2rtr
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+QP of tid=12 nid=3 init2rtr
+register RPCID 28.
+register RPCID 29.
+register RPCID 30.
+QP of tid=14 nid=3 init2rtr
+QP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+QP of tid=12 nid=0 init2rtr
+register_dgram_mr: 0x600070f728a0 0x7f9a3fc00000 13883146240 15
+QP of tid=12 nid=1 init2rtr
+QP of tid=12 nid=2 init2rtr
+QP of tid=12 nid=3 init2rtr
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_listener2.cc:137] All workers has initilized.
+[0mregister_dgram_mr: 0x60007f88aba0 0x7f9a3fc00000 13883146240 15
+register RPCID 0.
+register RPCID 1.
+register RPCID 2.
+register RPCID 3.
+[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+[0m[bench_listener2.cc:145] Starting Slave Listener.
+[0m[bench_listener2.cc:241] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[rworker.cc:47] Worker 13 on cpu 7with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 1
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 2
+[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[rworker.cc:47] Worker 14 on cpu 9with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[0m[sequencer.cc:109] 13: Running Sequencer on routine 1
+[bench_worker.cc:350] running calvin routine on worker 0 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 2
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 1
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 1
+[0m[scheduler.cc:110] 14: Running Scheduler routine
+[bench_worker.cc:350] running calvin routine on worker 1 coroutine 3
+[0m[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 2
+[bench_worker.cc:350] running calvin routine on worker 2 coroutine 2
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 3
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 2
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 3
+[0m[0m[sequencer.cc:109] 13: Running Sequencer on routine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 3
+[0m[sequencer.cc:109] 13: Running Sequencer on routine 3
+[0m[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 3
+[0mmy throughput 17.922000 K, abort 0, commit 17940, abort ratio 0.000000
+my throughput 18.090000 K, abort 0, commit 18090, abort ratio 0.000000
+my throughput 18.030000 K, abort 0, commit 18030, abort ratio 0.000000
+my throughput 17.970000 K, abort 0, commit 17970, abort ratio 0.000000
+my throughput 18.030000 K, abort 0, commit 18030, abort ratio 0.000000
+my throughput 18.030000 K, abort 0, commit 18030, abort ratio 0.000000
+my throughput 18.090000 K, abort 0, commit 18090, abort ratio 0.000000
+my throughput 18.030000 K, abort 0, commit 18030, abort ratio 0.000000
+my throughput 18.030000 K, abort 0, commit 18030, abort ratio 0.000000
+my throughput 18.030000 K, abort 0, commit 18030, abort ratio 0.000000
+my throughput 18.000000 K, abort 0, commit 18000, abort ratio 0.000000
+my throughput 0, abort 0, commit 0, abort ratio -nan
+[bench_listener2.cc:283] start to exit.
+[0mstats for worker 0:
+no timer!
+no timer!
+no timer!
+no timer!
+no timer!
+no timer!
+exiting master routine for worker 3.
+exiting master routine for worker 6.
+exiting master routine for worker 4.
+exiting master routine for worker 0.
+exiting master routine for worker 9.
+exiting master routine for worker 2.
+exiting master routine for worker 5.
+exiting master routine for worker 11.
+exiting master routine for worker 13.
+exiting master routine for worker 1.
+exiting master routine for worker 7.
+exiting master routine for worker 14.
+exiting master routine for worker 8.
+SendPayment executed 13600, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+DepositChecking executed 13016, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Balance executed 13412, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Transact saving executed 12844, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Write check executed 13656, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Txn amal executed 12780, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+succs ratio 1.000000
+[bank_worker.h:161] worker exit.
+[0m[bank_worker.h:164] read time: 0ms
+[0m[occ_statistics.h:42] read_lat time: 0ms
+[0m[occ_statistics.h:43] lock time: 0ms
+[0m[occ_statistics.h:44] release_write time: 0ms
+[0m[occ_statistics.h:45] release_read time: 0ms
+[0m[occ_statistics.h:46] renew_lease time: 0ms
+[0m[occ_statistics.h:47] validate time: 0ms
+[0m[occ_statistics.h:48] log time: 0ms
+[0m[occ_statistics.h:49] 2pc time: 0ms
+[0m[occ_statistics.h:50] commit time: 0ms
+[0m[occ_statistics.h:52] 0
+[0m[occ_statistics.h:53] 0
+[0m[occ_statistics.h:54] 0
+[0m[occ_statistics.h:55] 0
+[0m[occ_statistics.h:56] 0
+[0m[occ_statistics.h:59] temp time: 0ms
+[0mmaster routine exit...
+[bench_runner.cc:360] main runner ends.
+[0m

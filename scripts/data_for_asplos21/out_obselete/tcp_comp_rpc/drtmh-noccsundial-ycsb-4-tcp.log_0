@@ -1,0 +1,208 @@
+NOCC started with program [/noccsundial-tcp]. at 24-07-2020 12:31:23
+[bench_runner.cc:341] Use TCP port 8895
+[0m[bench_runner.cc:363] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
+[0m[bank_main.cc:143] here100
+[0m[Bank]: check workload 0, 0, 0, 0, 0, 0, 100
+[util.cc:161] malloc_huge_pages: size = 10737418240huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+poller bind address tcp://*:8895
+[bench_runner.cc:144] [TCP] creating shared sockets
+[0m[TCP] creating shared sockets for tcp://172.23.33.33:8895
+[TCP] creating shared sockets for tcp://172.23.33.34:8895
+[TCP] creating shared sockets for tcp://172.23.33.35:8895
+[TCP] creating shared sockets for tcp://172.23.33.36:8895
+[bench_runner.cc:157] Total logger area 0.00390625G.
+[0m[bench_runner.cc:167] Total two-phase committer area 0.00195312G.
+[0m[bench_runner.cc:176] add RDMA store size 6.34766G.
+[0m[bench_runner.cc:185] [Mem] RDMA heap size 3.64453G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[Bank], total 12000000 accounts loaded
+[bank_main.cc:344] check cv balance 46280
+[0m[Runner] local db size: 275.902 MB
+[Runner] DID NOT start server for receiving QP connection requests.
+[Runner] Cache size: 0 MB
+[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:269] [Runner] Backup DB[0] for 2 size: 645.004 MB
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:269] [Runner] Backup DB[1] for 3 size: 645.422 MB
+[0mworker: 1 binding 2
+worker: 0 binding 0
+worker: 2 binding 4
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[Global sequence running] !
+[NOCC] poller running!
+[bench_listener2.cc:70] try log results to ./results//noccsundial-tcp_bank_4_10_10_100.log
+[0m[bench_worker.h:156] Use RPC for logging.
+[0m[bench_worker.h:192] Use two-sided RPC for two-phase-commit.
+[0m[sundial_rdma.h:232] Use one-sided for read.
+[0m[rworker.cc:47] Worker 11 on cpu 20with cor id 0
+[0m[bench_listener2.cc:79] New monitor running!
+[0m[bench_listener2.cc:130] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 5with cor id 0
+[0m[bench_listener2.cc:135] Starting Master Listener.
+[0m[bench_listener2.cc:234] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0mmerge data 9.267000 K from gorgon4
+merge data 9.389000 K from gorgon6
+merge data 9.197000 K from gorgon5
+my throughput 9.274000 K, abort 37, commit 9274, abort ratio 0.003974
+merge data 9.274000 K from gorgon3
+[occ_statistics.h:65] lock lat: 1.0881e+06 ;counts 185
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 1.63251e+06 ;counts 80
+[0m[occ_statistics.h:74] twopc lat: 1.06231e+06 ;counts 94
+[0m[occ_statistics.h:77] commit lat: 1.1925e+06 ;counts 94
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 1.04282e+06 ;counts 1530
+[0m[occ_statistics.h:86] renew_lease lat: 1.08343e+06 ;counts 755
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@1 System throughput 37.127000 K, abort 0.008439
+merge data 9.929000 K from gorgon5
+merge data 10.227000 K from gorgon6
+merge data 9.989000 K from gorgon4
+my throughput 9.913000 K, abort 52, commit 9913, abort ratio 0.005218
+merge data 9.913000 K from gorgon3
+[occ_statistics.h:65] lock lat: 984108 ;counts 203
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 1.56262e+06 ;counts 92
+[0m[occ_statistics.h:74] twopc lat: 1.15821e+06 ;counts 99
+[0m[occ_statistics.h:77] commit lat: 1.11972e+06 ;counts 99
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 986941 ;counts 1594
+[0m[occ_statistics.h:86] renew_lease lat: 1.02994e+06 ;counts 764
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 112412 ;counts 1
+[0m@2 System throughput 40.058000 K, abort 0.005462
+merge data 8.850000 K from gorgon5
+merge data 9.163000 K from gorgon6
+merge data 9.129000 K from gorgon4
+my throughput 9.018000 K, abort 42, commit 9018, abort ratio 0.004636
+merge data 9.018000 K from gorgon3
+[occ_statistics.h:65] lock lat: 1.22934e+06 ;counts 187
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 1.52386e+06 ;counts 81
+[0m[occ_statistics.h:74] twopc lat: 1.38154e+06 ;counts 90
+[0m[occ_statistics.h:77] commit lat: 1.2508e+06 ;counts 89
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 1.08408e+06 ;counts 1406
+[0m[occ_statistics.h:86] renew_lease lat: 1.12598e+06 ;counts 694
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@3 System throughput 36.160000 K, abort 0.006839
+[bench_listener2.cc:276] start to exit.
+[0mstats for worker 0:
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+[NOCC] poller exit!
+exiting master routine.
+[bench_listener2.cc:295] Medium latency 10.1367ms, 90th latency 12.9112ms, 99th latency 19.5603ms; average latency: 10.5973ms.
+[0mYCSB executed 2828, latency: 10.597226, rw_size -nan, m 10.136622, 90 12.911100, 99 19.560114
+succs ratio 0.992606
+[bank_worker.h:126] worker exit.
+[0m[bank_worker.h:129] read time: 0ms
+[0m[occ_statistics.h:42] read_lat time: 0.451247ms
+[0m[occ_statistics.h:43] lock time: 0.478449ms
+[0m[occ_statistics.h:44] release_write time: 0.0162901ms
+[0m[occ_statistics.h:45] release_read time: 0ms
+[0m[occ_statistics.h:46] renew_lease time: 0.469436ms
+[0m[occ_statistics.h:47] validate time: 0ms
+[0m[occ_statistics.h:48] log time: 0.683861ms
+[0m[occ_statistics.h:49] 2pc time: 0.521998ms
+[0m[occ_statistics.h:50] commit time: 0.516341ms
+[0m[occ_statistics.h:52] 0.451247
+[0m[occ_statistics.h:53] 0.478449
+[0m[occ_statistics.h:54] 0.0162901
+[0m[occ_statistics.h:55] 0.469436
+[0m[occ_statistics.h:56] 0.516341
+[0m[occ_statistics.h:59] temp time: 0ms
+[0m[bench_worker.cc:392] 0: 0
+[0m[bench_worker.cc:392] 1: 0
+[0m[bench_worker.cc:392] 2: 0
+[0m[bench_worker.cc:392] 3: 0
+[0m[bench_worker.cc:392] 4: 0
+[0m[bench_worker.cc:392] 5: 0
+[0m[bench_worker.cc:392] 6: 0
+[0m[bench_worker.cc:392] 7: 0
+[0m[bench_worker.cc:392] 8: 0
+[0m[bench_worker.cc:392] 9: 0
+[0m[bench_worker.cc:392] 10: 0
+[0m[bench_worker.cc:392] 11: 0
+[0m[bench_worker.cc:392] 12: 12
+[0m[bench_worker.cc:392] 13: 0
+[0m[bench_worker.cc:392] 14: 0
+[0m[bench_worker.cc:392] 15: 0
+[0m[bench_worker.cc:392] 16: 2821
+[0m[bench_worker.cc:392] 17: 0
+[0m[bench_worker.cc:392] 18: 60502
+[0m[bench_worker.cc:392] 19: 20
+[0m[bench_worker.cc:392] 20: 0
+[0m[bench_worker.cc:392] 21: 0
+[0m[bench_worker.cc:392] 22: 0
+[0m[bench_worker.cc:392] 23: 0
+[0m[bench_worker.cc:392] 24: 0
+[0m[bench_worker.cc:392] 25: 0
+[0m[bench_worker.cc:392] 26: 0
+[0m[bench_worker.cc:392] 27: 0
+[0m[bench_worker.cc:392] 28: 0
+[0m[bench_worker.cc:392] 29: 0
+[0m[bench_worker.cc:392] 30: 0
+[0m[bench_worker.cc:392] 31: 0
+[0m[bench_worker.cc:392] 32: 0
+[0m[bench_worker.cc:392] 33: 0
+[0m[bench_worker.cc:392] 34: 0
+[0m[bench_worker.cc:392] 35: 0
+[0m[bench_worker.cc:392] 36: 0
+[0m[bench_worker.cc:392] 37: 0
+[0m[bench_worker.cc:392] 38: 0
+[0m[bench_worker.cc:392] 39: 0
+[0mmaster routine exit...
+[bench_listener2.cc:307] benchmark ends
+[0m[bench_runner.cc:313] main runner ends.
+[0m

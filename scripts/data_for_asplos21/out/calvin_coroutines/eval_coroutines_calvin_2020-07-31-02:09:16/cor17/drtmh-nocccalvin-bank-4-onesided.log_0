@@ -1,0 +1,2347 @@
+NOCC started with program [/nocccalvin-onesided]. at 31-07-2020 03:42:57
+[bench_runner.cc:388] Use TCP port 8859
+[0m[bench_runner.cc:410] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:153] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
+[0m[bank_main.cc:162] here0
+[0m[Bank]: check workload 17, 17, 17, 16, 17, 16, 0
+[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:183] Total logger area 0.00390625G.
+[0m[bench_runner.cc:193] Total two-phase committer area 0.00195312G.
+[0m[bench_runner.cc:202] add RDMA store size 7.8125G.
+[0m[bench_runner.cc:217] add calvin request buffer of size 0.00111324G.
+[0m[bench_runner.cc:223] add calvin forward buffer of size 0.00822186G.
+[0m[bench_runner.cc:232] [Mem] RDMA heap size 5.10004G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[Bank], total 12000000 accounts loaded
+[bank_main.cc:392] check cv balance 46280
+[0m[Runner] local db size: 277.121 MB
+[Runner] Started server for receiving QP connection requests.
+[bank_main.cc:532] loading cache.
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+21: 1 out of 4 qps connected. Retry connecting qps...
+threadid=21: all 4 qps connected
+QP of tid=21 nid=0 ready2init
+QP of tid=21 nid=1 ready2init
+QP of tid=21 nid=2 ready2init
+QP of tid=21 nid=3 ready2init
+QP of tid=21 nid=0 init2rtr
+QP of tid=21 nid=2 init2rtr
+QP of tid=21 nid=3 init2rtr
+QP of tid=21 nid=1 init2rtr
+   0% [                                                            ]   0% [                                                            ]   0% [                                                            ]   1% [                                                            ]   1% [                                                            ]   1% [|                                                           ]   2% [|                                                           ]   2% [|                                                           ]   2% [|                                                           ]   3% [|                                                           ]   3% [||                                                          ]   3% [||                                                          ]   4% [||                                                          ]   4% [||                                                          ]   4% [||                                                          ]   5% [|||                                                         ]   5% [|||                                                         ]   5% [|||                                                         ]   6% [|||                                                         ]   6% [|||                                                         ]   6% [||||                                                        ]   7% [||||                                                        ]   7% [||||                                                        ]   7% [||||                                                        ]   8% [||||                                                        ]   8% [|||||                                                       ]   8% [|||||                                                       ]   9% [|||||                                                       ]   9% [|||||                                                       ]   9% [|||||                                                       ]  10% [||||||                                                      ]  10% [||||||                                                      ]  10% [||||||                                                      ]  11% [||||||                                                      ]  11% [||||||                                                      ]  11% [|||||||                                                     ]  12% [|||||||                                                     ]  12% [|||||||                                                     ]  12% [|||||||                                                     ]  13% [|||||||                                                     ]  13% [||||||||                                                    ]  13% [||||||||                                                    ]  14% [||||||||                                                    ]  14% [||||||||                                                    ]  14% [||||||||                                                    ]  15% [|||||||||                                                   ]  15% [|||||||||                                                   ]  15% [|||||||||                                                   ]  16% [|||||||||                                                   ]  16% [|||||||||                                                   ]  16% [||||||||||                                                  ]  17% [||||||||||                                                  ]  17% [||||||||||                                                  ]  17% [||||||||||                                                  ]  18% [||||||||||                                                  ]  18% [|||||||||||                                                 ]  18% [|||||||||||                                                 ]  19% [|||||||||||                                                 ]  19% [|||||||||||                                                 ]  19% [|||||||||||                                                 ]  20% [||||||||||||                                                ]  20% [||||||||||||                                                ]  20% [||||||||||||                                                ]  21% [||||||||||||                                                ]  21% [||||||||||||                                                ]  21% [|||||||||||||                                               ]  22% [|||||||||||||                                               ]  22% [|||||||||||||                                               ]  22% [|||||||||||||                                               ]  23% [|||||||||||||                                               ]  23% [||||||||||||||                                              ]  23% [||||||||||||||                                              ]  24% [||||||||||||||                                              ]  24% [||||||||||||||                                              ]  24% [||||||||||||||                                              ]  25% [|||||||||||||||                                             ]  25% [|||||||||||||||                                             ]  25% [|||||||||||||||                                             ]  26% [|||||||||||||||                                             ]  26% [|||||||||||||||                                             ]  26% [||||||||||||||||                                            ]  27% [||||||||||||||||                                            ]  27% [||||||||||||||||                                            ]  27% [||||||||||||||||                                            ]  28% [||||||||||||||||                                            ]  28% [|||||||||||||||||                                           ]  28% [|||||||||||||||||                                           ]  28% [|||||||||||||||||                                           ]  29% [|||||||||||||||||                                           ]  29% [|||||||||||||||||                                           ]  30% [||||||||||||||||||                                          ]  30% [||||||||||||||||||                                          ]  30% [||||||||||||||||||                                          ]  31% [||||||||||||||||||                                          ]  31% [||||||||||||||||||                                          ]  31% [|||||||||||||||||||                                         ]  32% [|||||||||||||||||||                                         ]  32% [|||||||||||||||||||                                         ]  32% [|||||||||||||||||||                                         ]  33% [|||||||||||||||||||                                         ]  33% [||||||||||||||||||||                                        ]  33% [||||||||||||||||||||                                        ]  34% [||||||||||||||||||||                                        ]  34% [||||||||||||||||||||                                        ]  34% [||||||||||||||||||||                                        ]  35% [|||||||||||||||||||||                                       ]  35% [|||||||||||||||||||||                                       ]  35% [|||||||||||||||||||||                                       ]  36% [|||||||||||||||||||||                                       ]  36% [|||||||||||||||||||||                                       ]  36% [||||||||||||||||||||||                                      ]  37% [||||||||||||||||||||||                                      ]  37% [||||||||||||||||||||||                                      ]  37% [||||||||||||||||||||||                                      ]  38% [||||||||||||||||||||||                                      ]  38% [|||||||||||||||||||||||                                     ]  38% [|||||||||||||||||||||||                                     ]  39% [|||||||||||||||||||||||                                     ]  39% [|||||||||||||||||||||||                                     ]  39% [|||||||||||||||||||||||                                     ]  40% [||||||||||||||||||||||||                                    ]  40% [||||||||||||||||||||||||                                    ]  40% [||||||||||||||||||||||||                                    ]  41% [||||||||||||||||||||||||                                    ]  41% [||||||||||||||||||||||||                                    ]  41% [|||||||||||||||||||||||||                                   ]  42% [|||||||||||||||||||||||||                                   ]  42% [|||||||||||||||||||||||||                                   ]  42% [|||||||||||||||||||||||||                                   ]  43% [|||||||||||||||||||||||||                                   ]  43% [||||||||||||||||||||||||||                                  ]  43% [||||||||||||||||||||||||||                                  ]  44% [||||||||||||||||||||||||||                                  ]  44% [||||||||||||||||||||||||||                                  ]  44% [||||||||||||||||||||||||||                                  ]  45% [|||||||||||||||||||||||||||                                 ]  45% [|||||||||||||||||||||||||||                                 ]  45% [|||||||||||||||||||||||||||                                 ]  46% [|||||||||||||||||||||||||||                                 ]  46% [|||||||||||||||||||||||||||                                 ]  46% [||||||||||||||||||||||||||||                                ]  47% [||||||||||||||||||||||||||||                                ]  47% [||||||||||||||||||||||||||||                                ]  47% [||||||||||||||||||||||||||||                                ]  48% [||||||||||||||||||||||||||||                                ]  48% [|||||||||||||||||||||||||||||                               ]  48% [|||||||||||||||||||||||||||||                               ]  49% [|||||||||||||||||||||||||||||                               ]  49% [|||||||||||||||||||||||||||||                               ]  49% [|||||||||||||||||||||||||||||                               ]  50% [||||||||||||||||||||||||||||||                              ]  50% [||||||||||||||||||||||||||||||                              ]  50% [||||||||||||||||||||||||||||||                              ]  51% [||||||||||||||||||||||||||||||                              ]  51% [||||||||||||||||||||||||||||||                              ]  51% [|||||||||||||||||||||||||||||||                             ]  52% [|||||||||||||||||||||||||||||||                             ]  52% [|||||||||||||||||||||||||||||||                             ]  52% [|||||||||||||||||||||||||||||||                             ]  53% [|||||||||||||||||||||||||||||||                             ]  53% [||||||||||||||||||||||||||||||||                            ]  53% [||||||||||||||||||||||||||||||||                            ]  54% [||||||||||||||||||||||||||||||||                            ]  54% [||||||||||||||||||||||||||||||||                            ]  54% [||||||||||||||||||||||||||||||||                            ]  55% [|||||||||||||||||||||||||||||||||                           ]  55% [|||||||||||||||||||||||||||||||||                           ]  55% [|||||||||||||||||||||||||||||||||                           ]  56% [|||||||||||||||||||||||||||||||||                           ]  56% [|||||||||||||||||||||||||||||||||                           ]  56% [||||||||||||||||||||||||||||||||||                          ]  56% [||||||||||||||||||||||||||||||||||                          ]  57% [||||||||||||||||||||||||||||||||||                          ]  57% [||||||||||||||||||||||||||||||||||                          ]  57% [||||||||||||||||||||||||||||||||||                          ]  58% [|||||||||||||||||||||||||||||||||||                         ]  58% [|||||||||||||||||||||||||||||||||||                         ]  59% [|||||||||||||||||||||||||||||||||||                         ]  59% [|||||||||||||||||||||||||||||||||||                         ]  59% [|||||||||||||||||||||||||||||||||||                         ]  60% [||||||||||||||||||||||||||||||||||||                        ]  60% [||||||||||||||||||||||||||||||||||||                        ]  60% [||||||||||||||||||||||||||||||||||||                        ]  61% [||||||||||||||||||||||||||||||||||||                        ]  61% [||||||||||||||||||||||||||||||||||||                        ]  61% [|||||||||||||||||||||||||||||||||||||                       ]  62% [|||||||||||||||||||||||||||||||||||||                       ]  62% [|||||||||||||||||||||||||||||||||||||                       ]  62% [|||||||||||||||||||||||||||||||||||||                       ]  63% [|||||||||||||||||||||||||||||||||||||                       ]  63% [||||||||||||||||||||||||||||||||||||||                      ]  63% [||||||||||||||||||||||||||||||||||||||                      ]  64% [||||||||||||||||||||||||||||||||||||||                      ]  64% [||||||||||||||||||||||||||||||||||||||                      ]  64% [||||||||||||||||||||||||||||||||||||||                      ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  65% [|||||||||||||||||||||||||||||||||||||||                     ]  66% [|||||||||||||||||||||||||||||||||||||||                     ]  66% [|||||||||||||||||||||||||||||||||||||||                     ]  66% [||||||||||||||||||||||||||||||||||||||||                    ]  67% [||||||||||||||||||||||||||||||||||||||||                    ]  67% [||||||||||||||||||||||||||||||||||||||||                    ]  67% [||||||||||||||||||||||||||||||||||||||||                    ]  68% [||||||||||||||||||||||||||||||||||||||||                    ]  68% [|||||||||||||||||||||||||||||||||||||||||                   ]  68% [|||||||||||||||||||||||||||||||||||||||||                   ]  69% [|||||||||||||||||||||||||||||||||||||||||                   ]  69% [|||||||||||||||||||||||||||||||||||||||||                   ]  69% [|||||||||||||||||||||||||||||||||||||||||                   ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  70% [||||||||||||||||||||||||||||||||||||||||||                  ]  71% [||||||||||||||||||||||||||||||||||||||||||                  ]  71% [||||||||||||||||||||||||||||||||||||||||||                  ]  71% [|||||||||||||||||||||||||||||||||||||||||||                 ]  72% [|||||||||||||||||||||||||||||||||||||||||||                 ]  72% [|||||||||||||||||||||||||||||||||||||||||||                 ]  72% [|||||||||||||||||||||||||||||||||||||||||||                 ]  73% [|||||||||||||||||||||||||||||||||||||||||||                 ]  73% [||||||||||||||||||||||||||||||||||||||||||||                ]  73% [||||||||||||||||||||||||||||||||||||||||||||                ]  74% [||||||||||||||||||||||||||||||||||||||||||||                ]  74% [||||||||||||||||||||||||||||||||||||||||||||                ]  74% [||||||||||||||||||||||||||||||||||||||||||||                ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  75% [|||||||||||||||||||||||||||||||||||||||||||||               ]  76% [|||||||||||||||||||||||||||||||||||||||||||||               ]  76% [|||||||||||||||||||||||||||||||||||||||||||||               ]  76% [||||||||||||||||||||||||||||||||||||||||||||||              ]  77% [||||||||||||||||||||||||||||||||||||||||||||||              ]  77% [||||||||||||||||||||||||||||||||||||||||||||||              ]  77% [||||||||||||||||||||||||||||||||||||||||||||||              ]  78% [||||||||||||||||||||||||||||||||||||||||||||||              ]  78% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  78% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  79% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  79% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  79% [|||||||||||||||||||||||||||||||||||||||||||||||             ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  80% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  81% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  81% [||||||||||||||||||||||||||||||||||||||||||||||||            ]  81% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  82% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  83% [|||||||||||||||||||||||||||||||||||||||||||||||||           ]  83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  83% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  84% [||||||||||||||||||||||||||||||||||||||||||||||||||          ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  85% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  86% [|||||||||||||||||||||||||||||||||||||||||||||||||||         ]  86% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  87% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  88% [||||||||||||||||||||||||||||||||||||||||||||||||||||        ]  88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  88% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  89% [|||||||||||||||||||||||||||||||||||||||||||||||||||||       ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  90% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  91% [||||||||||||||||||||||||||||||||||||||||||||||||||||||      ]  91% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  92% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  93% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||     ]  93% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  93% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  94% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  95% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  96% [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||   ]  96% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  97% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||  ]  98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  98% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ]  99% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ] 100% [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||]Time to loader the caching is 71.892288 second
+[Runner] Cache size: 105.461 MB
+[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:316] [Runner] Backup DB[0] for 2 size: 644.996 MB
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:316] [Runner] Backup DB[1] for 3 size: 647.355 MB
+[0mworker: 1 binding 2
+worker: 0 binding 0
+worker: 2 binding 4
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[Global epoch manager running] !
+worker: 13 binding 7
+[bench_listener2.cc:77] try log results to ./results//nocccalvin-onesided_bank_4_10_17_100.log
+[0mcreate_logger: local_log=0x7fd73d5dc620
+create_logger: local_log=0x7fd73dddd620
+create_logger: local_log=0x7fd7385d2620
+register_connect_mr 13883146240 via ibv_reg_mr.
+worker: 14 binding 9
+[rworker.cc:126] using RDMA device: 0 to create qps @2
+[0m14: next_log_entry: local_log=0x7fd7385d2620
+create_logger: local_log=0x7fd738dd3620
+register_connect_mr 13883146240 via ibv_reg_mr.
+QP of tid=2 nid=0 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @11
+[0mnext_log_entry: local_log=0x7fd738dd3620
+create_logger: local_log=0x7fd73c5da620
+register_connect_mr 13883146240 via ibv_reg_mr.
+14: scheduler in init rdma.
+QP of tid=2 nid=1 ready2init
+QP of tid=2 nid=2 ready2init
+QP of tid=2 nid=3 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @1
+[0mcreate_logger: local_log=0x7fd73add7620
+create_logger: local_log=0x7fd73b5d8620
+create_logger: local_log=0x7fd73bdd9620
+create_logger: local_log=0x7fd739dd5620
+register_connect_mr 13883146240 via ibv_reg_mr.
+sequencer in init rdma; id = 13
+QP of tid=11 nid=0 ready2init
+QP of tid=11 nid=1 ready2init
+QP of tid=11 nid=2 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @14
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @4
+[0mcreate_logger: local_log=0x7fd8407ff620
+create_logger: local_log=0x7fd73cddb620
+create_logger: local_log=0x7fd73a5d6620
+register_connect_mr 13883146240 via ibv_reg_mr.
+QP of tid=11 nid=3 ready2init
+QP of tid=2 nid=0 init2rtr
+[rworker.cc:126] using RDMA device: 0 to create qps @13
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @6
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @5
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @7
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @9
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+QP of tid=1 nid=0 ready2init
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @0
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @3
+[0mregister_connect_mr 13883146240 via ibv_reg_mr.
+QP of tid=1 nid=3 ready2init
+QP of tid=13 nid=0 ready2init
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=9 nid=0 ready2init
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=5 nid=0 ready2init
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=3 nid=0 ready2init
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+[rworker.cc:126] using RDMA device: 0 to create qps @8
+[0m2: 3 out of 4 qps connected. Retry connecting qps...
+11: 3 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+13: 3 out of 4 qps connected. Retry connecting qps...
+9: 3 out of 4 qps connected. Retry connecting qps...
+QP of tid=14 nid=0 ready2init
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=6 nid=0 ready2init
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=11 nid=0 init2rtr
+QP of tid=2 nid=2 init2rtr
+QP of tid=7 nid=0 ready2init
+QP of tid=7 nid=1 ready2init
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=8 nid=0 ready2init
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=4 nid=0 ready2init
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=11 nid=2 init2rtr
+QP of tid=1 nid=0 init2rtr
+QP of tid=13 nid=0 init2rtr
+QP of tid=9 nid=0 init2rtr
+QP of tid=0 nid=0 init2rtr
+QP of tid=5 nid=0 init2rtr
+QP of tid=3 nid=0 init2rtr
+QP of tid=14 nid=0 init2rtr
+QP of tid=6 nid=0 init2rtr
+QP of tid=7 nid=0 init2rtr
+QP of tid=8 nid=0 init2rtr
+QP of tid=4 nid=0 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=9 nid=2 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=14 nid=2 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=7 nid=2 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=11 nid=3 init2rtr
+QP of tid=1 nid=3 init2rtr
+QP of tid=13 nid=3 init2rtr
+QP of tid=9 nid=3 init2rtr
+QP of tid=5 nid=3 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=3 nid=3 init2rtr
+QP of tid=14 nid=3 init2rtr
+QP of tid=6 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+QP of tid=7 nid=3 init2rtr
+QP of tid=4 nid=3 init2rtr
+[bench_listener2.cc:86] New monitor running!
+[0m5: 3 out of 4 qps connected. Retry connecting qps...
+0: 3 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
+14: 3 out of 4 qps connected. Retry connecting qps...
+6: 3 out of 4 qps connected. Retry connecting qps...
+8: 3 out of 4 qps connected. Retry connecting qps...
+7: 3 out of 4 qps connected. Retry connecting qps...
+4: 3 out of 4 qps connected. Retry connecting qps...
+register_connect_mr 13883146240 via ibv_reg_mr.
+[rworker.cc:126] using RDMA device: 0 to create qps @12
+[0m12: 2 out of 4 qps connected. Retry connecting qps...
+threadid=2: all 4 qps connected
+threadid=13: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=14: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=3: all 4 qps connected
+13: 3 out of 4 qps connected. Retry connecting qps...
+9: 3 out of 4 qps connected. Retry connecting qps...
+5: 3 out of 4 qps connected. Retry connecting qps...
+7: 3 out of 4 qps connected. Retry connecting qps...
+threadid=13: all 4 qps connected
+6: 3 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+14: 3 out of 4 qps connected. Retry connecting qps...
+4: 3 out of 4 qps connected. Retry connecting qps...
+threadid=5: all 4 qps connected
+11: 3 out of 4 qps connected. Retry connecting qps...
+threadid=9: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=14: all 4 qps connected
+threadid=6: all 4 qps connected
+0: 3 out of 4 qps connected. Retry connecting qps...
+threadid=9: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=13: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=14: all 4 qps connected
+threadid=6: all 4 qps connected
+2: 3 out of 4 qps connected. Retry connecting qps...
+8: 3 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
+threadid=0: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=6: all 4 qps connected
+9: 2 out of 4 qps connected. Retry connecting qps...
+13: 1 out of 4 qps connected. Retry connecting qps...
+threadid=12: all 4 qps connected
+threadid=9: all 4 qps connected
+5: 2 out of 4 qps connected. Retry connecting qps...
+threadid=14: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=8: all 4 qps connected
+7: 2 out of 4 qps connected. Retry connecting qps...
+11: 2 out of 4 qps connected. Retry connecting qps...
+threadid=2: all 4 qps connected
+threadid=7: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=13: all 4 qps connected
+1: 2 out of 4 qps connected. Retry connecting qps...
+threadid=7: all 4 qps connected
+threadid=1: all 4 qps connected
+6: 2 out of 4 qps connected. Retry connecting qps...
+12: 3 out of 4 qps connected. Retry connecting qps...
+9: 2 out of 4 qps connected. Retry connecting qps...
+14: 1 out of 4 qps connected. Retry connecting qps...
+0: 1 out of 4 qps connected. Retry connecting qps...
+4: 2 out of 4 qps connected. Retry connecting qps...
+8: 3 out of 4 qps connected. Retry connecting qps...
+threadid=5: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=12: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=13: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=14: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=5: all 4 qps connected
+12: 3 out of 4 qps connected. Retry connecting qps...
+starting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+QP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+QP of tid=12 nid=0 init2rtr
+QP of tid=12 nid=2 init2rtr
+QP of tid=12 nid=3 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=11 nid=1 init2rtr
+QP of tid=2 nid=0 ready2init
+QP of tid=2 nid=1 ready2init
+QP of tid=9 nid=1 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=1 nid=1 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=3 nid=1 init2rtr
+QP of tid=2 nid=2 ready2init
+QP of tid=14 nid=1 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=2 nid=3 ready2init
+QP of tid=13 nid=0 ready2init
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=8 nid=0 ready2init
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=9 nid=0 ready2init
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=5 nid=0 ready2init
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=7 nid=0 ready2init
+QP of tid=7 nid=1 ready2init
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=6 nid=0 ready2init
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=1 nid=0 ready2init
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=14 nid=0 ready2init
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=3 nid=0 ready2init
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=4 nid=0 ready2init
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=11 nid=0 ready2init
+QP of tid=11 nid=1 ready2init
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=2 nid=0 init2rtr
+QP of tid=13 nid=0 init2rtr
+QP of tid=8 nid=0 init2rtr
+QP of tid=9 nid=0 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=5 nid=0 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=7 nid=0 init2rtr
+QP of tid=6 nid=0 init2rtr
+QP of tid=1 nid=0 init2rtr
+QP of tid=14 nid=0 init2rtr
+QP of tid=3 nid=0 init2rtr
+QP of tid=4 nid=0 init2rtr
+QP of tid=11 nid=0 init2rtr
+QP of tid=0 nid=0 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=2 nid=2 init2rtr
+QP of tid=3 nid=1 init2rtr
+QP of tid=9 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=7 nid=2 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=14 nid=2 init2rtr
+QP of tid=13 nid=3 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=9 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=5 nid=3 init2rtr
+QP of tid=7 nid=3 init2rtr
+QP of tid=2 nid=0 ready2init
+QP of tid=6 nid=3 init2rtr
+QP of tid=1 nid=3 init2rtr
+QP of tid=14 nid=3 init2rtr
+QP of tid=2 nid=1 ready2init
+QP of tid=2 nid=2 ready2init
+QP of tid=4 nid=3 init2rtr
+QP of tid=2 nid=3 ready2init
+QP of tid=8 nid=0 ready2init
+QP of tid=3 nid=3 init2rtr
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=3 nid=0 ready2init
+QP of tid=11 nid=3 init2rtr
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=2 nid=0 init2rtr
+QP of tid=8 nid=0 init2rtr
+QP of tid=3 nid=0 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=3 nid=1 init2rtr
+QP of tid=2 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=9 nid=1 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=13 nid=0 ready2init
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=5 nid=0 ready2init
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=9 nid=0 ready2init
+QP of tid=1 nid=1 init2rtr
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=7 nid=0 ready2init
+QP of tid=11 nid=1 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=7 nid=1 ready2init
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=11 nid=0 ready2init
+QP of tid=11 nid=1 ready2init
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=1 nid=0 ready2init
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=13 nid=0 init2rtr
+QP of tid=4 nid=0 ready2init
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=5 nid=0 init2rtr
+QP of tid=9 nid=0 init2rtr
+QP of tid=14 nid=1 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=7 nid=0 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=14 nid=0 ready2init
+QP of tid=9 nid=1 init2rtr
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=6 nid=0 ready2init
+QP of tid=6 nid=1 ready2init
+QP of tid=9 nid=2 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=6 nid=2 ready2init
+QP of tid=9 nid=3 init2rtr
+QP of tid=6 nid=3 ready2init
+QP of tid=11 nid=0 init2rtr
+QP of tid=9 nid=0 ready2init
+QP of tid=7 nid=1 init2rtr
+QP of tid=5 nid=3 init2rtr
+QP of tid=13 nid=3 init2rtr
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=5 nid=0 ready2init
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=7 nid=2 init2rtr
+QP of tid=5 nid=3 ready2init
+QP of tid=13 nid=0 ready2init
+QP of tid=11 nid=1 init2rtr
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=1 nid=0 init2rtr
+QP of tid=4 nid=0 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=7 nid=3 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=14 nid=0 init2rtr
+QP of tid=1 nid=1 init2rtr
+QP of tid=7 nid=0 ready2init
+QP of tid=11 nid=3 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=7 nid=1 ready2init
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=11 nid=0 ready2init
+QP of tid=11 nid=1 ready2init
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=14 nid=1 init2rtr
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=6 nid=0 init2rtr
+QP of tid=9 nid=0 init2rtr
+QP of tid=5 nid=0 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=13 nid=0 init2rtr
+QP of tid=7 nid=0 init2rtr
+QP of tid=11 nid=0 init2rtr
+QP of tid=0 nid=0 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=14 nid=2 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=9 nid=2 init2rtr
+QP of tid=1 nid=3 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=4 nid=3 init2rtr
+QP of tid=14 nid=3 init2rtr
+QP of tid=6 nid=3 init2rtr
+QP of tid=1 nid=0 ready2init
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=7 nid=2 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=6 nid=0 ready2init
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=14 nid=0 ready2init
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=4 nid=0 ready2init
+QP of tid=0 nid=3 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=3 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=4 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=8 nid=0 ready2init
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=3 nid=0 ready2init
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=2 nid=0 ready2init
+QP of tid=2 nid=1 ready2init
+QP of tid=2 nid=2 ready2init
+QP of tid=2 nid=3 ready2init
+QP of tid=1 nid=0 init2rtr
+QP of tid=6 nid=0 init2rtr
+QP of tid=14 nid=0 init2rtr
+QP of tid=4 nid=0 init2rtr
+QP of tid=0 nid=0 init2rtr
+QP of tid=8 nid=0 init2rtr
+QP of tid=3 nid=0 init2rtr
+QP of tid=2 nid=0 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=6 nid=3 init2rtr
+QP of tid=6 nid=0 ready2init
+QP of tid=6 nid=1 ready2init
+QP of tid=6 nid=2 ready2init
+QP of tid=6 nid=3 ready2init
+QP of tid=6 nid=0 init2rtr
+QP of tid=14 nid=1 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=3 nid=1 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=12 nid=1 init2rtr
+QP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=9 nid=1 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=12 nid=3 ready2init
+QP of tid=12 nid=0 init2rtr
+QP of tid=9 nid=3 init2rtr
+QP of tid=9 nid=0 ready2init
+QP of tid=9 nid=1 ready2init
+QP of tid=9 nid=2 ready2init
+QP of tid=9 nid=3 ready2init
+QP of tid=9 nid=0 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=14 nid=2 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=14 nid=3 init2rtr
+QP of tid=4 nid=3 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=8 nid=3 init2rtr
+QP of tid=14 nid=0 ready2init
+QP of tid=14 nid=1 ready2init
+QP of tid=14 nid=2 ready2init
+QP of tid=14 nid=3 ready2init
+QP of tid=4 nid=0 ready2init
+QP of tid=4 nid=1 ready2init
+QP of tid=4 nid=2 ready2init
+QP of tid=2 nid=2 init2rtr
+QP of tid=4 nid=3 ready2init
+QP of tid=0 nid=0 ready2init
+QP of tid=0 nid=1 ready2init
+QP of tid=0 nid=2 ready2init
+QP of tid=0 nid=3 ready2init
+QP of tid=8 nid=0 ready2init
+QP of tid=8 nid=1 ready2init
+QP of tid=8 nid=2 ready2init
+QP of tid=8 nid=3 ready2init
+QP of tid=14 nid=0 init2rtr
+QP of tid=4 nid=0 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=11 nid=1 init2rtr
+QP of tid=0 nid=0 init2rtr
+QP of tid=8 nid=0 init2rtr
+QP of tid=3 nid=2 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=6 nid=2 init2rtr
+QP of tid=12 nid=2 init2rtr
+QP of tid=9 nid=2 init2rtr
+QP of tid=4 nid=2 init2rtr
+QP of tid=8 nid=2 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=2 nid=0 ready2init
+QP of tid=2 nid=1 ready2init
+QP of tid=2 nid=2 ready2init
+QP of tid=7 nid=3 init2rtr
+QP of tid=11 nid=3 init2rtr
+QP of tid=3 nid=3 init2rtr
+QP of tid=2 nid=3 ready2init
+QP of tid=7 nid=0 ready2init
+QP of tid=13 nid=3 init2rtr
+QP of tid=7 nid=1 ready2init
+QP of tid=12 nid=3 init2rtr
+QP of tid=7 nid=2 ready2init
+QP of tid=7 nid=3 ready2init
+QP of tid=8 nid=3 init2rtr
+QP of tid=11 nid=0 ready2init
+QP of tid=11 nid=1 ready2init
+QP of tid=11 nid=2 ready2init
+QP of tid=11 nid=3 ready2init
+QP of tid=13 nid=0 ready2init
+QP of tid=13 nid=1 ready2init
+QP of tid=13 nid=2 ready2init
+QP of tid=13 nid=3 ready2init
+QP of tid=3 nid=0 ready2init
+QP of tid=3 nid=1 ready2init
+QP of tid=3 nid=2 ready2init
+QP of tid=3 nid=3 ready2init
+QP of tid=2 nid=0 init2rtr
+QP of tid=7 nid=0 init2rtr
+QP of tid=11 nid=0 init2rtr
+QP of tid=13 nid=0 init2rtr
+QP of tid=3 nid=0 init2rtr
+QP of tid=7 nid=1 init2rtr
+QP of tid=7 nid=2 init2rtr
+QP of tid=7 nid=3 init2rtr
+QP of tid=2 nid=1 init2rtr
+QP of tid=11 nid=1 init2rtr
+QP of tid=13 nid=1 init2rtr
+QP of tid=3 nid=1 init2rtr
+register_dgram_mr: 0x600062e62820 0x7fd97d000000 13883146240 15
+QP of tid=1 nid=1 init2rtr
+QP of tid=1 nid=3 init2rtr
+QP of tid=1 nid=0 ready2init
+QP of tid=1 nid=1 ready2init
+QP of tid=1 nid=2 ready2init
+QP of tid=1 nid=3 ready2init
+QP of tid=1 nid=0 init2rtr
+QP of tid=9 nid=1 init2rtr
+QP of tid=5 nid=3 init2rtr
+QP of tid=14 nid=1 init2rtr
+QP of tid=4 nid=1 init2rtr
+QP of tid=12 nid=1 init2rtr
+QP of tid=5 nid=0 ready2init
+QP of tid=5 nid=1 ready2init
+QP of tid=5 nid=2 ready2init
+QP of tid=5 nid=3 ready2init
+QP of tid=9 nid=3 init2rtr
+QP of tid=8 nid=1 init2rtr
+QP of tid=0 nid=1 init2rtr
+QP of tid=6 nid=1 init2rtr
+QP of tid=1 nid=1 init2rtr
+QP of tid=4 nid=3 init2rtr
+register_dgram_mr: 0x60006368aa20 0x7fd97d000000 13883146240 15
+QP of tid=6 nid=3 init2rtr
+register_dgram_mr: 0x60006262a520 0x7fd97d000000 13883146240 15
+register_dgram_mr: 0x600063276920 0x7fd97d000000 13883146240 15
+QP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+register_dgram_mr: 0x600062a5e820 0x7fd97d000000 13883146240 15
+QP of tid=5 nid=0 init2rtr
+QP of tid=5 nid=1 init2rtr
+QP of tid=12 nid=0 init2rtr
+QP of tid=11 nid=2 init2rtr
+QP of tid=11 nid=3 init2rtr
+register_dgram_mr: 0x60006b2b62a0 0x7fd97d000000 13883146240 15
+QP of tid=2 nid=2 init2rtr
+QP of tid=2 nid=3 init2rtr
+QP of tid=13 nid=2 init2rtr
+QP of tid=3 nid=2 init2rtr
+register_dgram_mr: 0x600062317420 0x7fd97d000000 13883146240 15
+QP of tid=14 nid=2 init2rtr
+QP of tid=1 nid=2 init2rtr
+QP of tid=0 nid=2 init2rtr
+QP of tid=5 nid=2 init2rtr
+QP of tid=12 nid=2 init2rtr
+QP of tid=13 nid=3 init2rtr
+QP of tid=3 nid=3 init2rtr
+QP of tid=14 nid=3 init2rtr
+QP of tid=1 nid=3 init2rtr
+QP of tid=0 nid=3 init2rtr
+QP of tid=5 nid=3 init2rtr
+QP of tid=12 nid=3 init2rtr
+register_dgram_mr: 0x60006263a620 0x7fd97d000000 13883146240 15
+register_dgram_mr: 0x6000622d7020 0x7fd97d000000 13883146240 15
+register_dgram_mr: 0x600064003fe0 0x7fd97d000000 13883146240 15
+register_dgram_mr: 0x60006264a720 0x7fd97d000000 13883146240 15
+register_dgram_mr: 0x6000622a6d20 0x7fd97d000000 13883146240 15
+register_dgram_mr: 0x60007296c6a0 0x7fd97d000000 13883146240 15
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:214] forward_address 0x7fdb72007440
+[0m[bench_worker.cc:215] forward_offset 8405414976
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb72011940
+[0m[bench_worker.cc:215] forward_offset 8405457216
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb7201be40
+[0m[bench_worker.cc:215] forward_offset 8405499456
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb72026340
+[0m[bench_worker.cc:215] forward_offset 8405541696
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb72030840
+[0m[bench_worker.cc:215] forward_offset 8405583936
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb7203ad40
+[0m[bench_worker.cc:215] forward_offset 8405626176
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb72045240
+[0m[bench_worker.cc:215] forward_offset 8405668416
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb7204f740
+[0m[bench_worker.cc:215] forward_offset 8405710656
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb72059c40
+[0m[bench_worker.cc:215] forward_offset 8405752896
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb72064140
+[0m[bench_worker.cc:215] forward_offset 8405795136
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:214] forward_address 0x7fdb7206e640
+[0m[bench_worker.cc:215] forward_offset 8405837376
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb72078b40
+[0m[bench_worker.cc:215] forward_offset 8405879616
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:214] forward_address 0x7fdb72083040
+[0m[bench_worker.cc:215] forward_offset 8405921856
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb7208d540
+[0m[bench_worker.cc:215] forward_offset 8405964096
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb72097a40
+[0m[bench_worker.cc:215] forward_offset 8406006336
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb720a1f40
+[0m[bench_worker.cc:215] forward_offset 8406048576
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb720ac440
+[0m[bench_worker.cc:215] forward_offset 8406090816
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb720b6940
+[0m[bench_worker.cc:215] forward_offset 8406133056
+[0mstarting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f43540
+[0m[bench_worker.cc:215] forward_offset 8404612416
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f4da40
+[0m[bench_worker.cc:215] forward_offset 8404654656
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f57f40
+[0m[bench_worker.cc:215] forward_offset 8404696896
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f62440
+[0m[bench_worker.cc:215] forward_offset 8404739136
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f6c940
+[0m[bench_worker.cc:215] forward_offset 8404781376
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f76e40
+[0m[bench_worker.cc:215] forward_offset 8404823616
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f81340
+[0m[bench_worker.cc:215] forward_offset 8404865856
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f8b840
+[0m[bench_worker.cc:215] forward_offset 8404908096
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f95d40
+[0m[bench_worker.cc:215] forward_offset 8404950336
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb71fa0240
+[0m[bench_worker.cc:215] forward_offset 8404992576
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:214] forward_address 0x7fdb71faa740
+[0m[bench_worker.cc:215] forward_offset 8405034816
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb71fb4c40
+[0m[bench_worker.cc:215] forward_offset 8405077056
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:214] forward_address 0x7fdb71fbf140
+[0m[bench_worker.cc:215] forward_offset 8405119296
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb71fc9640
+[0m[bench_worker.cc:215] forward_offset 8405161536
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb71fd3b40
+[0m[bench_worker.cc:215] forward_offset 8405203776
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb71fde040
+[0m[bench_worker.cc:215] forward_offset 8405246016
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb71fe8540
+[0m[bench_worker.cc:215] forward_offset 8405288256
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ff2a40
+[0m[bench_worker.cc:215] forward_offset 8405330496
+[0mstarting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e7f640
+[0m[bench_worker.cc:215] forward_offset 8403809856
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e89b40
+[0m[bench_worker.cc:215] forward_offset 8403852096
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e94040
+[0m[bench_worker.cc:215] forward_offset 8403894336
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e9e540
+[0m[bench_worker.cc:215] forward_offset 8403936576
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ea8a40
+[0m[bench_worker.cc:215] forward_offset 8403978816
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb71eb2f40
+[0m[bench_worker.cc:215] forward_offset 8404021056
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ebd440
+[0m[bench_worker.cc:215] forward_offset 8404063296
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ec7940
+[0m[bench_worker.cc:215] forward_offset 8404105536
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ed1e40
+[0m[bench_worker.cc:215] forward_offset 8404147776
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb71edc340
+[0m[bench_worker.cc:215] forward_offset 8404190016
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ee6840
+[0m[bench_worker.cc:215] forward_offset 8404232256
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ef0d40
+[0m[bench_worker.cc:215] forward_offset 8404274496
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:214] forward_address 0x7fdb71efb240
+[0m[bench_worker.cc:215] forward_offset 8404316736
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f05740
+[0m[bench_worker.cc:215] forward_offset 8404358976
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f0fc40
+[0m[bench_worker.cc:215] forward_offset 8404401216
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f1a140
+[0m[bench_worker.cc:215] forward_offset 8404443456
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f24640
+[0m[bench_worker.cc:215] forward_offset 8404485696
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb71f2eb40
+[0m[bench_worker.cc:215] forward_offset 8404527936
+[0mstarting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+QP of tid=12 nid=1 init2rtr
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:214] forward_address 0x7fdb71dbb740
+[0m[bench_worker.cc:215] forward_offset 8403007296
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb71dc5c40
+[0m[bench_worker.cc:215] forward_offset 8403049536
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71dd0140
+[0m[bench_worker.cc:215] forward_offset 8403091776
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb71dda640
+[0m[bench_worker.cc:215] forward_offset 8403134016
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb71de4b40
+[0m[bench_worker.cc:215] forward_offset 8403176256
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb71def040
+[0m[bench_worker.cc:215] forward_offset 8403218496
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb71df9540
+[0m[bench_worker.cc:215] forward_offset 8403260736
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e03a40
+[0m[bench_worker.cc:215] forward_offset 8403302976
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e0df40
+[0m[bench_worker.cc:215] forward_offset 8403345216
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e18440
+[0m[bench_worker.cc:215] forward_offset 8403387456
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e22940
+threadid=12: all 4 qps connected
+[0m[bench_worker.cc:215] forward_offset 8403429696
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e2ce40
+[0m[bench_worker.cc:215] forward_offset 8403471936
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e37340
+[0m[bench_worker.cc:215] forward_offset 8403514176
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e41840
+[0m[bench_worker.cc:215] forward_offset 8403556416
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e4bd40
+[0m[bench_worker.cc:215] forward_offset 8403598656
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e56240
+[0m[bench_worker.cc:215] forward_offset 8403640896
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e60740
+[0m[bench_worker.cc:215] forward_offset 8403683136
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb71e6ac40
+[0m[bench_worker.cc:215] forward_offset 8403725376
+[0mQP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+[rworker.cc:47] Worker 11 on cpu 22with cor id 0
+[0mstarting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+QP of tid=12 nid=0 init2rtr
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:214] forward_address 0x7fdb71aabb40
+[0m[bench_worker.cc:215] forward_offset 8399797056
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ab6040
+[0m[bench_worker.cc:215] forward_offset 8399839296
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ac0540
+[0m[bench_worker.cc:215] forward_offset 8399881536
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb71acaa40
+[0m[bench_worker.cc:215] forward_offset 8399923776
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ad4f40
+[0m[bench_worker.cc:215] forward_offset 8399966016
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb71adf440
+[0m[bench_worker.cc:215] forward_offset 8400008256
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ae9940
+[0m[bench_worker.cc:215] forward_offset 8400050496
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb71af3e40
+starting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+[0m[bench_worker.cc:215] forward_offset 8400092736
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb71afe340
+register RPCID 19.
+[0m[bench_worker.cc:215] forward_offset 8400134976
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b08840
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0m[bench_worker.cc:215] forward_offset 8400177216
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+[bench_worker.cc:210] routine 10
+register RPCID 19.
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b12d40
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:215] forward_offset 8400219456
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:210] routine 11
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:214] forward_address 0x7fdb71b1d240
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:215] forward_offset 8400261696
+warning: the RPC ID 19 has been registered.
+[0mregister RPCID 19.
+[bench_worker.cc:210] routine 12
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:214] forward_address 0x7fdb71b27740
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:215] forward_offset 8400303936
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:210] routine 13
+warning: the RPC ID 19 has been registered.
+[0mregister RPCID 19.
+[bench_worker.cc:214] forward_address 0x7fdb71b31c40
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:215] forward_offset 8400346176
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b3c140
+[0m[bench_worker.cc:215] forward_offset 8400388416
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b46640
+[0m[bench_worker.cc:215] forward_offset 8400430656
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b50b40
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b6fa40
+[0m[bench_worker.cc:215] forward_offset 8400472896
+[0m[bench_worker.cc:215] forward_offset 8400599616
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b5b040
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b79f40
+[0m[bench_worker.cc:215] forward_offset 8400641856
+[0m[bench_worker.cc:215] forward_offset 8400515136
+starting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b84440
+register RPCID 19.
+[0m[bench_worker.cc:215] forward_offset 8400684096
+[0mwarning: the RPC ID 19 has been registered.
+[bench_worker.cc:210] routine 3
+register RPCID 19.
+[0m[bench_worker.cc:214] forward_address 0x7fdb71b8e940
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:215] forward_offset 8400726336
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:210] routine 4
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:214] forward_address 0x7fdb71b98e40
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:215] forward_offset 8400768576
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:210] routine 5
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:214] forward_address 0x7fdb71ba3340
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:215] forward_offset 8400810816
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:210] routine 6
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:214] forward_address 0x7fdb71bad840
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:215] forward_offset 8400853056
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:210] routine 7
+[0mwarning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:214] forward_address 0x7fdb71bb7d40
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[0m[bench_worker.cc:215] forward_offset 8400895296
+[0m[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[bench_worker.cc:210] routine 8
+[0m[0m[bench_worker.cc:214] forward_address 0x7fdb71bc2240
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:215] forward_offset 8400937536
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb719e7c40
+[0m[bench_worker.cc:214] forward_address 0x7fdb71bcc740
+[0m[bench_worker.cc:215] forward_offset 8398994496
+[0m[bench_worker.cc:215] forward_offset 8400979776
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb71bd6c40
+[0m[bench_worker.cc:215] forward_offset 8401022016
+[0m[bench_worker.cc:214] forward_address 0x7fdb719f2140
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb71be1140
+[0m[bench_worker.cc:215] forward_offset 8399036736
+[0m[bench_worker.cc:215] forward_offset 8401064256
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71beb640
+[0m[bench_worker.cc:215] forward_offset 8401106496
+[0m[bench_worker.cc:214] forward_address 0x7fdb719fc640
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb71bf5b40
+[0m[bench_worker.cc:215] forward_offset 8399078976
+[0m[bench_worker.cc:215] forward_offset 8401148736
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c00040
+[0m[bench_worker.cc:215] forward_offset 8401190976
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c0a540
+[0m[bench_worker.cc:215] forward_offset 8401233216
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a06b40
+[0m[bench_worker.cc:215] forward_offset 8399121216
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c14a40
+[0m[bench_worker.cc:215] forward_offset 8401275456
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a11040
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c1ef40
+[0m[bench_worker.cc:215] forward_offset 8399163456
+[0m[bench_worker.cc:215] forward_offset 8401317696
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a1b540
+[0m[bench_worker.cc:215] forward_offset 8399205696
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a25a40
+[0m[bench_worker.cc:215] forward_offset 8399247936
+register RPCID 28.
+register RPCID 29.
+register RPCID 30.
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a2ff40
+[0m[bench_worker.cc:215] forward_offset 8399290176
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a3a440
+[0m[bench_worker.cc:215] forward_offset 8399332416
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a44940
+[0m[bench_worker.cc:215] forward_offset 8399374656
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a4ee40
+[0m[bench_worker.cc:215] forward_offset 8399416896
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a59340
+[0m[bench_worker.cc:215] forward_offset 8399459136
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a63840
+[0m[bench_worker.cc:215] forward_offset 8399501376
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a6dd40
+[0m[bench_worker.cc:215] forward_offset 8399543616
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a78240
+[0m[bench_worker.cc:215] forward_offset 8399585856
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a82740
+[0m[bench_worker.cc:215] forward_offset 8399628096
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a8cc40
+[0m[bench_worker.cc:215] forward_offset 8399670336
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb71a97140
+[0m[bench_worker.cc:215] forward_offset 8399712576
+[0m[bench_worker.h:200] Use RDMA for logging.
+[0m[bench_worker.h:235] Use one-sided for two-phase-commit.
+[0mstarting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:214] forward_address 0x7fdb71923d40
+[0m[bench_worker.cc:215] forward_offset 8398191936
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb7192e240
+[0m[bench_worker.cc:215] forward_offset 8398234176
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71938740
+[0m[bench_worker.cc:215] forward_offset 8398276416
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb71942c40
+[0m[bench_worker.cc:215] forward_offset 8398318656
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb7194d140
+[0m[bench_worker.cc:215] forward_offset 8398360896
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb71957640
+[0m[bench_worker.cc:215] forward_offset 8398403136
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb71961b40
+[0m[bench_worker.cc:215] forward_offset 8398445376
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb7196c040
+[0m[bench_worker.cc:215] forward_offset 8398487616
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb71976540
+[0m[bench_worker.cc:215] forward_offset 8398529856
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb71980a40
+[0m[bench_worker.cc:215] forward_offset 8398572096
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:214] forward_address 0x7fdb7198af40
+[0m[bench_worker.cc:215] forward_offset 8398614336
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb71995440
+[0m[bench_worker.cc:215] forward_offset 8398656576
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:214] forward_address 0x7fdb7199f940
+[0m[bench_worker.cc:215] forward_offset 8398698816
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb719a9e40
+[0m[bench_worker.cc:215] forward_offset 8398741056
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb719b4340
+[0m[bench_worker.cc:215] forward_offset 8398783296
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb719be840
+[0m[bench_worker.cc:215] forward_offset 8398825536
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb719c8d40
+[0m[bench_worker.cc:215] forward_offset 8398867776
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb719d3240
+[0m[bench_worker.cc:215] forward_offset 8398910016
+[0m[scheduler.cc:318] start_ptr = 0x7fd97d000000 addrs:
+[0m[scheduler.cc:327] routine 0
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb71800000
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb71803d70
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb71807ae0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb7180b850
+[0m[scheduler.cc:327] routine 1
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7180f5c0
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb71813330
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718170a0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb7181ae10
+[0m[scheduler.cc:327] routine 2
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7181eb80
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb718228f0
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb71826660
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb7182a3d0
+[0m[scheduler.cc:327] routine 3
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7182e140
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb71831eb0
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb71835c20
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71839990
+[0m[scheduler.cc:327] routine 4
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7183d700
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb71841470
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718451e0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71848f50
+[0m[scheduler.cc:327] routine 5
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7184ccc0
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb71850a30
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718547a0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71858510
+[0m[scheduler.cc:327] routine 6
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7185c280
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb7185fff0
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb71863d60
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71867ad0
+[0m[scheduler.cc:327] routine 7
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7186b840
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb7186f5b0
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb71873320
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71877090
+[0m[scheduler.cc:327] routine 8
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7187ae00
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb7187eb70
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718828e0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71886650
+[0m[scheduler.cc:327] routine 9
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb7188a3c0
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb7188e130
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb71891ea0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71895c10
+[0m[scheduler.cc:327] routine 10
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb71899980
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb7189d6f0
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718a1460
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb718a51d0
+[0m[scheduler.cc:327] routine 11
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb718a8f40
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb718accb0
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718b0a20
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb718b4790
+[0m[scheduler.cc:327] routine 12
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb718b8500
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb718bc270
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718bffe0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb718c3d50
+[0m[scheduler.cc:327] routine 13
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb718c7ac0
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb718cb830
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718cf5a0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb718d3310
+[0m[scheduler.cc:327] routine 14
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb718d7080
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb718dadf0
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718deb60
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb718e28d0
+[0m[scheduler.cc:327] routine 15
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb718e6640
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb718ea3b0
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718ee120
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb718f1e90
+[0m[scheduler.cc:327] routine 16
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb718f5c00
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb718f9970
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb718fd6e0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71901450
+[0m[scheduler.cc:327] routine 17
+[0m[scheduler.cc:333] node 0's addrs: 0x7fdb719051c0
+[0m[scheduler.cc:333] node 1's addrs: 0x7fdb71908f30
+[0m[scheduler.cc:333] node 2's addrs: 0x7fdb7190cca0
+[0m[scheduler.cc:333] node 3's addrs: 0x7fdb71910a10
+[0m[scheduler.cc:337] offsets:
+[0m[scheduler.cc:341] routine 0
+[0m[scheduler.cc:344] node 0's offset: 8396996608
+[0m[scheduler.cc:344] node 1's offset: 8397012336
+[0m[scheduler.cc:344] node 2's offset: 8397028064
+[0m[scheduler.cc:344] node 3's offset: 8397043792
+[0m[scheduler.cc:341] routine 1
+[0m[scheduler.cc:344] node 0's offset: 8397059520
+[0m[scheduler.cc:344] node 1's offset: 8397075248
+[0m[scheduler.cc:344] node 2's offset: 8397090976
+[0m[scheduler.cc:344] node 3's offset: 8397106704
+[0m[scheduler.cc:341] routine 2
+[0m[scheduler.cc:344] node 0's offset: 8397122432
+[0m[scheduler.cc:344] node 1's offset: 8397138160
+[0m[scheduler.cc:344] node 2's offset: 8397153888
+[0m[scheduler.cc:344] node 3's offset: 8397169616
+[0m[scheduler.cc:341] routine 3
+[0m[scheduler.cc:344] node 0's offset: 8397185344
+[0m[scheduler.cc:344] node 1's offset: 8397201072
+[0m[scheduler.cc:344] node 2's offset: 8397216800
+[0m[scheduler.cc:344] node 3's offset: 8397232528
+[0m[scheduler.cc:341] routine 4
+[0m[scheduler.cc:344] node 0's offset: 8397248256
+[0m[scheduler.cc:344] node 1's offset: 8397263984
+[0m[scheduler.cc:344] node 2's offset: 8397279712
+[0m[scheduler.cc:344] node 3's offset: 8397295440
+[0m[scheduler.cc:341] routine 5
+[0m[scheduler.cc:344] node 0's offset: 8397311168
+[0m[scheduler.cc:344] node 1's offset: 8397326896
+[0m[scheduler.cc:344] node 2's offset: 8397342624
+[0m[scheduler.cc:344] node 3's offset: 8397358352
+[0m[scheduler.cc:341] routine 6
+[0m[scheduler.cc:344] node 0's offset: 8397374080
+[0m[scheduler.cc:344] node 1's offset: 8397389808
+[0m[scheduler.cc:344] node 2's offset: 8397405536
+[0m[scheduler.cc:344] node 3's offset: 8397421264
+[0m[scheduler.cc:341] routine 7
+[0m[scheduler.cc:344] node 0's offset: 8397436992
+[0m[scheduler.cc:344] node 1's offset: 8397452720
+[0m[scheduler.cc:344] node 2's offset: 8397468448
+[0m[scheduler.cc:344] node 3's offset: 8397484176
+[0m[scheduler.cc:341] routine 8
+[0m[scheduler.cc:344] node 0's offset: 8397499904
+[0m[scheduler.cc:344] node 1's offset: 8397515632
+[0m[scheduler.cc:344] node 2's offset: 8397531360
+[0m[scheduler.cc:344] node 3's offset: 8397547088
+[0m[scheduler.cc:341] routine 9
+[0m[scheduler.cc:344] node 0's offset: 8397562816
+[0m[scheduler.cc:344] node 1's offset: 8397578544
+[0m[scheduler.cc:344] node 2's offset: 8397594272
+[0m[scheduler.cc:344] node 3's offset: 8397610000
+[0m[scheduler.cc:341] routine 10
+[0m[scheduler.cc:344] node 0's offset: 8397625728
+[0m[scheduler.cc:344] node 1's offset: 8397641456
+[0m[scheduler.cc:344] node 2's offset: 8397657184
+[0m[scheduler.cc:344] node 3's offset: 8397672912
+[0m[scheduler.cc:341] routine 11
+[0m[scheduler.cc:344] node 0's offset: 8397688640
+[0m[scheduler.cc:344] node 1's offset: 8397704368
+[0m[scheduler.cc:344] node 2's offset: 8397720096
+[0m[scheduler.cc:344] node 3's offset: 8397735824
+[0m[scheduler.cc:341] routine 12
+[0m[scheduler.cc:344] node 0's offset: 8397751552
+[0m[scheduler.cc:344] node 1's offset: 8397767280
+[0m[scheduler.cc:344] node 2's offset: 8397783008
+[0m[scheduler.cc:344] node 3's offset: 8397798736
+[0m[scheduler.cc:341] routine 13
+[0m[scheduler.cc:344] node 0's offset: 8397814464
+[0m[scheduler.cc:344] node 1's offset: 8397830192
+[0m[scheduler.cc:344] node 2's offset: 8397845920
+[0m[scheduler.cc:344] node 3's offset: 8397861648
+[0m[scheduler.cc:341] routine 14
+[0m[scheduler.cc:344] node 0's offset: 8397877376
+[0m[scheduler.cc:344] node 1's offset: 8397893104
+[0m[scheduler.cc:344] node 2's offset: 8397908832
+[0m[scheduler.cc:344] node 3's offset: 8397924560
+QP of tid=12 nid=2 init2rtr
+[0m[scheduler.cc:341] routine 15
+[0m[scheduler.cc:344] node 0's offset: 8397940288
+[0m[scheduler.cc:344] node 1's offset: 8397956016
+[0m[scheduler.cc:344] node 2's offset: 8397971744
+[0m[scheduler.cc:344] node 3's offset: 8397987472
+[0m[scheduler.cc:341] routine 16
+[0m[scheduler.cc:344] node 0's offset: 8398003200
+[0m[scheduler.cc:344] node 1's offset: 8398018928
+[0m[scheduler.cc:344] node 2's offset: 8398034656
+[0m[scheduler.cc:344] node 3's offset: 8398050384
+[0m[scheduler.cc:341] routine 17
+[0m[scheduler.cc:344] node 0's offset: 8398066112
+[0m[scheduler.cc:344] node 1's offset: 8398081840
+[0m[scheduler.cc:344] node 2's offset: 8398097568
+[0m[scheduler.cc:344] node 3's offset: 8398113296
+[0mstarting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+QP of tid=12 nid=3 init2rtr
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c33940
+[0m[bench_worker.cc:215] forward_offset 8401402176
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c3de40
+[0m[bench_worker.cc:215] forward_offset 8401444416
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c48340
+[0m[bench_worker.cc:215] forward_offset 8401486656
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c52840
+[0m[bench_worker.cc:215] forward_offset 8401528896
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c5cd40
+[0m[bench_worker.cc:215] forward_offset 8401571136
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c67240
+[0m[bench_worker.cc:215] forward_offset 8401613376
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c71740
+[0m[bench_worker.cc:215] forward_offset 8401655616
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c7bc40
+[0m[bench_worker.cc:215] forward_offset 8401697856
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c86140
+[0m[bench_worker.cc:215] forward_offset 8401740096
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c90640
+[0m[bench_worker.cc:215] forward_offset 8401782336
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:214] forward_address 0x7fdb71c9ab40
+[0m[bench_worker.cc:215] forward_offset 8401824576
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ca5040
+[0m[bench_worker.cc:215] forward_offset 8401866816
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:214] forward_address 0x7fdb71caf540
+[0m[bench_worker.cc:215] forward_offset 8401909056
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb71cb9a40
+[0m[bench_worker.cc:215] forward_offset 8401951296
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb71cc3f40
+[0m[bench_worker.cc:215] forward_offset 8401993536
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb71cce440
+[0m[bench_worker.cc:215] forward_offset 8402035776
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb71cd8940
+[0m[bench_worker.cc:215] forward_offset 8402078016
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb71ce2e40
+[0m[bench_worker.cc:215] forward_offset 8402120256
+[0mstarting ptr: 0x7fd97d000000, mem_base_offset = 6291456
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+warning: the RPC ID 19 has been registered.
+register RPCID 19.
+[bench_worker.cc:199] start_ptr = 0x7fd97d000000 addrs:
+[0m[bench_worker.cc:208] forward offsets:
+[0m[bench_worker.cc:210] routine 0
+[0m[bench_worker.cc:214] forward_address 0x7fdb71cf7840
+[0m[bench_worker.cc:215] forward_offset 8402204736
+[0m[bench_worker.cc:210] routine 1
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d01d40
+[0m[bench_worker.cc:215] forward_offset 8402246976
+[0m[bench_worker.cc:210] routine 2
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d0c240
+[0m[bench_worker.cc:215] forward_offset 8402289216
+[0m[bench_worker.cc:210] routine 3
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d16740
+[0m[bench_worker.cc:215] forward_offset 8402331456
+[0m[bench_worker.cc:210] routine 4
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d20c40
+[0m[bench_worker.cc:215] forward_offset 8402373696
+[0m[bench_worker.cc:210] routine 5
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d2b140
+[0m[bench_worker.cc:215] forward_offset 8402415936
+[0m[bench_worker.cc:210] routine 6
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d35640
+[0m[bench_worker.cc:215] forward_offset 8402458176
+[0m[bench_worker.cc:210] routine 7
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d3fb40
+[0m[bench_worker.cc:215] forward_offset 8402500416
+[0m[bench_worker.cc:210] routine 8
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d4a040
+[0m[bench_worker.cc:215] forward_offset 8402542656
+[0m[bench_worker.cc:210] routine 9
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d54540
+[0m[bench_worker.cc:215] forward_offset 8402584896
+[0m[bench_worker.cc:210] routine 10
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d5ea40
+[0m[bench_worker.cc:215] forward_offset 8402627136
+[0m[bench_worker.cc:210] routine 11
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d68f40
+[0m[bench_worker.cc:215] forward_offset 8402669376
+[0m[bench_worker.cc:210] routine 12
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d73440
+[0m[bench_worker.cc:215] forward_offset 8402711616
+[0m[bench_worker.cc:210] routine 13
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d7d940
+[0m[bench_worker.cc:215] forward_offset 8402753856
+[0m[bench_worker.cc:210] routine 14
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d87e40
+[0m[bench_worker.cc:215] forward_offset 8402796096
+[0m[bench_worker.cc:210] routine 15
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d92340
+[0m[bench_worker.cc:215] forward_offset 8402838336
+[0m[bench_worker.cc:210] routine 16
+[0m[bench_worker.cc:214] forward_address 0x7fdb71d9c840
+[0m[bench_worker.cc:215] forward_offset 8402880576
+[0m[bench_worker.cc:210] routine 17
+[0m[bench_worker.cc:214] forward_address 0x7fdb71da6d40
+[0m[bench_worker.cc:215] forward_offset 8402922816
+[0m12: 3 out of 4 qps connected. Retry connecting qps...
+threadid=12: all 4 qps connected
+threadid=12: all 4 qps connected
+QP of tid=12 nid=1 init2rtr
+QP of tid=12 nid=0 ready2init
+QP of tid=12 nid=1 ready2init
+QP of tid=12 nid=2 ready2init
+QP of tid=12 nid=3 ready2init
+QP of tid=12 nid=0 init2rtr
+QP of tid=12 nid=1 init2rtr
+QP of tid=12 nid=2 init2rtr
+QP of tid=12 nid=3 init2rtr
+[bench_listener2.cc:137] All workers has initilized.
+[0mregister_dgram_mr: 0x6000804668a0 0x7fd97d000000 13883146240 15
+register RPCID 0.
+register RPCID 1.
+register RPCID 2.
+register RPCID 3.
+[rworker.cc:47] Worker 12 on cpu 20with cor id 0
+[0m[bench_listener2.cc:142] Starting Master Listener.
+[0m[bench_listener2.cc:241] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[0m[rworker.cc:47] Worker 14 on cpu 9with cor id 0
+[bench_worker.cc:350] running calvin routine on worker 0 coroutine 1
+[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[bench_worker.cc:350] running calvin routine on worker 1 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 4
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 1
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 1
+[0m[rworker.cc:47] Worker 13 on cpu 7with cor id 0
+[0m[0m[sequencer.cc:109] 13: Running Sequencer on routine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 5
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 6
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[sequencer.cc:109] 13: Running Sequencer on routine 2
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 7
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 8
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 4
+[bench_worker.cc:350] running calvin routine on worker 9 coroutine 1
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 9
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 3
+[bench_worker.cc:350] running calvin routine on worker 4 coroutine 1
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 2
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 1
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 4
+[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 1
+[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 2
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 4
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 5
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 6
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 7
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 10
+[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 2
+[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 3
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 1
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 4
+[scheduler.cc:110] 14: Running Scheduler routine
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 5
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 8
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 11
+[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 3
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 4
+[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 2
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 6
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 7
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 8
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 9
+[0m[sequencer.cc:109] 13: Running Sequencer on routine 3
+[0m[sequencer.cc:109] 13: Running Sequencer on routine 4
+[0m[sequencer.cc:109] 13: Running Sequencer on routine 5
+[0m[0m[sequencer.cc:109] 13: Running Sequencer on routine 6
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 2
+[sequencer.cc:109] 13: Running Sequencer on routine 7
+[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 9
+[bench_worker.cc:350] running calvin routine on worker 5 coroutine 5
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 5
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 12
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 10
+[bench_worker.cc:350] running calvin routine on worker 3 coroutine 2
+[bench_worker.cc:350] running calvin routine on worker 5 coroutine 6
+[0m[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 3
+[bench_worker.cc:350] running calvin routine on worker 2 coroutine 10
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 2
+[bench_worker.cc:350] running calvin routine on worker 5 coroutine 7
+[0m[sequencer.cc:109] 13: Running Sequencer on routine 8
+[bench_worker.cc:350] running calvin routine on worker 1 coroutine 13
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 4
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 6
+[bench_worker.cc:350] running calvin routine on worker 2 coroutine 11
+[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 8
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 5
+[bench_worker.cc:350] running calvin routine on worker 5 coroutine 9
+[sequencer.cc:109] 13: Running Sequencer on routine 9
+[bench_worker.cc:350] running calvin routine on worker 1 coroutine 14
+[bench_worker.cc:350] running calvin routine on worker 8 coroutine 3
+[0m[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 7
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 5
+[bench_worker.cc:350] running calvin routine on worker 2 coroutine 12
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 3
+[bench_worker.cc:350] running calvin routine on worker 8 coroutine 4
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 6
+[bench_worker.cc:350] running calvin routine on worker 0 coroutine 3
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 11
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 6
+[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 15
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 1 coroutine 16
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 10
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 7
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 8
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 12
+[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 5
+[bench_worker.cc:350] running calvin routine on worker 2 coroutine 13
+[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 4
+[bench_worker.cc:350] running calvin routine on worker 2 coroutine 14
+[bench_worker.cc:350] running calvin routine on worker 1 coroutine 17
+[0m[sequencer.cc:109] 13: Running Sequencer on routine 10
+[bench_worker.cc:350] running calvin routine on worker 3 coroutine 4
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 13
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 11
+[bench_worker.cc:350] running calvin routine on worker 9 coroutine 9
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 7
+[0m[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 6
+[0m[0m[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 10
+[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 12
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 8
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 14
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 8
+[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 5
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 7
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 11
+[sequencer.cc:109] 13: Running Sequencer on routine 11
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 9
+[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 6
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 15
+[bench_worker.cc:350] running calvin routine on worker 3 coroutine 5
+[bench_worker.cc:350] running calvin routine on worker 5 coroutine 13
+[bench_worker.cc:350] running calvin routine on worker 4 coroutine 9
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 10
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 8
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 10
+[bench_worker.cc:350] running calvin routine on worker 2 coroutine 15
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 7
+[sequencer.cc:109] 13: Running Sequencer on routine 12
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 2 coroutine 16
+[0m[bench_worker.cc:350] running calvin routine on worker 6 coroutine 16
+[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 9
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 11
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 6
+[bench_worker.cc:350] running calvin routine on worker 0 coroutine 8
+[bench_worker.cc:350] running calvin routine on worker 9 coroutine 12
+[bench_worker.cc:350] running calvin routine on worker 5 coroutine 14
+[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 15
+[0m[sequencer.cc:109] 13: Running Sequencer on routine 13
+[0m[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 9
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 12
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 13
+[sequencer.cc:109] 13: Running Sequencer on routine 14
+[bench_worker.cc:350] running calvin routine on worker 2 coroutine 17
+[bench_worker.cc:350] running calvin routine on worker 8 coroutine 10
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 11
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 12
+[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 13
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 7
+[0m[0m[0m[sequencer.cc:109] 13: Running Sequencer on routine 15
+[bench_worker.cc:350] running calvin routine on worker 6 coroutine 17
+[bench_worker.cc:350] running calvin routine on worker 8 coroutine 11
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 10
+[bench_worker.cc:350] running calvin routine on worker 8 coroutine 12
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 14
+[bench_worker.cc:350] running calvin routine on worker 4 coroutine 13
+[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 14
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 13
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 8
+[bench_worker.cc:350] running calvin routine on worker 4 coroutine 14
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 15
+[bench_worker.cc:350] running calvin routine on worker 9 coroutine 15
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 8 coroutine 14
+[sequencer.cc:109] 13: Running Sequencer on routine 16
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 16
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 7 coroutine 16
+[bench_worker.cc:350] running calvin routine on worker 0 coroutine 11
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 5 coroutine 17
+[bench_worker.cc:350] running calvin routine on worker 7 coroutine 17
+[bench_worker.cc:350] running calvin routine on worker 8 coroutine 15
+[bench_worker.cc:350] running calvin routine on worker 9 coroutine 16
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 15
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 9 coroutine 17
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 16
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 12
+[bench_worker.cc:350] running calvin routine on worker 8 coroutine 16
+[0m[bench_worker.cc:350] running calvin routine on worker 4 coroutine 17
+[bench_worker.cc:350] running calvin routine on worker 3 coroutine 9
+[0m[0m[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 13
+[bench_worker.cc:350] running calvin routine on worker 8 coroutine 17
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 10
+[sequencer.cc:109] 13: Running Sequencer on routine 17
+[bench_worker.cc:350] running calvin routine on worker 0 coroutine 14
+[0m[0m[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 11
+[bench_worker.cc:350] running calvin routine on worker 0 coroutine 15
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 16
+[bench_worker.cc:350] running calvin routine on worker 3 coroutine 12
+[0m[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 13
+[0m[bench_worker.cc:350] running calvin routine on worker 0 coroutine 17
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 14
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 15
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 16
+[0m[bench_worker.cc:350] running calvin routine on worker 3 coroutine 17
+[0mmerge data 32.980000 K from gorgon6
+merge data 32.980000 K from gorgon4
+merge data 32.980000 K from gorgon5
+my throughput 32.980000 K, abort 0, commit 32980, abort ratio 0.000000
+merge data 32.980000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@1 System throughput 131.920000 K, abort 0.000000
+merge data 33.141000 K from gorgon6
+merge data 33.150000 K from gorgon4
+merge data 32.980000 K from gorgon5
+my throughput 33.150000 K, abort 0, commit 33150, abort ratio 0.000000
+merge data 33.150000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@2 System throughput 132.421000 K, abort 0.000000
+merge data 32.810000 K from gorgon4
+merge data 32.980000 K from gorgon5
+merge data 32.819000 K from gorgon6
+my throughput 32.810000 K, abort 0, commit 32810, abort ratio 0.000000
+merge data 32.810000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@3 System throughput 131.419000 K, abort 0.000000
+merge data 33.150000 K from gorgon5
+merge data 33.320000 K from gorgon4
+merge data 33.320000 K from gorgon6
+my throughput 33.320000 K, abort 0, commit 33320, abort ratio 0.000000
+merge data 33.320000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@4 System throughput 133.110000 K, abort 0.000000
+merge data 32.980000 K from gorgon5
+merge data 32.980000 K from gorgon4
+merge data 32.980000 K from gorgon6
+my throughput 32.980000 K, abort 0, commit 32980, abort ratio 0.000000
+merge data 32.980000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@5 System throughput 131.920000 K, abort 0.000000
+merge data 33.150000 K from gorgon5
+merge data 33.150000 K from gorgon4
+merge data 33.150000 K from gorgon6
+my throughput 33.150000 K, abort 0, commit 33150, abort ratio 0.000000
+merge data 33.150000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@6 System throughput 132.600000 K, abort 0.000000
+merge data 33.320000 K from gorgon5
+merge data 33.150000 K from gorgon4
+merge data 33.150000 K from gorgon6
+my throughput 33.150000 K, abort 0, commit 33150, abort ratio 0.000000
+merge data 33.150000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@7 System throughput 132.770000 K, abort 0.000000
+merge data 33.150000 K from gorgon5
+merge data 33.320000 K from gorgon4
+merge data 33.320000 K from gorgon6
+my throughput 33.320000 K, abort 0, commit 33320, abort ratio 0.000000
+merge data 33.320000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@8 System throughput 133.110000 K, abort 0.000000
+merge data 32.980000 K from gorgon5
+merge data 32.980000 K from gorgon4
+merge data 32.980000 K from gorgon6
+my throughput 32.980000 K, abort 0, commit 32980, abort ratio 0.000000
+merge data 32.980000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@9 System throughput 131.920000 K, abort 0.000000
+merge data 33.150000 K from gorgon5
+merge data 33.150000 K from gorgon4
+merge data 33.150000 K from gorgon6
+my throughput 33.150000 K, abort 0, commit 33150, abort ratio 0.000000
+merge data 33.150000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@10 System throughput 132.600000 K, abort 0.000000
+merge data 33.150000 K from gorgon5
+merge data 33.150000 K from gorgon4
+merge data 33.150000 K from gorgon6
+my throughput 33.150000 K, abort 0, commit 33150, abort ratio 0.000000
+merge data 33.150000 K from gorgon3
+[occ_statistics.h:65] lock lat: 0 ;counts 1
+[0m[occ_statistics.h:68] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:71] log lat: 0 ;counts 1
+[0m[occ_statistics.h:74] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:77] commit lat: 0 ;counts 1
+[0m[occ_statistics.h:80] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:83] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:86] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:89] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:92] release_write lat: 0 ;counts 1
+[0m@11 System throughput 132.600000 K, abort 0.000000
+[bench_listener2.cc:283] start to exit.
+[0mstats for worker 0:
+no timer!
+no timer!
+no timer!
+no timer!
+no timer!
+no timer!
+no timer!
+exiting master routine for worker 12.
+exiting master routine for worker 5.
+exiting master routine for worker 2.
+exiting master routine for worker 9.
+exiting master routine for worker 13.
+exiting master routine for worker 1.
+exiting master routine for worker 3.
+exiting master routine for worker 14.
+exiting master routine for worker 4.
+exiting master routine for worker 11.
+exiting master routine for worker 8.
+exiting master routine for worker 0.
+exiting master routine for worker 6.
+exiting master routine for worker 7.
+SendPayment executed 24244, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+DepositChecking executed 25272, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Balance executed 24316, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Transact saving executed 23520, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Write check executed 25000, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+Txn amal executed 23304, latency: 0.000000, rw_size -nan, m 0.000000, 90 0.000000, 99 0.000000
+succs ratio 1.000000
+[bank_worker.h:161] worker exit.
+[0m[bench_listener2.cc:302] Medium latency 0ms, 90th latency 0ms, 99th latency 0ms; average latency: 0ms.
+[0m[bank_worker.h:164] read time: 0ms
+[0m[occ_statistics.h:42] read_lat time: 0ms
+[0m[occ_statistics.h:43] lock time: 0ms
+[0m[occ_statistics.h:44] release_write time: 0ms
+[0m[occ_statistics.h:45] release_read time: 0ms
+[0m[occ_statistics.h:46] renew_lease time: 0ms
+[0m[occ_statistics.h:47] validate time: 0ms
+[0m[occ_statistics.h:48] log time: 0ms
+[0m[occ_statistics.h:49] 2pc time: 0ms
+[0m[occ_statistics.h:50] commit time: 0ms
+[0m[occ_statistics.h:52] 0
+[0m[occ_statistics.h:53] 0
+[0m[occ_statistics.h:54] 0
+[0m[occ_statistics.h:55] 0
+[0m[occ_statistics.h:56] 0
+[0m[occ_statistics.h:59] temp time: 0ms
+[0mmaster routine exit...
+[bench_listener2.cc:314] benchmark ends
+[0m[bench_runner.cc:360] main runner ends.
+[0m

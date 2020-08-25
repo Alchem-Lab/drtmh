@@ -1,0 +1,248 @@
+NOCC started with program [/noccocc-rpc]. at 20-08-2020 05:27:22
+[bench_runner.cc:341] Use TCP port 8854
+[0m[bench_runner.cc:363] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
+[0m[bank_main.cc:143] here100
+[0m[Bank]: check workload 0, 0, 0, 0, 0, 0, 100
+[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:157] Total logger area 0.00390625G.
+[0m[bench_runner.cc:167] Total two-phase committer area 0.00195312G.
+[0m[bench_runner.cc:176] add RDMA store size 7.8125G.
+[0m[bench_runner.cc:185] [Mem] RDMA heap size 5.10933G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[Bank], total 12000000 accounts loaded
+[bank_main.cc:344] check cv balance 46280
+[0m[Runner] local db size: 276.387 MB
+[Runner] Started server for receiving QP connection requests.
+[Runner] Cache size: 0 MB
+[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:269] [Runner] Backup DB[0] for 2 size: 645.367 MB
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:269] [Runner] Backup DB[1] for 3 size: 644.914 MB
+[0mworker: 0 binding 0
+worker: 2 binding 4
+worker: 1 binding 2
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[bench_listener2.cc:70] try log results to ./results//noccocc-rpc_bank_4_10_1_100.log
+[0mregisterring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240threadid=1: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=7: all 4 qps connected
+9: 3 out of 4 qps connected. Retry connecting qps...
+[bench_listener2.cc:79] New monitor running!
+[0mthreadid=0: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=2: all 4 qps connected
+registerring 13883146240threadid=5: all 4 qps connected
+threadid=12: all 4 qps connected
+[bench_worker.h:156] Use RPC for logging.
+[0m[occ.cc:27] Baseline OCC.
+[0m[bench_listener2.cc:130] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+[0m[bench_listener2.cc:135] Starting Master Listener.
+[0m[bench_listener2.cc:234] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0mmerge data 51.017000 K from gorgon2
+merge data 51.120000 K from gorgon5
+merge data 51.189000 K from gorgon4
+my throughput 51.270000 K, abort 60, commit 51270, abort ratio 0.001169
+merge data 51.270000 K from gorgon3
+[occ_statistics.h:111] lock lat: 11053.6 ;counts 5133
+[0m[occ_statistics.h:114] lock cpu cycles: 0.188389 ;counts 5133
+[0m[occ_statistics.h:117] validate lat: 70467.6 ;counts 5131
+[0m[occ_statistics.h:120] validate cpu cycles: 0.286689 ;counts 5131
+[0m[occ_statistics.h:123] log lat: 58887.4 ;counts 4601
+[0m[occ_statistics.h:126] log cpu cycles: 0.132145 ;counts 4601
+[0m[occ_statistics.h:129] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:132] twopc cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:135] commit lat: 34154.8 ;counts 5131
+[0m[occ_statistics.h:138] commit cpu cycles: 0.0824401 ;counts 5131
+[0m[occ_statistics.h:141] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:144] temp cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:147] read_lat lat: 83939.4 ;counts 5134
+[0m[occ_statistics.h:150] read cpu cycles: 0.206661 ;counts 5134
+[0m[occ_statistics.h:153] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:156] renew_lease cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:159] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:162] release_read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:165] release_write lat: 14370.5 ;counts 2
+[0m[occ_statistics.h:168] release_write cpu cycles: 490.5 ;counts 2
+[0m@1 System throughput 204.596000 K, abort 0.001133
+merge data 50.973000 K from gorgon5
+merge data 51.059000 K from gorgon4
+merge data 51.177000 K from gorgon2
+my throughput 51.145000 K, abort 60, commit 51145, abort ratio 0.001172
+merge data 51.145000 K from gorgon3
+[occ_statistics.h:111] lock lat: 12229.2 ;counts 5080
+[0m[occ_statistics.h:114] lock cpu cycles: 3.63125e+15 ;counts 5080
+[0m[occ_statistics.h:117] validate lat: 72294.9 ;counts 5076
+[0m[occ_statistics.h:120] validate cpu cycles: 3.63411e+15 ;counts 5076
+[0m[occ_statistics.h:123] log lat: 62042.7 ;counts 4514
+[0m[occ_statistics.h:126] log cpu cycles: 0.0126274 ;counts 4514
+[0m[occ_statistics.h:129] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:132] twopc cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:135] commit lat: 34613.6 ;counts 5076
+[0m[occ_statistics.h:138] commit cpu cycles: 3.63411e+15 ;counts 5076
+[0m[occ_statistics.h:141] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:144] temp cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:147] read_lat lat: 81798.6 ;counts 5087
+[0m[occ_statistics.h:150] read cpu cycles: 0.0251622 ;counts 5087
+[0m[occ_statistics.h:153] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:156] renew_lease cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:159] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:162] release_read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:165] release_write lat: 46784.9 ;counts 11
+[0m[occ_statistics.h:168] release_write cpu cycles: 43.5455 ;counts 11
+[0m@2 System throughput 204.354000 K, abort 0.001163
+merge data 52.125000 K from gorgon4
+merge data 51.982000 K from gorgon5
+merge data 52.219000 K from gorgon2
+my throughput 52.097000 K, abort 67, commit 52097, abort ratio 0.001284
+merge data 52.097000 K from gorgon3
+[occ_statistics.h:111] lock lat: 10875.1 ;counts 5212
+[0m[occ_statistics.h:114] lock cpu cycles: 0.43123 ;counts 5213
+[0m[occ_statistics.h:117] validate lat: 67422.9 ;counts 5204
+[0m[occ_statistics.h:120] validate cpu cycles: 3.54472e+15 ;counts 5204
+[0m[occ_statistics.h:123] log lat: 59569.2 ;counts 4631
+[0m[occ_statistics.h:126] log cpu cycles: 3.98332e+15 ;counts 4631
+[0m[occ_statistics.h:129] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:132] twopc cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:135] commit lat: 34155.6 ;counts 5204
+[0m[occ_statistics.h:138] commit cpu cycles: 0.0353574 ;counts 5204
+[0m[occ_statistics.h:141] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:144] temp cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:147] read_lat lat: 82059.8 ;counts 5213
+[0m[occ_statistics.h:150] read cpu cycles: 0.131402 ;counts 5213
+[0m[occ_statistics.h:153] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:156] renew_lease cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:159] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:162] release_read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:165] release_write lat: 19769.4 ;counts 9
+[0m[occ_statistics.h:168] release_write cpu cycles: 2.04964e+18 ;counts 9
+[0m@3 System throughput 208.423000 K, abort 0.000968
+[bench_listener2.cc:276] start to exit.
+[0mstats for worker 0:
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+YCSB executed 15412, latency: 0.194400, rw_size -nan, m 0.205183, 90 0.267003, 99 0.329397
+succs ratio 0.998510
+[bank_worker.h:126] worker exit.
+[0m[bench_listener2.cc:295] Medium latency 0.205182ms, 90th latency 0.267004ms, 99th latency 0.329372ms; average latency: 0.194405ms.
+[0m[bank_worker.h:129] read time: 0ms
+[0m[occ_statistics.h:63] read_lat time: 0.0359099ms
+[0m[occ_statistics.h:64] lock time: 0.00494963ms
+[0m[occ_statistics.h:65] release_write time: 0.0117269ms
+[0m[occ_statistics.h:66] release_read time: 0ms
+[0m[occ_statistics.h:67] renew_lease time: 0ms
+[0m[occ_statistics.h:68] validate time: 0.030459ms
+[0m[occ_statistics.h:69] log time: 0.0261572ms
+[0m[occ_statistics.h:70] 2pc time: 0ms
+[0m[occ_statistics.h:71] commit time: 0.014915ms
+[0m[occ_statistics.h:73] 0.0359099
+[0m[occ_statistics.h:74] 0.00494963
+[0m[occ_statistics.h:75] 0.0117269
+[0m[occ_statistics.h:76] 0
+[0m[occ_statistics.h:77] 0.014915
+[0m[occ_statistics.h:80] temp time: 0ms
+[0m[occ_statistics.h:97] read cpu time: 0ms
+[0m[occ_statistics.h:98] lock cpu time: 5.26229e+08ms
+[0m[occ_statistics.h:99] release_write cpu time: 2.97027e+11ms
+[0m[occ_statistics.h:100] release_read cpu time: 0ms
+[0m[occ_statistics.h:101] renew_lease cpu time: 0ms
+[0m[occ_statistics.h:102] validate cpu time: 1.04033e+09ms
+[0m[occ_statistics.h:103] log cpu time: 5.77249e+08ms
+[0m[occ_statistics.h:104] 2pc cpu time: 0ms
+[0m[occ_statistics.h:105] commit cpu time: 5.26643e+08ms
+[0m[occ_statistics.h:106] temp time: 0ms
+[0m[bench_worker.cc:392] 0: 0
+[0m[bench_worker.cc:392] 1: 0
+[0m[bench_worker.cc:392] 2: 0
+[0m[bench_worker.cc:392] 3: 0
+[0m[bench_worker.cc:392] 4: 0
+[0m[bench_worker.cc:392] 5: 2
+[0m[bench_worker.cc:392] 6: 2
+[0m[bench_worker.cc:392] 7: 0
+[0m[bench_worker.cc:392] 8: 0
+[0m[bench_worker.cc:392] 9: 0
+[0m[bench_worker.cc:392] 10: 15411
+[0m[bench_worker.cc:392] 11: 0
+[0m[bench_worker.cc:392] 12: 0
+[0m[bench_worker.cc:392] 13: 0
+[0m[bench_worker.cc:392] 14: 0
+[0m[bench_worker.cc:392] 15: 0
+[0m[bench_worker.cc:392] 16: 14
+[0m[bench_worker.cc:392] 17: 0
+[0m[bench_worker.cc:392] 18: 89222
+[0m[bench_worker.cc:392] 19: 30752
+[0m[bench_worker.cc:392] 20: 14
+[0m[bench_worker.cc:392] 21: 8
+[0m[bench_worker.cc:392] 22: 0
+[0m[bench_worker.cc:392] 23: 0
+[0m[bench_worker.cc:392] 24: 30732
+[0m[bench_worker.cc:392] 25: 0
+[0m[bench_worker.cc:392] 26: 0
+[0m[bench_worker.cc:392] 27: 0
+[0m[bench_worker.cc:392] 28: 0
+[0m[bench_worker.cc:392] 29: 0
+[0m[bench_worker.cc:392] 30: 0
+[0m[bench_worker.cc:392] 31: 0
+[0m[bench_worker.cc:392] 32: 0
+[0m[bench_worker.cc:392] 33: 0
+[0m[bench_worker.cc:392] 34: 0
+[0m[bench_worker.cc:392] 35: 0
+[0m[bench_worker.cc:392] 36: 0
+[0m[bench_worker.cc:392] 37: 0
+[0m[bench_worker.cc:392] 38: 0
+[0m[bench_worker.cc:392] 39: 0
+[0mmaster routine exit...
+[bench_listener2.cc:307] benchmark ends
+[0m[bench_runner.cc:313] main runner ends.
+[0m

@@ -1,0 +1,123 @@
+NOCC started with program [/noccsundial-hybrid]. at 07-08-2020 05:16:19
+[bench_runner.cc:341] Use TCP port 8854
+[0m[bench_runner.cc:363] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot90num_hot100num_accounts 100000
+[0m[bank_main.cc:143] here100
+[0m[Bank]: check workload 0, 0, 0, 0, 0, 0, 100
+[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:157] Total logger area 0.00390625G.
+[0m[bench_runner.cc:167] Total two-phase committer area 0.00195312G.
+[0m[bench_runner.cc:176] add RDMA store size 7.8125G.
+[0m[bench_runner.cc:185] [Mem] RDMA heap size 5.10932G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[Bank], total 12000000 accounts loaded
+[Runner] local db size: 277.371 MB
+[Runner] Started server for receiving QP connection requests.
+[bank_main.cc:455] loading cache.
+[0mregisterring 13883146240threadid=21: all 4 qps connected
+Time to loader the caching is 81.802203 second
+[Runner] Cache size: 106.078 MB
+[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:269] [Runner] Backup DB[0] for 1 size: 645.793 MB
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:175] huge page alloc failed!
+[0m[Bank], total 12000000 accounts loaded
+[bench_runner.cc:269] [Runner] Backup DB[1] for 2 size: 644.785 MB
+[0mregisterring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 13883146240registerring 1388314624011: 3 out of 4 qps connected. Retry connecting qps...
+3: 3 out of 4 qps connected. Retry connecting qps...
+7: 3 out of 4 qps connected. Retry connecting qps...
+9: 3 out of 4 qps connected. Retry connecting qps...
+6: 3 out of 4 qps connected. Retry connecting qps...
+1: 3 out of 4 qps connected. Retry connecting qps...
+0: 3 out of 4 qps connected. Retry connecting qps...
+2: 3 out of 4 qps connected. Retry connecting qps...
+5: 3 out of 4 qps connected. Retry connecting qps...
+4: 3 out of 4 qps connected. Retry connecting qps...
+8: 3 out of 4 qps connected. Retry connecting qps...
+worker: 1 binding 2
+worker: 0 binding 0
+worker: 2 binding 4
+worker: 3 binding 6
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[Global sequence running] !
+[bench_listener2.cc:79] New monitor running!
+[0mregisterring 1388314624012: 3 out of 4 qps connected. Retry connecting qps...
+threadid=7: all 4 qps connected
+threadid=11: all 4 qps connected
+threadid=3: all 4 qps connected
+threadid=6: all 4 qps connected
+threadid=9: all 4 qps connected
+threadid=2: all 4 qps connected
+threadid=1: all 4 qps connected
+threadid=4: all 4 qps connected
+threadid=0: all 4 qps connected
+threadid=8: all 4 qps connected
+threadid=5: all 4 qps connected
+threadid=12: all 4 qps connected
+[rworker.cc:47] Worker 11 on cpu 20with cor id 0
+[0m[bench_worker.h:162] Use RDMA for logging.
+[0m[bench_worker.h:192] Use two-sided RPC for two-phase-commit.
+[0mMVCC uses RPC READ.
+MVCC uses ONE_SIDED LOCK.
+MVCC uses ONE_SIDED LOG.
+MVCC uses RPC 2PC.
+MVCC uses ONE_SIDED RELEASE.
+MVCC uses ONE_SIDED COMMIT.
+MVCC uses RPC RENEW.[bench_listener2.cc:130] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 22with cor id 0
+[0m[bench_listener2.cc:138] Starting Slave Listener.
+[0m[bench_listener2.cc:234] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[0m[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0mmlx5: gorgon6: got completion with error:
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000003 00000000 00000000 00000000
+00000000 9d003304 10013b43 0015f6d2
+[rdma_sched.cc:47] got bad completion with status: 4 with error local protection error@node 3
+[0mnoccsundial-hybrid: /home/huangkz/usc/new/drtmh/src/core/rdma_sched.cc:50: void nocc::oltp::RScheduler::poll_comps(): Assertion `false' failed.
+stack trace:
+  ../noccsundial-hybrid() [0x47eec5]
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
+  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
+  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dbd7
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dc82
+  ../noccsundial-hybrid() [0x495152]
+  ../noccsundial-hybrid : nocc::oltp::RWorker::new_master_routine(boost::coroutines::detail::symmetric_coroutine_yield<void>&, int)+0x22d
+  ../noccsundial-hybrid : boost::coroutines::detail::symmetric_coroutine_object<void, boost::_bi::bind_t<void, boost::_mfi::mf2<void, nocc::oltp::RWorker, boost::coroutines::detail::symmetric_coroutine_yield<void>&, int>, boost::_bi::list3<boost::_bi::value<nocc::oltp::RWorker*>, boost::arg<1>, boost::_bi::value<int> > >, boost::coroutines::basic_standard_stack_allocator<boost::coroutines::stack_traits> >::run()+0x4e
+  ../noccsundial-hybrid : make_fcontext()+0x1b
+[NOCC] Meet an assertion failure!

@@ -1,0 +1,39 @@
+NOCC started with program [/noccocc-hybrid]. at 20-08-2020 08:47:42
+[bench_runner.cc:341] Use TCP port 8879
+[0m[bench_runner.cc:363] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0m[bank_main.cc:134] ycsb param:set len=10 write num=2tx hot20num_hot100num_accounts 100000
+[0m[bank_main.cc:143] here100
+[0m[Bank]: check workload 0, 0, 0, 0, 0, 0, 100
+[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+[bench_runner.cc:157] Total logger area 0.00390625G.
+[0m[bench_runner.cc:167] Total two-phase committer area 0.00195312G.
+[0m[bench_runner.cc:176] add RDMA store size 7.8125G.
+[0m[bench_runner.cc:185] [Mem] RDMA heap size 5.10933G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[Bank], total 12000000 accounts loaded
+[Runner] local db size: 277.004 MB
+[Runner] Started server for receiving QP connection requests.
+[bank_main.cc:455] loading cache.
+[0mGet error msg ERROR on binding,Address already in use
+noccocc-hybrid: /home/huangkz/usc/new/drtmh/third_party/libRDMA/src/pre_connector.hpp:33: static int rdmaio::PreConnector::get_listen_socket(const string&, int): Assertion `false' failed.
+stack trace:
+  ../noccocc-hybrid() [0x4841e5]
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x354b0
+  /lib/x86_64-linux-gnu/libc.so.6 : gsignal()+0x38
+  /lib/x86_64-linux-gnu/libc.so.6 : abort()+0x16a
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dbd7
+  /lib/x86_64-linux-gnu/libc.so.6 : ()+0x2dc82
+  ../noccocc-hybrid : rdmaio::RdmaCtrl::recv_thread(void*)+0x705
+  /lib/x86_64-linux-gnu/libpthread.so.0 : ()+0x76ba
+  /lib/x86_64-linux-gnu/libc.so.6 : clone()+0x6d
+[NOCC] Meet an assertion failure!
