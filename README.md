@@ -1,62 +1,14 @@
-## ROCC and DrTM+H
+## RCC
 
 ### Intro
 
-**ROCC** provides fast and simple programming of distributed applications, especially atop of *RDMA*. ROCC has been integrated with most RDMA features, including a variety of optimizations.  ROCC's code is in `src/core`. 
-
-**DrTM+H** is a fast distributed transactional system atop of ROCC.
-
-Below are some documentations of **ROCC**, which describes the hardware setting and computation model of this project, while also includes some tutorials to demonstrate that it is very easy to write high performance RDMA applications upon on **ROCC**.
-
-* [Recommended Hardware settings](docs/rnic.md)
-
-A snippet of how to use rocc framework. Notice that ROCC is independent of DrTM+H.
-
-- Issue RDMA read/write operations 
-
-```c++
-// for one-sided RDMA READ, as an exmaple
-int payload = 64;                // the size of data to read
-uint64_t remote_addr = 0;        // remote memory address(offset)
-char *buffer = Rmalloc(payload); // allocate a local buffer to store the result
-auto qp = cm->get_rc_qp(mac_id);  // the the connection of target machine
-rdma_sched_->post_send(qp,cor_id_,IBV_WR_RDMA_READ,local_buf,size,remote_addr,
-                           IBV_SEND_SIGNALED); // send the read request and add completion event to the scheduler
-indirect_yield();   // yield, not waiting the completion of READ
-// when executed, the buffer got the results of remote memory
-Rfree(buffer);      // can free the buffer after that
-```
-
-- For messaging operations. Notice that the message primitive has been optimized using RDMA.  ROCC provides 3 messaging primitive's implementations: 
-  - Messaging with RDMA UD send/recv 
-  - Messaging with RDMA RC write-with-imm
-  - Messaging with TCP/IP
-
-```c++
-int payload = 64;
-char *msg_buf = Rmalloc(payload);  // send buffer
-char *reply_buf = Rmalloc(payload); // reply buffer
-int id = remote_id; // remote server's id
-rpc_handler->prepare_multi_req(reply_buf,1,cor_id_); // tell RPC handler to receive 1 RPC replies
-rpc_handler->broadcast_to(msg_buf, // request buf
-                       rpc_id,     // remote function id to call
-                       payload,    // size of the request
-                       cor_id_,    // app coroutine id
-                       RRpc::REQ,  // this is a request
-                       &id, // the address of servers list to send
-                       1);  // number of servers to send
-                       
-indirect_yield();   // yield to other coroutine
-// when executed, the buffer got the results of remote memory
-Rfree(msg_buffer);      // can free the buffer after that
-Rfree(reply_buffer);     
-```
+**RCC** is a comprehensive framework for evaluating existing concurrency control protocols and create stage-wise hybrid designs for them.  **RCC** is atop of *DrTM+H*. RCC has been integrated with a variety of optimizations techniques such as co-routines, outstanding requests and doorbell batching.  RCC's main code is under `src/rtx`. 
 
 ------
 
 ### Build
 
-We use DrTM+H to evaluate a transactional system's performance using ROCC. 
+RCC is build on top of DrTM+H. Therefore shares same building procedure as DrTM+H.
 
 **Dependencies:**
 
@@ -72,9 +24,9 @@ For build & for run time
 
 ------
 
-**A sample of how to build DrTM+H:**
+**A sample of how to build RCC:**
 
-- `git clone --recursive https://github.com/SJTU-IPADS/drtmh.git`.
+- `git clone --recursive https://github.com/XXX/rcc.git`.
 - `sudo apt-get install libzmq3-dev`
 - `sudo apt-get install libtool-bin`
 - `sudo apt-get install cmake` 
@@ -90,27 +42,29 @@ For build & for run time
          
          `-DTX_LOG_STYLE=2         // RTX's log style. 1 uses RPC, 2 uses RDMA`
 
-- `make noccocc`
+- `make nocc<A>-<B>`
+where A is one of `occ`, `nowait`, `waitdie`, `mvcc`, `sundial`, `calvin` and B is one of `rpc`, `one-sided` and `hybrid`.
+
 ------
 
 **Prepare for running:**
 
-Two files, `config.xml`, `hosts.xml` must be used to configure the running of DrTM+H.  `config.xml` provides benchmark specific configuration, while `hosts.xml` provides the topology of the cluster.
+Two files, `config.xml`, `hosts.xml` must be used to configure the running of RCC.  `config.xml` provides benchmark specific configuration, while `hosts.xml` provides the topology of the cluster.
 
-The samples of these two files are listed in `${PATH_TO_DrTMH}/scripts` .
+The samples of these two files are listed in `${PATH_TO_RCC}/scripts` .
 
 ***
 
 ### **Run in a cluster:**
 
-We provide a script to help deploy and run in a	cluster	setting. Using the following command on	the first machine defined in the `hosts.xml`.
+Using the following command on $each$ machine i defined in the `hosts.xml`.
+`cd ${PATH_TO_RCC}/scripts;   ./noccmvcc-rpc --bench tpcc --txn-flags 1  --verbose --config config.xml --id i -t 1 -c 1 -r 100 -p 16`
 
-`cd ${PATH_TO_DrTMH}/scripts; ./run2.py config.xml noccocc "-t 24 -c 10 -r 100" tpcc 16 ` , 
 
-where `t` states for number of threads used, `c` states for number of coroutines used and `r` is left for workload. `tpcc` states for the application used, here states for running the TPC-C workload. The final augrment(16) is the number of machine used, according to the hosts.xml mentioned above. 
+where `t` states for number of threads used, `c` states for number of coroutines used and `r` is left for workload. `tpcc` states for the application used, here states for running the TPC-C workload. use `bank` for both SmallBank and YCSB. The final augrment(16) is the number of machine used, according to the hosts.xml mentioned above. 
 
 ------
 
-**We will soon make a detailed description and better configuration tools for ROCC**.
+**We will soon make a detailed description and better configuration tools for RCC**.
 
 ***
