@@ -2,7 +2,7 @@
 
 ### Intro
 
-**RCC** is a comprehensive framework for evaluating existing concurrency control protocols and create stage-wise hybrid designs for them.  **RCC** is atop of *DrTM+H*. RCC has been integrated with a variety of optimizations techniques such as co-routines, outstanding requests and doorbell batching.  RCC's main code is under `src/rtx`. 
+**RCC** is a comprehensive framework for evaluating existing concurrency control protocols and creating and experimenting stage-wise hybrid designs for them.  **RCC** is atop of *DrTM+H*. RCC has been integrated with a variety of optimizations techniques such as co-routines, outstanding requests and doorbell batching.  RCC's main code is under `src/rtx`. 
 
 ------
 
@@ -57,7 +57,7 @@ The samples of these two files are listed in `${PATH_TO_RCC}/scripts` .
 
 ### **Run in a cluster:**
 
-Using the following command on $each$ machine i defined in the `hosts.xml`.
+Using the following command on `each` machine `i` defined in the `hosts.xml`.
 `cd ${PATH_TO_RCC}/scripts;   ./noccmvcc-rpc --bench tpcc --txn-flags 1  --verbose --config config.xml --id i -t 1 -c 1 -r 100 -p 16`
 
 
