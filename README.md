@@ -8,7 +8,7 @@
 
 ### Build
 
-RCC is build on top of DrTM+H. Therefore shares same building procedure as DrTM+H.
+RCC is build on top of DrTM+H. Therefore shares similar building procedure as DrTM+H.
 
 **Dependencies:**
 
@@ -49,7 +49,9 @@ where A is one of `occ`, `nowait`, `waitdie`, `mvcc`, `sundial`, `calvin` and B 
 
 **Prepare for running:**
 
-Two files, `config.xml`, `hosts.xml` must be used to configure the running of RCC.  `config.xml` provides benchmark specific configuration, while `hosts.xml` provides the topology of the cluster.
+Two files: 
+`config.xml`, `hosts.xml` must be used to configure the running of RCC.  
+`config.xml` provides benchmark specific configuration, while `hosts.xml` provides the topology of the cluster.
 
 The samples of these two files are listed in `${PATH_TO_RCC}/scripts` .
 
@@ -58,6 +60,7 @@ The samples of these two files are listed in `${PATH_TO_RCC}/scripts` .
 ### **Run in a cluster:**
 
 Using the following command on `each` machine `i` defined in the `hosts.xml`.
+
 `cd ${PATH_TO_RCC}/scripts;   ./noccmvcc-rpc --bench tpcc --txn-flags 1  --verbose --config config.xml --id i -t 1 -c 1 -r 100 -p 16`
 
 
