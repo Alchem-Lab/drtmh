@@ -4,12 +4,16 @@ project(rocc)
 
 option( LINK_STATIC_LIB "Link static version of libssmalloc and libboost" true)
 
+#set(CMAKE_CXX_COMPILER /spack/apps/gcc/8.3.0/bin/g++)
+#set(CMAKE_C_COMPILER /spack/apps/gcc/8.3.0/bin/gcc)
+#set(CMAKE_CXX_COMPILER /usr/bin/g++)
+#set(CMAKE_C_COMPILER /usr/bin/gcc)
+#set(CMAKE_CXX_COMPILER g++-4.8)
 set(ROCC_ROOT "." )
 #set(CMAKE_BUILD_TYPE Debug)
 
 ADD_DEFINITIONS( -std=c++0x)
 
-#set(CMAKE_CXX_COMPILER g++-4.8)
 include_directories(./src)
 include_directories(.)
 
@@ -37,6 +41,12 @@ set (MACRO_FLAGS "-DBASE_LINE")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLEVELDB_PLATFORM_POSIX -pthread -DOS_LINUX -mrtm -pthread -O2 -g ${MACRO_FLAGS}")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLEVELDB_PLATFORM_POSIX -pthread -DOS_LINUX -mrtm -pthread  -O0 -g2 ${MACRO_FLAGS}")
 
+set(CMAKE_THREAD_LIBS_INIT "-lpthread")
+set(CMAKE_HAVE_THREADS_LIBRARY 1)
+set(CMAKE_USE_WIN32_THREADS_INIT 0)
+set(CMAKE_USE_PTHREADS_INIT 1)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+
 ## TODO, we shall replace it with a pre-complied lib, but since now the lib is not stable, so we just add sources here
 #file(GLOB RDMA_SOURCES "third_party/libRDMA/src/*.cc" "third_party/micautil/*.cc")
 file(GLOB RDMA_SOURCES  "third_party/micautil/*.cc")
@@ -57,6 +67,10 @@ file(GLOB SOURCES
 
 include(cmake/tpce.cmake)
 add_executable(noccocc ${SOURCES} ${TPCE_SOURCES} ${RDMA_SOURCES})
+#target_include_directories(noccocc BEFORE PRIVATE /usr/include/c++/4.8.5/ PRIVATE /usr/lib/gcc/x86_64-redhat-linux/4.8.5/include/ /spack/apps/linux-centos7-x86_64/gcc-8.3.0/rdma-core-20-4oz3lq23c2m4adoovlu4akm6nugs6kfs/include/)
+#target_include_directories(noccocc BEFORE PRIVATE /spack/apps/gcc/9.2.0/include/c++/9.2.0/ PRIVATE /spack/apps/gcc/9.2.0/lib/gcc/x86_64-pc-linux-gnu/9.2.0/include/ PRIVATE /spack/apps/linux-centos7-x86_64/gcc-9.2.0/rdma-core-20-u3xrik4xivt5t5q74vv3f5lbvzuc526d)
+#target_include_directories(noccocc BEFORE PRIVATE /spack/apps/linux-centos7-x86_64/gcc-9.2.0/rdma-core-20-u3xrik4xivt5t5q74vv3f5lbvzuc526d/include/)
+target_include_directories(noccocc BEFORE PRIVATE /spack/apps/linux-centos7-x86_64/gcc-8.3.0/rdma-core-20-4oz3lq23c2m4adoovlu4akm6nugs6kfs/include/)
 
 target_compile_options(noccocc PRIVATE "-DOCC_TX")
 

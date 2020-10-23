@@ -147,16 +147,16 @@ retry:
   LOG(2) << "vector_1: ";
   for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
     lbuf->vector_1[i] = random_generator[cor_id_].next() % 1000;
-    fprintf(stderr, "%u,", lbuf->vector_1[i]);
+    fprintf(stdout, "%u,", lbuf->vector_1[i]);
   }
-  fprintf(stderr, "\n");
+  fprintf(stdout, "\n");
 
-  LOG(2) << "and vector_2: ";
+  LOG(2) << "vector_2: ";
   for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
     lbuf->vector_2[i] = random_generator[cor_id_].next() % 1000;
-    fprintf(stderr, "%u,", lbuf->vector_2[i]);   
+    fprintf(stdout, "%u,", lbuf->vector_2[i]);   
   }
-  fprintf(stderr, "\n");  
+  fprintf(stdout, "\n");  
   lbuf->status = vector_buffer_t::INPUT_READY;
 
   char *temp_buf = (char *)Rmalloc(size);
@@ -173,7 +173,6 @@ retry:
     }
     indirect_yield(yield);
     // got the remote vector in local buffer
-    LOG(2) << "After RDMA_READ";
 
     if (tbuf->status == vector_buffer_t::INPUT_READY)
       break;
@@ -184,7 +183,6 @@ retry:
     for(int i = 0; i < VECTOR_SIZE_MAX; i++)
       tbuf->vector_add_result[i] = tbuf->vector_1[i] + tbuf->vector_2[i];
     tbuf->status = vector_buffer_t::RESULT_READY;
-  LOG(2) << "After Calculation.";
   
   // write back the vector to remote buffer
   {
@@ -199,7 +197,6 @@ retry:
     ASSERT(rc == SUCC) << "post error " << strerror(errno);
   }
   indirect_yield(yield);
-  LOG(2) << "After RDMA_WRITE";
 
   // wait until the result of my local vector add is done
   while(lbuf->status != vector_buffer_t::RESULT_READY) {
@@ -208,9 +205,9 @@ retry:
 
   LOG(2) << "The result of vector addition of length " << VECTOR_SIZE_MAX;
   for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
-    fprintf(stderr, "%u,", lbuf->vector_add_result[i]);
+    fprintf(stdout, "%u,", lbuf->vector_add_result[i]);
   }
-  fprintf(stderr, "\n");
+  fprintf(stdout, "\n");
   return txn_result_t(true,1);
 }
 
@@ -232,16 +229,16 @@ retry:
   LOG(2) << "vector_1: ";
   for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
     lbuf->vector_1[i] = random_generator[cor_id_].next() % 1000;
-    fprintf(stderr, "%u,", lbuf->vector_1[i]);
+    fprintf(stdout, "%u,", lbuf->vector_1[i]);
   }
-  fprintf(stderr, "\n");
+  fprintf(stdout, "\n");
 
-  LOG(2) << "and vector_2: ";
+  LOG(2) << "vector_2: ";
   for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
     lbuf->vector_2[i] = random_generator[cor_id_].next() % 1000;
-    fprintf(stderr, "%u,", lbuf->vector_2[i]);   
+    fprintf(stdout, "%u,", lbuf->vector_2[i]);   
   }
-  fprintf(stderr, "\n");  
+  fprintf(stdout, "\n");  
   lbuf->status = vector_buffer_t::INPUT_READY;
 
   char *temp_buf = (char *)Rmalloc(size);
@@ -258,7 +255,6 @@ retry:
     }
     indirect_yield(yield);
     // got the remote vector in local buffer
-    LOG(2) << "After RDMA_READ";
 
     if (tbuf->status == vector_buffer_t::INPUT_READY)
       break;
@@ -270,7 +266,6 @@ retry:
   for(int i = 0; i < VECTOR_SIZE_MAX; i++)
     tbuf->vector_inner_product_result += tbuf->vector_1[i] * tbuf->vector_2[i];
   tbuf->status = vector_buffer_t::RESULT_READY;
-  LOG(2) << "After Calculation.";
   
   // write back the vector to remote buffer
   {
@@ -285,7 +280,6 @@ retry:
     ASSERT(rc == SUCC) << "post error " << strerror(errno);
   }
   indirect_yield(yield);
-  LOG(2) << "After RDMA_WRITE";
 
   // wait until the result of my local vector add is done
   while(lbuf->status != vector_buffer_t::RESULT_READY) {
@@ -318,21 +312,21 @@ retry:
     for (int i = 0; i < MATRIX_ROW_MAX; i++) {
       for (int j = 0; j < MATRIX_COLUMN_MAX; j++) {
         lbuf->matrix_1[i][j] = random_generator[cor_id_].next() % 1000;
-        fprintf(stderr, "%u,", lbuf->matrix_1[i][j]);
+        fprintf(stdout, "%u,", lbuf->matrix_1[i][j]);
       }
-      fprintf(stderr, "\n");
+      fprintf(stdout, "\n");
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
     LOG(2) << "matrix_2: ";
     for (int i = 0; i < MATRIX_ROW_MAX; i++) {
       for (int j = 0; j < MATRIX_COLUMN_MAX; j++) {
         lbuf->matrix_2[i][j] = random_generator[cor_id_].next() % 1000;
-        fprintf(stderr, "%u,", lbuf->matrix_2[i][j]);
+        fprintf(stdout, "%u,", lbuf->matrix_2[i][j]);
       }
-      fprintf(stderr, "\n");
+      fprintf(stdout, "\n");
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
     lbuf->status = matrix_buffer_t::INPUT_READY;
   }
 
@@ -347,7 +341,7 @@ retry:
       * Retry after come back frome yield.
       **/
 
-    // EE559 student: put your code here.
+    //  put your code here.
     
   }
 
@@ -359,7 +353,7 @@ retry:
        **/
 
     ASSERT(MATRIX_ROW_MAX == MATRIX_COLUMN_MAX);
-    // EE559 student: put your code here.
+    //  put your code here.
 
   }
 
@@ -370,15 +364,18 @@ retry:
       * at the remote machine.
       **/
 
-    // EE559 student: put your code here.
+    //  put your code here.
 
   }
 
   {
-    // yield until the result of my local matrix buffer is ready
-    while(lbuf->status != matrix_buffer_t::RESULT_READY) {
-      yield_next(yield);
-    }
+    /**
+      *    
+      *
+      * yield until the result of my local matrix buffer is ready
+      **/
+    //  put your code here.
+  
   }
 
   // print the result and verify the result locally.
@@ -389,11 +386,11 @@ retry:
       for (int k = 0; k < MATRIX_ROW_MAX; k++)
         sum += lbuf->matrix_1[i][k]*lbuf->matrix_2[k][j];
       ASSERT(sum == lbuf->matrix_multiplication_result[i][j]) << "MATRIX MULTIPLICATION via RDMA is NOT correct.";
-      fprintf(stderr, "%u,", lbuf->matrix_multiplication_result[i][j]);
+      fprintf(stdout, "%u,", lbuf->matrix_multiplication_result[i][j]);
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
   }
-  fprintf(stderr, "\n");
+  fprintf(stdout, "\n");
   LOG(2) << "MATRIX MULTIPLICATION via RDMA is correct.";
   return txn_result_t(true,1);
 }

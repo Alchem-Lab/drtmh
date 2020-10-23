@@ -37,8 +37,12 @@ set( LIBBOOST_LIBRARIES ${BOOST_INSTALL_DIR}/lib )
 #
 # Configure dependencies: both built-in and external
 #
-find_library( LIBZMQ NAMES zmq HINTS $ENV{HOME}/local/zeromq/lib)
-find_library( LIBIBVERBS NAMES ibverbs)
+find_library( LIBZMQ NAMES zmq HINTS $ENV{HOME}/install/zeromq-4.2.3/lib/)
+# for hpc.usc.edu user, please comment out the following line.
+find_library( LIBIBVERBS NAMES ibverbs HINTS /spack/apps/linux-centos7-x86_64/gcc-8.3.0/rdma-core-20-4oz3lq23c2m4adoovlu4akm6nugs6kfs/lib64/)
+# for hpc.usc.edu user, please un-comment the following line.
+#find_library( LIBIBVERBS NAMES ibverbs)
+
 if( LINK_STATIC_LIB )
   add_library( ssmalloc STATIC IMPORTED )
   set_target_properties( ssmalloc PROPERTIES
@@ -103,7 +107,7 @@ if (NOT TARGET cpuinfo)
   set_property(TARGET cpuinfo PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
-find_path(ZMQ_CPP NAMES zmq.hpp HINTS  $ENV{HOME}/local/zeromq/include/)
+find_path(ZMQ_CPP NAMES zmq.hpp HINTS  $ENV{HOME}/install/zeromq-4.2.3/include/)
 include_directories( BEFORE ${LIBSSMALLOC_HEADERS} )
 include_directories( BEFORE ${LIBBOOST_HEADERS} )
 include_directories( BEFORE ${ZMQ_CPP} )

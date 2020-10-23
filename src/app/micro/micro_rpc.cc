@@ -143,19 +143,19 @@ txn_result_t MicroWorker::micro_rpc_vector_add(yield_func_t &yield) {
     req->op = VectorOpReq::ADD;
     req->len = VECTOR_SIZE_MAX;
     // LOG(2) << "Operation id:" << req->req_idx;
-    LOG(2) << "Adding vector_1: ";
+    LOG(2) << "vector_1: ";
     for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
       req->vector_1[i] = random_generator[cor_id_].next() % 1000;
-      fprintf(stderr, "%u,", req->vector_1[i]);
+      fprintf(stdout, "%u,", req->vector_1[i]);
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
-    LOG(2) << "and vector_2: ";
+    LOG(2) << "vector_2: ";
     for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
       req->vector_2[i] = random_generator[cor_id_].next() % 1000;
-      fprintf(stderr, "%u,", req->vector_2[i]);   
+      fprintf(stdout, "%u,", req->vector_2[i]);   
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
     rpc_->append_pending_req((char *)req,VECTOR_OP_REQ_ID,sizeof(VectorOpReq),cor_id_,RRpc::REQ,pid);
   }
@@ -169,9 +169,9 @@ txn_result_t MicroWorker::micro_rpc_vector_add(yield_func_t &yield) {
     VectorAddReply* res = (VectorAddReply*)reply_buf;
     LOG(2) << "The result of " << res->req_idx << "'s vector addition of length " << res->len;
     for (int i = 0; i < res->len; i++) {
-      fprintf(stderr, "%u,", res->result[i]);
+      fprintf(stdout, "%u,", res->result[i]);
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
     res += sizeof(VectorAddReply);
   }
@@ -212,16 +212,16 @@ txn_result_t MicroWorker::micro_rpc_vector_inner_product(yield_func_t &yield) {
     LOG(2) << "vector_1: ";
     for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
       req->vector_1[i] = random_generator[cor_id_].next() % 1000;
-      fprintf(stderr, "%u,", req->vector_1[i]);
+      fprintf(stdout, "%u,", req->vector_1[i]);
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
-    LOG(2) << "and vector_2: ";
+    LOG(2) << "vector_2: ";
     for (int i = 0; i < VECTOR_SIZE_MAX; i++) {
       req->vector_2[i] = random_generator[cor_id_].next() % 1000;
-      fprintf(stderr, "%u,", req->vector_2[i]);   
+      fprintf(stdout, "%u,", req->vector_2[i]);   
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
     rpc_->append_pending_req((char *)req,VECTOR_OP_REQ_ID,sizeof(VectorOpReq),cor_id_,RRpc::REQ,pid);
   }
@@ -235,7 +235,7 @@ txn_result_t MicroWorker::micro_rpc_vector_inner_product(yield_func_t &yield) {
     VectorInnerProductReply* res = (VectorInnerProductReply*)reply_buf;
     LOG(2) << "The result of " << res->req_idx << "'s vector inner product is " 
                                << res->inner_product_result;
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
     res += sizeof(VectorAddReply);
   }
@@ -277,26 +277,26 @@ txn_result_t MicroWorker::micro_rpc_matrix_multiplication(yield_func_t &yield) {
     for (int i = 0; i < req->row_1; i++) {
       for (int j = 0; j < req->col_1; j++) {
         req->matrix_1[i][j] = random_generator[cor_id_].next() % 1000;
-        fprintf(stderr, "%u,", req->matrix_1[i][j]);
+        fprintf(stdout, "%u,", req->matrix_1[i][j]);
       }
-      fprintf(stderr, "\n");
+      fprintf(stdout, "\n");
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
     LOG(2) << "matrix_2: ";
     for (int i = 0; i < req->row_2; i++) {
       for (int j = 0; j < req->col_2; j++) {
         req->matrix_2[i][j] = random_generator[cor_id_].next() % 1000;
-        fprintf(stderr, "%u,", req->matrix_2[i][j]);
+        fprintf(stdout, "%u,", req->matrix_2[i][j]);
       }
-      fprintf(stderr, "\n");
+      fprintf(stdout, "\n");
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
 
     /**
       * Send the RPC Request for matrix multiplication
       **/
-    // EE559 student: put your code here.
+    //  put your code here.
     
   }
 
@@ -304,17 +304,19 @@ txn_result_t MicroWorker::micro_rpc_matrix_multiplication(yield_func_t &yield) {
     // print out the result matrix and locally verify the correctness
     MatrixMultiplicationReply* res = (MatrixMultiplicationReply*)reply_buf;
     LOG(2) << "The result of matrix multiplication is ";
+    ASSERT(res->row > 0) << "MATRIX MULTIPLICATION via RPC is NOT correct.";
+    ASSERT(res->col > 0) << "MATRIX MULTIPLICATION via RPC is NOT correct.";
     for (int i = 0; i < res->row; i++) {
       for (int j = 0; j < res->col; j++) {
         int sum = 0;
         for (int k = 0; k < req->row_2; k++)
           sum += req->matrix_1[i][k]*req->matrix_2[k][j];
         ASSERT(sum == res->result[i][j]) << "MATRIX MULTIPLICATION via RPC is NOT correct.";
-        fprintf(stderr, "%u,", res->result[i][j]);
+        fprintf(stdout, "%u,", res->result[i][j]);
       }
-      fprintf(stderr, "\n");
+      fprintf(stdout, "\n");
     }
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
     LOG(2) << "MATRIX MULTIPLICATION via RPC is correct.";
   }
   return txn_result_t(true,1);
@@ -385,12 +387,12 @@ void MicroWorker::matrix_rpc_handler(int id,int cid,char *msg, void *arg) {
         /**
           * fill out the rest of the fields of the reply message
           **/
-        // EE559 student: put your code here.
+        //  put your code here.
 
         /**
           * send the reply back to the RPC requester.
           **/
-        // EE559 student: put your code here.
+        //  put your code here.
       }
       break;
     default:
