@@ -29,4 +29,6 @@ fi
 
 date
 
+touch ../nocc$protocol-$version
+echo "executing `ls -lah ../nocc$protocol-$version` + on $id"
 ../nocc$protocol-$version --bench $app_ --txn-flags 1  --verbose --config config.xml --id $id -t 10 -c $cornum -r 100 -p 4  1>$outpath/drtmh-nocc$protocol-$app-4-$version.log_$id 2>&1
