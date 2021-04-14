@@ -32,7 +32,7 @@ For build & for run time
 - `sudo apt-get install cmake` 
 - `cmake -DUSE_RDMA=1              //run using RDMA; set it to be 0 if only use TCP for execution`
 
-         `-DONE_SIDED_READ=1       // enable RDMA friendly data store`
+         `-DONE_SIDED_READ=1       // enable RDMA friendly data store， need to set to 2 for generating hybrid protocols.`
          
          `-DROCC_RBUF_SIZE_M=13240 // total RDMA buffer registered~(Unit of M)`
          
@@ -41,6 +41,7 @@ For build & for run time
          `-DRDMA_CACHE=0           // whether use location cache for data store`
          
          `-DTX_LOG_STYLE=2         // RTX's log style. 1 uses RPC, 2 uses RDMA`
+         `-DHYBRID_CODE=1          // This hybrid code must be set when generating hybrid protocols.`
 
 - `make nocc<A>-<B>`
 where A is one of `occ`, `nowait`, `waitdie`, `mvcc`, `sundial`, `calvin` and B is one of `rpc`, `one-sided` and `hybrid`.
