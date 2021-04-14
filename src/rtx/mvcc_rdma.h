@@ -416,6 +416,7 @@ private:
         pos = i;
       }
     }
+    printf("check_read version %d\n", pos);
     // pos can be -1 here, meaning no available item
     return pos;
   }

@@ -160,6 +160,7 @@ bool MVCC::try_read_rpc(int index, yield_func_t &yield) {
       abort_reason = 14;
       return false;
     }
+    fprintf(stderr, "mvcc read version %d\n", pos);
   }
 
   return true;
@@ -421,6 +422,7 @@ void MVCC::read_rpc_handler(int id,int cid,char *msg,void *arg) {
       abort_reason = 26;
       goto END;
     }
+    fprintf(stderr, "mvcc read version %d\n", pos);
     nodelen = sizeof(uint64_t) + item->len;
     goto END;
   }
@@ -844,7 +846,8 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
       abort_reason = 10;
       return false;
     }
-
+    fprintf(stderr, "mvcc read version %d\n", pos);
+    
     // step 3: write the rts back
     uint64_t compare = header->rts;
     uint64_t back = 0;
@@ -885,6 +888,7 @@ bool MVCC::try_read_rdma(int index, yield_func_t &yield) {
       abort_reason = 12;
       return false;
     }
+    fprintf(stderr, "mvcc read version %d\n", pos);
     while(true) {
       volatile uint64_t* rts_ptr = &(header->rts);
       volatile uint64_t rts = header->rts;
