@@ -1,0 +1,277 @@
+NOCC started with program [/noccnowait-tcp]. at 19-08-2020 03:31:17
+[tpcc] settings:
+  new_order_remote_item_pct    : 1
+  uniform_item_dist            : 0
+  micro dist :20
+[bench_runner.cc:341] Use TCP port 8853
+[0m[bench_runner.cc:363] use scale factor: 30; with total 10 threads.
+[0m[view.h:48] Start with 2 backups.
+[0m[view.cc:10] total 4 backups to assign
+[0mTxn NewOrder, 100
+Remote counts: 100
+NAIVE: 4[util.cc:161] malloc_huge_pages: size = 13883146240huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 12.9316
+[0m[librdma] get device name mlx5_0, idx 0
+[librdma] : Device 0 has 1 ports
+poller bind address tcp://*:8853
+[bench_runner.cc:144] [TCP] creating shared sockets
+[0m[TCP] creating shared sockets for tcp://172.23.33.33:8853
+[TCP] creating shared sockets for tcp://172.23.33.34:8853
+[TCP] creating shared sockets for tcp://172.23.33.35:8853
+[TCP] creating shared sockets for tcp://172.23.33.32:8853
+[bench_runner.cc:157] Total logger area 0.00390625G.
+[0m[bench_runner.cc:167] Total two-phase committer area 0.00195312G.
+[0m[bench_runner.cc:176] add RDMA store size 7.8125G.
+[0m[bench_runner.cc:185] [Mem] RDMA heap size 5.10936G.
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[TPCC loader] total 120 warehouses
+[tpcc_loader.cc:55] loading warehouses.
+[0m[tpcc_loader.cc:122] [TPCC] finished loading warehouse.
+[0m[tpcc_loader.cc:123] [TPCC]   * average warehouse record length: 101 bytes.
+[0m[tpcc_loader.cc:192] [TPCC] finished loading district.
+[0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
+[0m[TPCC] finished loading item
+[TPCC]   * average item record length: 84.1739 bytes
+[TPCC] finished loading stock
+[TPCC]   * average stock record length: 9 bytes
+[tpcc_loader.cc:319] [TPCC] finished loading customer.
+[0m[tpcc_loader.cc:320] [TPCC]   * average customer record length: 168.245 bytes.
+[0m[Runner] local db size: 2886.16 MB
+[Runner] DID NOT start server for receiving QP connection requests.
+[Runner] Cache size: 0 MB
+[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[TPCC loader] total 120 warehouses
+[tpcc_loader.cc:192] [TPCC] finished loading district.
+[0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
+[0m[TPCC] finished loading stock
+[TPCC]   * average stock record length: 9 bytes
+[bench_runner.cc:269] [Runner] Backup DB[0] for 2 size: 368.07 MB
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[util.cc:161] malloc_huge_pages: size = 1440000000huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 1.34375
+[0m[util.cc:161] malloc_huge_pages: size = 314572800huge_page_sz = 2097152flag = 1
+[0m[util.cc:178] huge page real size 0.294922
+[0m[TPCC loader] total 120 warehouses
+[tpcc_loader.cc:192] [TPCC] finished loading district.
+[0m[tpcc_loader.cc:193] [TPCC]   * average district record length: 103 bytes.
+[0m[TPCC] finished loading stock
+[TPCC]   * average stock record length: 9 bytes
+[bench_runner.cc:269] [Runner] Backup DB[1] for 3 size: 368.508 MB
+[0m[Tpcc] n_ware_per_worker: 3
+worker: 0 binding 0
+worker: 2 binding 4
+worker: 3 binding 6
+worker: 1 binding 2
+worker: 4 binding 8
+worker: 5 binding 10
+worker: 6 binding 12
+worker: 7 binding 14
+worker: 8 binding 16
+worker: 9 binding 18
+[NOCC] poller running!
+[bench_listener2.cc:70] try log results to ./results//noccnowait-tcp_tpcc_4_10_1_100.log
+[0m[bench_worker.h:156] Use RPC for logging.
+[0mNOWAIT uses RPC LOCK.
+NOWAIT uses RPC LOG.
+NOWAIT uses RPC RELEASE.
+NOWAIT uses RPC COMMIT.
+[bench_listener2.cc:79] New monitor running!
+[0m[bench_listener2.cc:130] All workers has initilized.
+[0m[rworker.cc:47] Worker 12 on cpu 15with cor id 0
+[0m[bench_listener2.cc:135] Starting Master Listener.
+[0m[bench_listener2.cc:234] [LISTENER] receive start RPC.
+[0m[rworker.cc:47] Worker 4 on cpu 8with cor id 0
+[0m[rworker.cc:47] Worker 3 on cpu 6with cor id 0
+[0m[rworker.cc:47] Worker 7 on cpu 14with cor id 0
+[rworker.cc:47] Worker 5 on cpu 10with cor id 0
+[rworker.cc:47] Worker 0 on cpu 0with cor id 0
+[0m[rworker.cc:47] Worker 1 on cpu 2with cor id 0
+[0m[0m[rworker.cc:47] Worker 6 on cpu 12with cor id 0
+[0m[rworker.cc:47] Worker 9 on cpu 18with cor id 0
+[0m[rworker.cc:47] Worker 8 on cpu 16with cor id 0
+[0m[rworker.cc:47] Worker 2 on cpu 4with cor id 0
+[0m[0mmerge data 2.113000 K from gorgon2
+merge data 2.136000 K from gorgon5
+merge data 2.007000 K from gorgon4
+my throughput 2.062000 K, abort 3043, commit 2062, abort ratio 0.596082
+merge data 2.062000 K from gorgon3
+[tpcc_worker.h:144] read lat: 6.91765e+06 ;counts 203
+[0m[occ_statistics.h:111] lock lat: 655015 ;counts 2372
+[0m[occ_statistics.h:114] lock cpu cycles: 10.1977 ;counts 2372
+[0m[occ_statistics.h:117] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:120] validate cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:123] log lat: 1.13194e+06 ;counts 203
+[0m[occ_statistics.h:126] log cpu cycles: 63.5961 ;counts 203
+[0m[occ_statistics.h:129] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:132] twopc cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:135] commit lat: 1.2487e+06 ;counts 203
+[0m[occ_statistics.h:138] commit cpu cycles: 55.197 ;counts 203
+[0m[occ_statistics.h:141] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:144] temp cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:147] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:150] read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:153] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:156] renew_lease cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:159] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:162] release_read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:165] release_write lat: 1694.85 ;counts 561
+[0m[occ_statistics.h:168] release_write cpu cycles: 0.0641711 ;counts 561
+[0m@1 System throughput 8.318000 K, abort 0.592814
+merge data 1.935000 K from gorgon5
+merge data 1.953000 K from gorgon2
+merge data 1.886000 K from gorgon4
+my throughput 1.894000 K, abort 3194, commit 1894, abort ratio 0.627752
+merge data 1.894000 K from gorgon3
+[tpcc_worker.h:144] read lat: 7.28799e+06 ;counts 193
+[0m[occ_statistics.h:111] lock lat: 716390 ;counts 2139
+[0m[occ_statistics.h:114] lock cpu cycles: 8.624e+15 ;counts 2139
+[0m[occ_statistics.h:117] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:120] validate cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:123] log lat: 1.32509e+06 ;counts 193
+[0m[occ_statistics.h:126] log cpu cycles: 9.5579e+16 ;counts 193
+[0m[occ_statistics.h:129] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:132] twopc cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:135] commit lat: 1.28042e+06 ;counts 192
+[0m[occ_statistics.h:138] commit cpu cycles: 21.5625 ;counts 192
+[0m[occ_statistics.h:141] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:144] temp cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:147] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:150] read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:153] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:156] renew_lease cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:159] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:162] release_read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:165] release_write lat: 171.086 ;counts 418
+[0m[occ_statistics.h:168] release_write cpu cycles: 0.215311 ;counts 418
+[0m@2 System throughput 7.668000 K, abort 0.628596
+merge data 2.123000 K from gorgon5
+merge data 2.140000 K from gorgon2
+merge data 2.068000 K from gorgon4
+my throughput 2.040000 K, abort 3258, commit 2040, abort ratio 0.614949
+merge data 2.040000 K from gorgon3
+[tpcc_worker.h:144] read lat: 6.35613e+06 ;counts 211
+[0m[occ_statistics.h:111] lock lat: 651976 ;counts 2298
+[0m[occ_statistics.h:114] lock cpu cycles: 8.0273e+15 ;counts 2298
+[0m[occ_statistics.h:117] validate lat: 0 ;counts 1
+[0m[occ_statistics.h:120] validate cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:123] log lat: 1.29348e+06 ;counts 211
+[0m[occ_statistics.h:126] log cpu cycles: 8.96209 ;counts 211
+[0m[occ_statistics.h:129] twopc lat: 0 ;counts 1
+[0m[occ_statistics.h:132] twopc cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:135] commit lat: 1.33365e+06 ;counts 212
+[0m[occ_statistics.h:138] commit cpu cycles: 8.70129e+16 ;counts 212
+[0m[occ_statistics.h:141] temp lat: 0 ;counts 1
+[0m[occ_statistics.h:144] temp cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:147] read_lat lat: 0 ;counts 1
+[0m[occ_statistics.h:150] read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:153] renew_lease lat: 0 ;counts 1
+[0m[occ_statistics.h:156] renew_lease cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:159] release_read lat: 0 ;counts 1
+[0m[occ_statistics.h:162] release_read cpu cycles: 0 ;counts 1
+[0m[occ_statistics.h:165] release_write lat: 2449.51 ;counts 420
+[0m[occ_statistics.h:168] release_write cpu cycles: 0.183333 ;counts 420
+[0m@3 System throughput 8.371000 K, abort 0.640745
+[bench_listener2.cc:276] start to exit.
+[0mstats for worker 0:
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+exiting master routine.
+[NOCC] poller exit!
+exiting master routine.
+NewOrder executed 608, latency: 4.940861, rw_size -nan, m 4.623662, 90 6.589858, 99 12.856669
+succs ratio 0.604582
+[tpcc_worker.h:152] worker exit.
+[0m[bench_listener2.cc:295] Medium latency 4.62356ms, 90th latency 6.58971ms, 99th latency 12.8564ms; average latency: 4.94073ms.
+[0m[tpcc_worker.h:155] read time: 2.97979ms
+[0m[occ_statistics.h:63] read_lat time: 0ms
+[0m[occ_statistics.h:64] lock time: 0.293226ms
+[0m[occ_statistics.h:65] release_write time: 0.000625179ms
+[0m[occ_statistics.h:66] release_read time: 0ms
+[0m[occ_statistics.h:67] renew_lease time: 0ms
+[0m[occ_statistics.h:68] validate time: 0ms
+[0m[occ_statistics.h:69] log time: 0.54352ms
+[0m[occ_statistics.h:70] 2pc time: 0ms
+[0m[occ_statistics.h:71] commit time: 0.559787ms
+[0m[occ_statistics.h:73] 0
+[0m[occ_statistics.h:74] 0.293226
+[0m[occ_statistics.h:75] 0.000625179
+[0m[occ_statistics.h:76] 0
+[0m[occ_statistics.h:77] 0.559787
+[0m[occ_statistics.h:80] temp time: 0ms
+[0m[occ_statistics.h:97] read cpu time: 0ms
+[0m[occ_statistics.h:98] lock cpu time: 2.41309e+09ms
+[0m[occ_statistics.h:99] release_write cpu time: 0ms
+[0m[occ_statistics.h:100] release_read cpu time: 0ms
+[0m[occ_statistics.h:101] renew_lease cpu time: 0ms
+[0m[occ_statistics.h:102] validate cpu time: 0ms
+[0m[occ_statistics.h:103] log cpu time: 1.38512e+10ms
+[0m[occ_statistics.h:104] 2pc cpu time: 0ms
+[0m[occ_statistics.h:105] commit cpu time: 1.26098e+10ms
+[0m[occ_statistics.h:106] temp time: 0ms
+[0m[bench_worker.cc:392] 0: 0
+[0m[bench_worker.cc:392] 1: 0
+[0m[bench_worker.cc:392] 2: 396
+[0m[bench_worker.cc:392] 3: 0
+[0m[bench_worker.cc:392] 4: 396
+[0m[bench_worker.cc:392] 5: 0
+[0m[bench_worker.cc:392] 6: 0
+[0m[bench_worker.cc:392] 7: 0
+[0m[bench_worker.cc:392] 8: 0
+[0m[bench_worker.cc:392] 9: 0
+[0m[bench_worker.cc:392] 10: 0
+[0m[bench_worker.cc:392] 11: 0
+[0m[bench_worker.cc:392] 12: 0
+[0m[bench_worker.cc:392] 13: 0
+[0m[bench_worker.cc:392] 14: 0
+[0m[bench_worker.cc:392] 15: 0
+[0m[bench_worker.cc:392] 16: 0
+[0m[bench_worker.cc:392] 17: 0
+[0m[bench_worker.cc:392] 18: 10426
+[0m[bench_worker.cc:392] 19: 38
+[0m[bench_worker.cc:392] 20: 0
+[0m[bench_worker.cc:392] 21: 0
+[0m[bench_worker.cc:392] 22: 0
+[0m[bench_worker.cc:392] 23: 0
+[0m[bench_worker.cc:392] 24: 0
+[0m[bench_worker.cc:392] 25: 0
+[0m[bench_worker.cc:392] 26: 607
+[0m[bench_worker.cc:392] 27: 0
+[0m[bench_worker.cc:392] 28: 0
+[0m[bench_worker.cc:392] 29: 0
+[0m[bench_worker.cc:392] 30: 0
+[0m[bench_worker.cc:392] 31: 0
+[0m[bench_worker.cc:392] 32: 0
+[0m[bench_worker.cc:392] 33: 0
+[0m[bench_worker.cc:392] 34: 0
+[0m[bench_worker.cc:392] 35: 0
+[0m[bench_worker.cc:392] 36: 0
+[0m[bench_worker.cc:392] 37: 0
+[0m[bench_worker.cc:392] 38: 0
+[0m[bench_worker.cc:392] 39: 0
+[0m[TPCC]: check consistency.
+master routine exit...
+[bench_listener2.cc:307] benchmark ends
+[0m[bench_runner.cc:313] main runner ends.
+[0m
