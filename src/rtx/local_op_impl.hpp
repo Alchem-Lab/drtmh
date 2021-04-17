@@ -109,7 +109,7 @@ MemNode *TXOpBase::inplace_write_op(MemNode *node,char *val,int len,int meta, ui
   assert(node->value != NULL);
   RdmaValHeader* header = (RdmaValHeader*)node->value;
   auto old_seq = header->seq;
-  assert(header->seq != 1);
+  // assert(header->seq != 1);
   header->seq = CONFLICT_WRITE_FLAG;
 
   asm volatile("" ::: "memory");
