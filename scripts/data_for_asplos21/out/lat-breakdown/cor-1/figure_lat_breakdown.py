@@ -141,10 +141,10 @@ for j, version in enumerate(versions):
         alpha=opacity, color=colors[i], hatch=patterns[i], label=series[i])
 
     if j == 0:
-       plt.ylabel(r'Latency($\mu$s)', fontsize=36) 
-    plt.yticks(fontsize=36)
+       plt.ylabel(r'Latency($\mu$s)', fontsize=24) 
+    plt.yticks(fontsize=12)
     plt.ylim(ymin=0,ymax=10)
-    plt.xticks(index + bar_width*(len(series)-1)/2, algs, fontsize=36,rotation=45)
+    plt.xticks(index + bar_width*(len(series)-1)/2, algs, fontsize=16,rotation=45)
     plt.grid(axis="y")
     if appname == "bank":
         plt.ylim(ymin=0,ymax=12)

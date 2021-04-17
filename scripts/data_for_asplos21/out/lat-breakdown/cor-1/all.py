@@ -144,11 +144,11 @@ for k, appname in enumerate(apps):
         # if k == len(apps)//2 and j == 0:
         #    plt.ylabel(r'Latency($\mu$s)', fontsize=36) 
         if j == 0:
-            plt.ylabel(applabel[appname], fontsize=36)
-        plt.yticks(fontsize=24)
+            plt.ylabel(applabel[appname], fontsize=32)
+        plt.yticks(fontsize=32)
         plt.ylim(ymin=0,ymax=10)
         if k == len(apps)-1:
-            plt.xticks(index + bar_width*(len(series)-1)/2, algs, fontsize=36,rotation=45)
+            plt.xticks(index + bar_width*(len(series)-1)/2, algs, fontsize=32,rotation=45)
         else:
             plt.xticks([],[])
         plt.grid(axis="y")

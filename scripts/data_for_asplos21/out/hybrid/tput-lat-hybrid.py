@@ -41,7 +41,7 @@ for j, appname in enumerate(apps):
             for thename in filenames_w_path:
                     fname = thename + '/drtmh-nocc' + item + '-' + appname + '-4-' + 'hybrid' + '.log_0'
                     if os.path.isfile(fname):
-                            print(fname)
+                            # print(fname)
                             res = subprocess.check_output(('awk', '-f', 'tput.awk', fname))
                             # print(res)
                             tres = (float(res.decode('ascii').strip("\n")))
@@ -57,8 +57,8 @@ for j, appname in enumerate(apps):
                             continue
                     tput.append(tres)
                     lat.append(lres)
-            print(tput)
-            print(lat)
+            # print(tput)
+            # print(lat)
             width = 0.3
             myco = ['b','g','r']
             plt.scatter(tput, lat, ls='-', c=myco[0])
@@ -71,7 +71,7 @@ for j, appname in enumerate(apps):
             lres = 0.0
             fname = thename + '/drtmh-nocc' + item + '-' + appname + '-4-' + 'rpc' + '.log_0'
             if os.path.isfile(fname):
-                    print(fname)
+                    # print(fname)
                     res = subprocess.check_output(('awk', '-f', 'tput.awk', fname))
                     # print(res)
                     tres = (float(res.decode('ascii').strip("\n")))
@@ -85,13 +85,13 @@ for j, appname in enumerate(apps):
                             l = f.readline()
             if(tres == 0.0 or lres == 0.0):
                     continue
-            plt.scatter([tres], [lres], ls='-', c=myco[1])
+            plt.scatter([tres], [lres], marker='x', c=myco[1])
 
             tres = 0.0
             lres = 0.0
             fname = thename + '/drtmh-nocc' + item + '-' + appname + '-4-' + 'onesided' + '.log_0'
             if os.path.isfile(fname):
-                    print(fname)
+                    # print(fname)
                     res = subprocess.check_output(('awk', '-f', 'tput.awk', fname))
                     # print(res)
                     tres = (float(res.decode('ascii').strip("\n")))
@@ -105,13 +105,13 @@ for j, appname in enumerate(apps):
                             l = f.readline()
             if(tres == 0.0 or lres == 0.0):
                     continue
-            plt.scatter([tres], [lres], ls='-', c=myco[2])
+            plt.scatter([tres], [lres], marker='+', c=myco[2])
 
             if j == 0:
                 plt.title(item, fontsize=30, loc='right')
             if i == 0:
                 plt.ylabel('Latency', fontsize=24)
-            if j == 1:
+            if j == 2:
                 plt.xlabel('Tput', fontsize=24)
             # plt.title(apps[wl]+'_'+str(server_cnt), fontsize=8, loc='right')
             ax.get_xaxis().set_tick_params(direction='in', width=1, length=2)
@@ -119,13 +119,21 @@ for j, appname in enumerate(apps):
             ax.get_yaxis().set_tick_params(direction='in', width=0.5, length=2, pad=1)
             plt.yticks(fontsize=16)
             if j == 0:
-                plt.xticks(np.arange(math.floor(min(tput)), math.floor(max(tput))+1, 2.0),fontsize=20)
-            else:
-                plt.xticks(np.arange(int(min(tput)*10)/10.0, int(max(tput)*10+1)/10.0, 0.1),fontsize=20)
+                plt.xticks(np.arange(math.floor(min(tput)), math.floor(max(tput))+1, 1.0),fontsize=16)
+            if j == 1:
+                plt.xticks(np.arange(int(min(tput)*10)/10.0, int(max(tput)*10+2)/10.0, 0.1),fontsize=16)
+            if j == 2:
+                plt.xticks(np.arange(int(min(tput)*10)/10.0, int(max(tput)*10+1)/10.0, 0.2),fontsize=16)
 
             ax.yaxis.get_offset_text().set_size(2)
             ax.yaxis.set_ticks_position('left')
-            
+           
+            #if appname == "bank":
+            #    ax.xaxis.set_major_locator(plt.LinearLocator(5))
+            #if appname == "ycsb":
+            #    ax.xaxis.set_major_locator(plt.LinearLocator(5))
+            #if appname == "tpcc":
+            #    ax.xaxis.set_major_locator(plt.LinearLocator(5))
     #if j == 0:
     #    plt.legend(fontsize=30, ncol=3, bbox_to_anchor=(0.3,1.7))
     # plt.suptitle("Throughput-Latency")
